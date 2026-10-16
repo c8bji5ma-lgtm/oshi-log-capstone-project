@@ -10,6 +10,7 @@
        data-photo-card-statistics-url-value="<%= statistics_card_path %>"
        data-photo-card-memories-url-value="<%= memories_card_path %>"
        data-photo-card-download-url-value="<%= download_card_path %>"
+       data-photo-card-recommendation-value="<%= @recommendation.to_json %>"
        data-photo-card-layouts-value="<%= Cards::Photo::LAYOUTS.transform_values { |layout| layout.slice(:width, :height) }.to_json %>"
        data-action="turbo:before-cache@document->photo-card#dispose pagehide@window->photo-card#dispose image-crop:confirm->photo-card#confirmCrop image-crop:activity->photo-card#cropActivity">
   <section class="card" aria-label="テンプレート選択">
