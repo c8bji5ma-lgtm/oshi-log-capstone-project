@@ -10,6 +10,7 @@ class CardsController < ApplicationController
     return redirect_to(edit_profile_path, alert: "カードを作る前にプロフィールを保存してください。") unless current_user.profile
 
     @user_oshis = current_user.user_oshis.includes(:oshi, representative_image_attachment: :blob, library_images_attachments: :blob).order(:id)
+    @recommendation = Cards::AutoPick.new(user: current_user, user_oshis: @user_oshis).call
   end
 
   def memories
