@@ -23,14 +23,34 @@ module Cards
     class FontUnavailable < StandardError; end
     class ProfileRequired < StandardError; end
 
-    def initialize(user:, user_oshi_ids:, image_user_oshi_ids:, show_introduction: true, crops: nil)
+    # Omitted attachment IDs retain the legacy representative-image API. With
+    # explicit IDs, each frame is either an owner/attachment pair or ""/"".
+    def self.validate_image_ids!(owners, attachments)
+      raise ArgumentError unless attachments.is_a?(Array) && attachments.length == owners.length
+      raise ArgumentError unless attachments.each_with_index.all? do |id, index|
+        owners[index] == "" ? id == "" : id.is_a?(String) && id.match?(/\A[1-9][0-9]{0,18}\z/) && id.to_i <= 2**63 - 1
+      end
+    end
+
+    def initialize(user:, user_oshi_ids:, image_user_oshi_ids:, show_introduction: true, crops: nil, image_attachment_ids: nil)
       @profile = Profile.find_by(user_id: user.id) || raise(ProfileRequired)
-      records = user.user_oshis.includes(:oshi, representative_image_attachment: :blob)
+      raise ArgumentError unless image_user_oshi_ids.is_a?(Array) && image_user_oshi_ids.length == user_oshi_ids.length
+      @explicit_images = !image_attachment_ids.nil?
+      self.class.validate_image_ids!(image_user_oshi_ids, image_attachment_ids) unless image_attachment_ids.nil?
+      records = user.user_oshis.includes(:oshi, representative_image_attachment: :blob, library_images_attachments: :blob)
         .where(id: user_oshi_ids).index_by { |record| record.id.to_s }
       raise ActiveRecord::RecordNotFound unless records.length == user_oshi_ids.length
       @user_oshis = user_oshi_ids.map { |id| records.fetch(id) }
       @image_owners = image_user_oshi_ids.map do |id|
         records.fetch(id) { raise ActiveRecord::RecordNotFound } if id.present?
+      end
+      @image_attachments = @image_owners.each_with_index.map do |owner, index|
+        next unless owner
+        if image_attachment_ids
+          owner.image_library.find { |image| image.id.to_s == image_attachment_ids[index] } || raise(ActiveRecord::RecordNotFound)
+        else
+          owner.representative_image.attachment
+        end
       end
       @image_bytes = {}
       @show_introduction = show_introduction
@@ -44,7 +64,7 @@ module Cards
         @profile.id, @profile.display_name, @profile.updated_at.iso8601(6),
         (@profile.introduction if @show_introduction),
         @user_oshis.map { |record| [ record.id, record.oshi.id, record.oshi.name, record.oshi.updated_at.iso8601(6) ] },
-        @image_owners.map { |owner| [ owner.id, image_identity(owner) ] if owner }
+        @image_owners.each_with_index.map { |owner, index| [ owner.id, image_identity(@image_attachments[index]) ] if owner }
       ]))
     end
 
@@ -55,7 +75,7 @@ module Cards
       layout = LAYOUTS.fetch(@user_oshis.length)
       @user_oshis.each_with_index do |record, index|
         x = layout[:xs][index]
-        canvas = picture(canvas, @image_owners[index], crop: @crops[index], x: x, width: layout[:width], height: layout[:height])
+        canvas = picture(canvas, @image_owners[index], attachment: @image_attachments[index], crop: @crops[index], x: x, width: layout[:width], height: layout[:height])
         canvas = text(canvas, record.oshi.name, x: single? ? 568 : x, y: layout[:name_y],
           width: single? ? 984 : layout[:width], size: layout[:name_size], limit: layout[:limit],
           max_lines: 2, line_height: single? ? 66 : 40)
@@ -79,8 +99,8 @@ module Cards
       # restored settings against the actual oriented image in that path too.
       def validate_crops!
         layout = LAYOUTS.fetch(@user_oshis.length)
-        @image_owners.each_with_index do |owner, index|
-          bytes = owner && image_bytes(owner)
+        @image_attachments.each_with_index do |attachment, index|
+          bytes = attachment && image_bytes(attachment)
           if bytes
             source = Vips::Image.new_from_buffer(bytes, "", access: :sequential, fail_on: :error).autorot
             Crop.geometry(image_width: source.width, image_height: source.height,
@@ -97,8 +117,8 @@ module Cards
         @user_oshis.length == 1
       end
 
-      def picture(canvas, owner, crop:, x:, width:, height:)
-        bytes = image_bytes(owner) if owner
+      def picture(canvas, owner, attachment:, crop:, x:, width:, height:)
+        bytes = image_bytes(attachment) if attachment
         if bytes
           source = Vips::Image.new_from_buffer(bytes, "", access: :sequential, fail_on: :error).autorot.colourspace(:srgb)
           geometry = Crop.geometry(image_width: source.width, image_height: source.height, width: width, height: height, crop: crop)
@@ -116,18 +136,18 @@ module Cards
         end
       end
 
-      def image_identity(owner)
-        attachment = owner.representative_image.attachment
+      def image_identity(attachment)
         return nil unless attachment
 
         blob = attachment.blob
-        [ attachment.id, blob.id, blob.key, blob.byte_size, Digest::SHA256.hexdigest(image_bytes(owner)) ]
+        unless @explicit_images
+          return [ attachment.id, blob.id, blob.key, blob.byte_size, Digest::SHA256.hexdigest(image_bytes(attachment)) ]
+        end
+        [ attachment.id, attachment.record_type, attachment.record_id, attachment.name,
+          blob.id, blob.key, blob.byte_size, blob.checksum, Digest::SHA256.hexdigest(image_bytes(attachment)) ]
       end
 
-      def image_bytes(owner)
-        attachment = owner.representative_image.attachment
-        return unless attachment
-
+      def image_bytes(attachment)
         blob = attachment.blob
         return @image_bytes[blob.id] if @image_bytes.key?(blob.id)
         @image_bytes[blob.id] = ImageSource.read(blob)
