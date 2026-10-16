@@ -35,6 +35,35 @@ export default class extends Controller {
 
   disconnect() { this.dispose() }
 
+  autoPick() {
+    if (this.disposed || !this.checkExpiry() || !this.hasRecommendationValue) return
+    const suggestion = this.recommendationValue
+    if (!["photo", "memories", "data"].includes(suggestion.template)) return
+    this.lastAction = Date.now()
+    this.closeCrop()
+    this.invalidate()
+    this.template = suggestion.template
+    this.templateTargets.forEach(input => { input.checked = input.value === this.template })
+
+    if (this.template === "photo") {
+      const proposed = Array.isArray(suggestion.user_oshi_ids) ? suggestion.user_oshi_ids : []
+      const known = new Set(this.oshiTargets.map(input => input.value))
+      this.selectedIds = proposed.filter(id => known.has(id)).slice(0, 4)
+      this.oshiTargets.forEach(input => { input.checked = this.selectedIds.includes(input.value) })
+      this.imageSources = new Map(this.selectedIds.map(id => [
+        id, this.defaultImage(id) || this.photoLibraries.get(id)?.images[0]?.id || ""
+      ]))
+      this.crops.clear()
+    }
+
+    this.renderPanels()
+    this.renderFrames()
+    if (this.template === "memories" && !this.memories) this.loadMemories()
+    if (this.template === "data" && !this.dataSettings) this.loadStatistics()
+    this.errorTarget.textContent = ""
+    this.statusTarget.textContent = `おまかせ設定を選択しました。${suggestion.reason}プレビューを作成してください。`
+  }
+
   switchTemplate(event) {
     if (this.disposed || !this.checkExpiry()) return
     this.lastAction = Date.now()
