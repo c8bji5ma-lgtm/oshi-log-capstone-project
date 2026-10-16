@@ -122,6 +122,22 @@ RSpec.describe "Photo cards", type: :request do
     ActiveSupport::Notifications.unsubscribe(subscription) if subscription
   end
 
+  it "offers an automatic template suggestion without saving profile or card settings" do
+    profile
+    record = user_oshi
+    login
+
+    original = profile.reload.attributes
+    expect { get new_card_path }.not_to change(Profile, :count)
+    expect(response).to have_http_status(:ok)
+    document = Nokogiri::HTML(response.body)
+    builder = document.at_css("[data-controller='photo-card']")
+    payload = JSON.parse(builder.fetch("data-photo-card-recommendation-value"))
+    expect(payload).to include("template" => "photo", "user_oshi_ids" => [ record.id.to_s ])
+    expect(document.text).to include("おまかせで選ぶ（試験版）")
+    expect(profile.reload.attributes).to eq(original)
+  end
+
   it "accepts an explicit photo template and preserves the existing preview download contract" do
     profile
     login
