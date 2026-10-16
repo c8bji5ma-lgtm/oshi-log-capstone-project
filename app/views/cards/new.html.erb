@@ -44,10 +44,11 @@
         <fieldset class="photo-card-choices">
           <legend>推しを1〜4人選択</legend>
           <% @user_oshis.each_with_index do |user_oshi, index| %>
+            <% images = user_oshi.image_library.map.with_index { |image, n| { id: image.id.to_s, url: protected_image_path(image), label: image.blob_id == user_oshi.representative_image.attachment&.blob_id ? "#{user_oshi.oshi.name}の代表画像" : "#{user_oshi.oshi.name}の画像#{n + 1}", representative: image.blob_id == user_oshi.representative_image.attachment&.blob_id } } %>
             <label>
               <input type="checkbox" name="user_oshi_ids[]" value="<%= user_oshi.id %>"
                      data-photo-card-target="oshi" data-name="<%= user_oshi.oshi.name %>"
-                     data-image-url="<%= protected_image_path(user_oshi.representative_image.attachment) if user_oshi.representative_image.attached? %>"
+                     data-images="<%= images.to_json %>" data-edit-url="<%= edit_user_oshi_path(user_oshi) %>"
                      data-action="change->photo-card#selectOshi" <%= "checked" if index.zero? %>>
               <%= user_oshi.oshi.name %>
             </label>
@@ -60,11 +61,16 @@
         <div class="form-field">
           <label data-frame-label></label>
           <select data-frame-source></select>
+          <div class="photo-card-source-confirmation">
+            <img class="photo-card-source-preview" data-frame-preview alt="" hidden>
+            <p data-frame-image-status role="status"></p>
+          </div>
           <button type="button" class="button button-secondary" data-crop-for data-action="photo-card#editCrop" disabled>画像を調整</button>
+          <p><a data-frame-library>画像ライブラリを編集</a></p>
         </div>
       </template>
       <p><label><input type="checkbox" name="show_introduction" checked> 保存済みの自己紹介を表示する</label></p>
-      <p>各枠には、選択中の推しの代表画像を使えます。画像未登録でも作成できます。「画像を調整」で表示範囲を変更できます。初期位置は中央です。</p>
+      <p>各枠には、選択中の推しの登録画像を使えます。候補は推しごとにまとまっています。画像未登録でも作成できます。「画像を調整」で表示範囲を変更できます。初期位置は中央です。</p>
       <button type="submit" class="button" data-photo-card-target="generateButton" disabled>プレビューを作成</button>
     </form>
   </section>

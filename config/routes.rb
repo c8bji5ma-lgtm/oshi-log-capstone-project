@@ -10,7 +10,9 @@ Rails.application.routes.draw do
 
   get "oshis", to: "user_oshis#index", as: :oshis
   resources :oshis, only: [ :new, :create ]
-  resources :user_oshis, only: [ :create, :show, :edit, :update ]
+  resources :user_oshis, only: [ :create, :show, :edit, :update ] do
+    resources :images, only: [ :create, :update, :destroy ], controller: "user_oshi_images"
+  end
   namespace :admin do
     resources :oshis, only: :index do
       collection do

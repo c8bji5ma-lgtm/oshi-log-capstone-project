@@ -69,7 +69,8 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     open_my_page
     click_link "カードを作成"
     expect(page).to have_css("main h1", text: "推し活カード作成", exact_text: true)
-    expect(page).to have_select("1. #{user_oshi.oshi.name}の画像", selected: "#{user_oshi.oshi.name}の代表画像")
+    initial_image = user_oshi.reload.representative_image.attached? ? "#{user_oshi.oshi.name}の代表画像" : "画像を表示しない"
+    expect(page).to have_select("1. #{user_oshi.oshi.name}の画像", selected: initial_image)
   end
 
   def check_loaded_image(alt)
@@ -418,6 +419,7 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
   it "starts with photo and keeps each template's settings independently while discarding previous previews" do
     create(:profile, user: user)
     second = create(:user_oshi, user: user, oshi: create(:oshi, :approved, name: "設定を保持する推し"))
+    attach_coordinates(second)
     memory = create(:activity, user: user, occurred_on: Date.current)
     sign_in
     open_card

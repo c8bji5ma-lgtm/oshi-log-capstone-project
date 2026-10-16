@@ -16,8 +16,12 @@ export default class extends Controller {
       form.querySelectorAll("input, select").forEach(input => { input.disabled = false })
     })
     this.selectedIds = this.oshiTargets.filter(input => input.checked).map(input => input.value)
-    this.imageSources = new Map(this.selectedIds.map(id => [id, id]))
+    this.photoLibraries = new Map(this.oshiTargets.map(input => [input.value, {
+      name: input.dataset.name, editUrl: input.dataset.editUrl, images: JSON.parse(input.dataset.images)
+    }]))
+    this.imageSources = new Map(this.selectedIds.map(id => [id, this.defaultImage(id)]))
     this.crops = new Map()
+    this.photoCropVersion = 0
     this.memories = null
     this.memoryIds = []
     this.memoryEdits = new Map()
@@ -276,17 +280,21 @@ export default class extends Controller {
     if (!this.disposed && this.checkExpiry()) this.lastAction = Date.now()
   }
 
-  closeCrop() { this.cropDialogTarget.dispatchEvent(new Event("crop:cancel")) }
+  closeCrop() {
+    this.photoCropVersion += 1
+    this.cropDialogTarget.dispatchEvent(new Event("crop:cancel"))
+  }
 
   editCrop(event) {
     if (this.disposed || !this.checkExpiry() || this.template !== "photo") return
     this.lastAction = Date.now()
     const frameId = event.currentTarget.dataset.cropFor
-    const sourceId = this.imageSources.get(frameId)
-    const source = this.oshiTargets.find(input => input.value === sourceId)
-    if (!source?.dataset.imageUrl) return
+    const attachmentId = this.imageSources.get(frameId)
+    const source = this.photoImage(attachmentId)
+    if (!source) return
+    const sourceId = `${attachmentId}:${++this.photoCropVersion}`
     this.cropDialogTarget.dispatchEvent(new CustomEvent("crop:open", { detail: {
-      frameId, sourceId, src: source.dataset.imageUrl, opener: event.currentTarget,
+      frameId, sourceId, src: source.url, opener: event.currentTarget,
       crop: this.crops.get(frameId) || defaultCrop(), ...this.layoutsValue[this.selectedIds.length]
     } }))
   }
@@ -298,7 +306,7 @@ export default class extends Controller {
     }
     if (this.disposed || !this.checkExpiry() || this.template !== "photo") return
     const { frameId, sourceId, crop } = event.detail
-    if (!this.selectedIds.includes(frameId) || this.imageSources.get(frameId) !== sourceId) return
+    if (!this.cropDialogTarget.open || !this.selectedIds.includes(frameId) || `${this.imageSources.get(frameId)}:${this.photoCropVersion}` !== sourceId) return
     const old = this.crops.get(frameId) || defaultCrop()
     if (["x", "y", "zoom"].every(key => Math.abs(old[key] - crop[key]) <= 1e-9)) return
     this.crops.set(frameId, crop)
@@ -319,15 +327,15 @@ export default class extends Controller {
         return
       }
       this.selectedIds.push(input.value)
-      this.imageSources.set(input.value, input.value)
+      this.imageSources.set(input.value, this.defaultImage(input.value))
     } else {
       this.selectedIds = this.selectedIds.filter(id => id !== input.value)
       this.imageSources.delete(input.value)
       this.crops.delete(input.value)
       for (const id of this.selectedIds) {
         const source = this.imageSources.get(id)
-        if (source && !this.selectedIds.includes(source)) {
-          this.imageSources.set(id, id)
+        if (source && !this.photoImage(source)) {
+          this.imageSources.set(id, this.defaultImage(id))
           this.crops.delete(id)
         }
       }
@@ -335,24 +343,60 @@ export default class extends Controller {
     this.renderFrames()
   }
 
+  // Attachment IDs are globally unique. The owner is resolved from the
+  // selected libraries, never from a URL, filename or the frame's name.
+  defaultImage(ownerId) {
+    return this.photoLibraries.get(ownerId)?.images.find(image => image.representative)?.id || ""
+  }
+
+  photoImage(attachmentId) {
+    for (const ownerId of this.selectedIds) {
+      const image = this.photoLibraries.get(ownerId)?.images.find(image => image.id === attachmentId)
+      if (image) return { ...image, ownerId }
+    }
+    return null
+  }
+
   renderFrames() {
-    const names = new Map(this.oshiTargets.map(input => [input.value, input.dataset.name]))
     const rows = this.selectedIds.map((id, index) => {
+      const library = this.photoLibraries.get(id)
       const row = this.frameTemplateTarget.content.firstElementChild.cloneNode(true)
       const label = row.querySelector("[data-frame-label]")
       const source = row.querySelector("[data-frame-source]")
       source.id = `card-image-source-${id}`
       source.dataset.imageFor = id
       label.htmlFor = source.id
-      label.textContent = `${index + 1}. ${names.get(id)}の画像`
+      label.textContent = `${index + 1}. ${library.name}の画像`
       source.add(new Option("画像を表示しない", ""))
-      for (const candidate of this.selectedIds) source.add(new Option(`${names.get(candidate)}の代表画像`, candidate))
+      for (const candidate of this.selectedIds) {
+        const owner = this.photoLibraries.get(candidate)
+        if (!owner.images.length) continue
+        const group = document.createElement("optgroup")
+        group.label = owner.name
+        owner.images.forEach(image => group.append(new Option(image.label, image.id)))
+        source.append(group)
+      }
       source.value = this.imageSources.get(id) || ""
+      const image = this.photoImage(source.value)
+      const preview = row.querySelector("[data-frame-preview]")
+      const status = row.querySelector("[data-frame-image-status]")
+      if (image) {
+        preview.alt = `選択中：${image.label}`
+        preview.src = image.url
+        preview.hidden = false
+        status.textContent = image.label
+        preview.addEventListener("error", () => {
+          preview.hidden = true
+          status.textContent = "選択画像を取得できません。画像を選び直すか、ページを開き直して再生成してください。"
+        })
+      } else {
+        status.textContent = library.images.length ? "画像を表示しません。" : "この推しの画像は未登録です。別の選択中の推しの画像も使えます。"
+      }
       const adjust = row.querySelector("[data-crop-for]")
       adjust.dataset.cropFor = id
-      adjust.setAttribute("aria-label", `${index + 1}. ${names.get(id)}の画像を調整`)
-      const imageOwner = this.oshiTargets.find(input => input.value === this.imageSources.get(id))
-      adjust.disabled = !imageOwner?.dataset.imageUrl
+      adjust.setAttribute("aria-label", `${index + 1}. ${library.name}の画像を調整`)
+      adjust.disabled = !image
+      row.querySelector("[data-frame-library]").href = this.photoLibraries.get(image?.ownerId || id).editUrl
       return row
     })
     this.framesTarget.replaceChildren(...rows)
@@ -367,8 +411,8 @@ export default class extends Controller {
       this.closeCrop()
       this.imageSources.set(id, event.target.value)
       this.crops.delete(id)
-      const owner = this.oshiTargets.find(input => input.value === event.target.value)
-      event.target.closest(".form-field").querySelector("[data-crop-for]").disabled = !owner?.dataset.imageUrl
+      this.renderFrames()
+      this.framesTarget.querySelector(`[data-image-for="${id}"]`).focus()
     }
     this.invalidate()
     this.errorTarget.textContent = ""
@@ -402,7 +446,8 @@ export default class extends Controller {
           crops: this.memoryIds.map(id => this.memoryEdits.get(id).crop)
         } : {
           template: "photo", user_oshi_ids: this.selectedIds,
-          image_user_oshi_ids: this.selectedIds.map(id => this.imageSources.get(id)),
+          image_user_oshi_ids: this.selectedIds.map(id => this.photoImage(this.imageSources.get(id))?.ownerId || ""),
+          image_attachment_ids: this.selectedIds.map(id => this.imageSources.get(id) || ""),
           crops: this.selectedIds.map(id => this.crops.get(id) || defaultCrop()),
           show_introduction: this.formTarget.elements.show_introduction.checked
         } })
@@ -520,6 +565,7 @@ export default class extends Controller {
     this.renderPanels()
     this.selectedIds = []
     this.imageSources?.clear()
+    this.photoLibraries?.clear()
     this.crops?.clear()
     this.dataLoad?.abort()
     this.dataLoad = null

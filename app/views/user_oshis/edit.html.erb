@@ -23,9 +23,17 @@
     <div class="form-field">
       <%= f.label :representative_image, "代表画像" %>
       <%= f.file_field :representative_image, accept: "image/jpeg,image/png,image/webp", aria: { invalid: @user_oshi.errors[:representative_image].any?, describedby: "image-help" } %>
-      <p id="image-help">JPEG・PNG・WebP、10 MiB以下。変更する場合だけ選択してください。入力エラー後は画像を再選択してください。</p>
+      <p id="image-help">JPEG・PNG・WebP、10 MiB以下。新しい代表画像を追加する場合に選択してください。以前の画像も保持されます。入力エラー後は画像を再選択してください。</p>
     </div>
     <%= f.submit "推し情報を更新", class: "button" %>
+  <% end %>
+</section>
+<section class="card oshi-image-library" aria-labelledby="library-heading">
+  <h2 id="library-heading">画像ライブラリ</h2>
+  <%= render "user_oshis/image_gallery", manage: true %>
+  <%= form_with model: @user_oshi, url: user_oshi_images_path(@user_oshi), method: :post, namespace: :library do |f| %>
+    <%= render "user_oshis/image_upload", f: f, label: "追加画像", help_id: "library-image-help" %>
+    <%= f.submit "画像を追加", class: "button", disabled: @images.size >= UserOshi::IMAGE_LIMIT %>
   <% end %>
 </section>
 <p><%= link_to "推し一覧へ戻る", oshis_path %></p>

@@ -2,7 +2,7 @@ class UserOshisController < ApplicationController
   before_action :set_user_oshi, only: [ :show, :edit, :update ]
 
   def index
-    @user_oshis = current_user.user_oshis.includes(:oshi).order(:id)
+    @user_oshis = current_user.user_oshis.includes(:oshi, representative_image_attachment: :blob).order(:id)
   end
 
   def show
@@ -15,9 +15,10 @@ class UserOshisController < ApplicationController
     oshi = Oshi.visible_to(current_user).find(params.require(:oshi_id))
     @existing_user_oshi = current_user.user_oshis.new(started_period_params.merge(oshi: oshi))
 
-    if @existing_user_oshi.save
-      redirect_to oshis_path, notice: "推しを登録しました。", status: :see_other
-    elsif @existing_user_oshi.errors.of_kind?(:oshi_id, :taken)
+    UserOshis::Save.call(user_oshi: @existing_user_oshi, new_images: image_upload_params)
+    redirect_to oshis_path, notice: "推しを登録しました。", status: :see_other
+  rescue ActiveRecord::RecordInvalid
+    if @existing_user_oshi.errors.of_kind?(:oshi_id, :taken)
       redirect_duplicate
     else
       @oshi = Oshi.new
@@ -34,25 +35,18 @@ class UserOshisController < ApplicationController
   end
 
   def update
-    attributes = user_oshi_params
-    attributes.delete(:representative_image) if attributes[:representative_image].blank?
-    if attributes.key?(:representative_image) && !attributes[:representative_image].is_a?(ActionDispatch::Http::UploadedFile)
-      @user_oshi.errors.add(:representative_image, "はファイルとして選択してください。")
-      render :edit, status: :unprocessable_content
-      return
-    end
-    if @user_oshi.update(attributes)
-      redirect_to oshis_path, notice: "推し情報を更新しました。", status: :see_other
-    else
-      render :edit, status: :unprocessable_content
-    end
+    UserOshis::Save.call(user_oshi: @user_oshi, attributes: user_oshi_params, new_images: image_upload_params)
+    redirect_to oshis_path, notice: "推し情報を更新しました。", status: :see_other
+  rescue ActiveRecord::RecordInvalid
+    load_saved_images
+    render :edit, status: :unprocessable_content
   end
 
   private
 
     def set_user_oshi
-      @user_oshi = current_user.user_oshis.find(params[:id])
-      @representative_image = @user_oshi.representative_image.attachment
+      @user_oshi = current_user.user_oshis.includes(:oshi, representative_image_attachment: :blob, library_images_attachments: :blob).find(params[:id])
+      load_saved_images(@user_oshi)
     rescue ActiveRecord::RecordNotFound => error
       render_user_data_not_found(error)
     end
@@ -62,7 +56,20 @@ class UserOshisController < ApplicationController
     end
 
     def user_oshi_params
-      params.require(:user_oshi).permit(:started_period, :ended_period, :representative_image)
+      input = params.require(:user_oshi)
+      attributes = input.permit(:started_period, :ended_period).to_h
+      attributes[:representative_image] = input[:representative_image] if input.key?(:representative_image)
+      attributes
+    end
+
+    def image_upload_params
+      params.fetch(:user_oshi, ActionController::Parameters.new)[:library_images]
+    end
+
+    def load_saved_images(saved = nil)
+      saved ||= current_user.user_oshis.includes(representative_image_attachment: :blob, library_images_attachments: :blob).find(@user_oshi.id)
+      @representative_image = saved.representative_image.attachment
+      @images = saved.image_library
     end
 
     def redirect_duplicate

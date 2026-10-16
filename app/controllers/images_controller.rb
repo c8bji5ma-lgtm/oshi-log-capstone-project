@@ -19,7 +19,7 @@ class ImagesController < ApplicationController
     def owned_attachments
       attachments = ActiveStorage::Attachment.all
       attachments.where(record_type: "Profile", name: "profile_image", record_id: Profile.where(user_id: current_user.id).select(:id))
-        .or(attachments.where(record_type: "UserOshi", name: "representative_image", record_id: current_user.user_oshis.select(:id)))
+        .or(attachments.where(record_type: "UserOshi", name: [ "representative_image", "library_images" ], record_id: current_user.user_oshis.select(:id)))
         .or(attachments.where(record_type: "Activity", name: "images", record_id: current_user.activities.select(:id)))
     end
 

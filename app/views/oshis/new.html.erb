@@ -22,6 +22,8 @@
         <%= f.text_field :started_period, aria: { invalid: @existing_user_oshi.errors[:started_period].any?, describedby: "existing-period-help" } %>
         <p id="existing-period-help">YYYY または YYYY/MMで入力してください（例：2023、2023/05）。</p>
       </div>
+      <p>登録画像：0/30枚（残り30枚）。最初の画像が代表画像になります。</p>
+      <%= render "user_oshis/image_upload", f: f, label: "登録画像", help_id: "existing-image-help" %>
       <%= f.submit "選んだ推しを追加", class: "button" %>
     <% end %>
   <% elsif params[:q].present? %>
@@ -34,7 +36,7 @@
   <h2>新しい推しを登録</h2>
   <%= render "shared/validation_errors", resource: @oshi %>
   <%= render "shared/validation_errors", resource: @user_oshi %>
-  <%= form_with model: @oshi do |f| %>
+  <%= form_with model: @oshi, html: { multipart: true } do |f| %>
     <fieldset>
       <legend>共通推し情報</legend>
       <div class="form-field">
@@ -53,6 +55,8 @@
     <fieldset>
       <legend>あなたの推し情報</legend>
       <%= fields_for :user_oshi, @user_oshi, namespace: :new do |uf| %>
+        <p>登録画像：0/30枚（残り30枚）。最初の画像が代表画像になります。</p>
+        <%= render "user_oshis/image_upload", f: uf, label: "登録画像", help_id: "new-image-help" %>
         <div class="form-field">
           <%= uf.label :started_period, "推し始め" %>
           <%= uf.text_field :started_period, aria: { invalid: @user_oshi.errors[:started_period].any?, describedby: "new-period-help" } %>

@@ -229,6 +229,84 @@ fieldset {
   object-fit: contain;
 }
 
+.oshi-list-card {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.oshi-list-image,
+.oshi-library-image {
+  display: block;
+  width: 120px;
+  height: 120px;
+  max-width: 100%;
+  object-fit: contain;
+  background: #f7f9fb;
+}
+
+.oshi-list-info {
+  min-width: 0;
+}
+
+.oshi-list-info .actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.oshi-image-library {
+  margin-top: 1.5rem;
+}
+
+.oshi-image-library .button:disabled {
+  border-color: #738395;
+  color: #4c5f73;
+  background: #e3eaf1;
+  cursor: not-allowed;
+}
+
+.oshi-image-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 160px), 1fr));
+  gap: 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.oshi-image-gallery li {
+  min-width: 0;
+}
+
+.oshi-image-gallery figure {
+  margin: 0 0 0.75rem;
+}
+
+.oshi-library-image {
+  width: 100%;
+  height: 160px;
+}
+
+.oshi-image-gallery figcaption {
+  margin-top: 0.5rem;
+}
+
+.image-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.image-delete-confirmation {
+  margin-top: 0.5rem;
+}
+
+.image-delete-confirmation summary {
+  min-height: 44px;
+  padding-block: 0.5rem;
+  color: #812c2c;
+  cursor: pointer;
+}
+
 @media (max-width: 640px) {
   .cards {
     grid-template-columns: minmax(0, 1fr);

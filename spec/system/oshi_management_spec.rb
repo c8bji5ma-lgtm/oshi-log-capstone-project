@@ -65,7 +65,7 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
       click_link "編集", exact: true
     end
     expect(page).to have_css("main h1", text: "推し編集", exact_text: true)
-    within("main form") do
+    within("main form[action='#{user_oshi_path(user.user_oshis.find_by!(oshi: oshi))}']") do
       expect(page).to have_field("推し始め", with: "2023/05")
       fill_in "推し始め", with: "2021/02"
       fill_in "推し終了時期", with: "2025/07"

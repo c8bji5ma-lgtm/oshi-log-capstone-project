@@ -9,7 +9,7 @@ class CardsController < ApplicationController
   def new
     return redirect_to(edit_profile_path, alert: "カードを作る前にプロフィールを保存してください。") unless current_user.profile
 
-    @user_oshis = current_user.user_oshis.includes(:oshi, representative_image_attachment: :blob).order(:id)
+    @user_oshis = current_user.user_oshis.includes(:oshi, representative_image_attachment: :blob, library_images_attachments: :blob).order(:id)
   end
 
   def memories
@@ -61,7 +61,13 @@ class CardsController < ApplicationController
   rescue ActionController::BadRequest, ArgumentError
     render_error("推しを重複なく1〜4人、正しい形式で選択してください。", :unprocessable_content)
   rescue ActiveRecord::RecordNotFound
-    message = settings && settings[:template] == "memory" ? "選択した活動・写真は利用できません。" : "選択した推しは利用できません。"
+    message = if settings && settings[:template] == "memory"
+      "選択した活動・写真は利用できません。"
+    elsif settings && settings.key?(:image_attachment_ids)
+      "選択した推し・画像は利用できません。画像を選び直して再生成してください。"
+    else
+      "選択した推しは利用できません。"
+    end
     render_error(message, :not_found)
   rescue Cards::Photo::ProfileRequired
     render_error("プロフィールを保存してから作成してください。", :unprocessable_content)
@@ -115,7 +121,17 @@ class CardsController < ApplicationController
       if %w[memories memory].include?(template)
         return Cards::Memory.settings(input.to_unsafe_h.except("template")).merge(template: "memory")
       end
-      raise ArgumentError unless (input.keys - %w[template user_oshi_ids image_user_oshi_ids show_introduction crops]).empty?
+      raise ArgumentError unless (input.keys - %w[template user_oshi_ids image_user_oshi_ids image_attachment_ids show_introduction crops]).empty?
+      # Rails removes nulls from arrays. Reject them before that normalization
+      # can turn an invalid array into a different, apparently valid frame order.
+      if request.media_type == "application/json" && request.raw_post.present?
+        original = JSON.parse(request.raw_post)
+        if original.is_a?(Hash) && original["card"].is_a?(Hash)
+          raise ArgumentError if %w[user_oshi_ids image_user_oshi_ids image_attachment_ids].any? { |key| original["card"][key].is_a?(Array) && original["card"][key].include?(nil) }
+          original_crops = original["card"]["crops"]
+          raise Cards::Crop::Invalid if original_crops.is_a?(Array) && original_crops.include?(nil)
+        end
+      end
       ids = input[:user_oshi_ids]
       raise ArgumentError unless ids.is_a?(Array) && ids.length.between?(1, 4) && ids.uniq.length == ids.length
       raise ArgumentError unless ids.all? { |id| id.is_a?(String) && id.match?(/\A[1-9][0-9]{0,18}\z/) && id.to_i <= 2**63 - 1 }
@@ -126,6 +142,11 @@ class CardsController < ApplicationController
       raise ArgumentError unless images.all? { |id| id == "" || ids.include?(id) }
       raise ArgumentError unless [ true, false ].include?(input[:show_introduction])
       settings = { user_oshi_ids: ids, image_user_oshi_ids: images, show_introduction: input[:show_introduction] }
+      if input.key?(:image_attachment_ids)
+        attachments = input[:image_attachment_ids]
+        Cards::Photo.validate_image_ids!(images, attachments)
+        settings[:image_attachment_ids] = attachments
+      end
       if input.key?(:crops)
         crops = input[:crops]
         raise Cards::Crop::Invalid unless crops.is_a?(Array) && crops.length == ids.length

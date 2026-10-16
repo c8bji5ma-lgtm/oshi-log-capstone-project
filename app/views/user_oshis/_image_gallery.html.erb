@@ -1,0 +1,32 @@
+<p class="image-count">登録画像：<%= @images.size %>/<%= UserOshi::IMAGE_LIMIT %>枚（残り<%= UserOshi::IMAGE_LIMIT - @images.size %>枚）</p>
+<% if @images.empty? %>
+  <p>画像はまだ登録されていません。編集画面から追加できます。</p>
+<% else %>
+  <ol class="oshi-image-gallery">
+    <% @images.each_with_index do |image, index| %>
+      <% representative = @representative_image&.blob_id == image.blob_id %>
+      <li data-image-id="<%= image.id %>">
+        <figure>
+          <%= attachment_image_tag image, alt: "#{@user_oshi.oshi.name}の登録画像#{index + 1}", class: "oshi-library-image", loading: "lazy" %>
+          <figcaption>画像<%= index + 1 %><%= "（代表画像）" if representative %></figcaption>
+        </figure>
+        <% if manage %>
+          <% unless representative %>
+            <%= button_to "代表画像にする", user_oshi_image_path(@user_oshi, image), method: :patch, class: "button button-secondary", aria: { label: "画像#{index + 1}を代表画像にする" } %>
+          <% end %>
+          <details class="image-delete-confirmation">
+            <summary>画像<%= index + 1 %>を削除</summary>
+            <%= form_with url: user_oshi_image_path(@user_oshi, image), method: :delete do |f| %>
+              <p>上の画像<%= index + 1 %>を削除します。この操作は取り消せません。</p>
+              <% if representative %>
+                <p><%= check_box_tag :clear_representative, "1", false, id: "clear-representative-#{image.id}", required: true %>
+                <%= label_tag "clear-representative-#{image.id}", "代表画像を解除して削除する" %></p>
+              <% end %>
+              <%= f.submit "画像#{index + 1}の削除を確定", class: "destructive-button" %>
+            <% end %>
+          </details>
+        <% end %>
+      </li>
+    <% end %>
+  </ol>
+<% end %>

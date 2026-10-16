@@ -12,15 +12,13 @@ class OshisController < ApplicationController
     @oshi.created_by_user = current_user
     @user_oshi = current_user.user_oshis.new(started_period_params.merge(oshi: @oshi))
 
-    ActiveRecord::Base.transaction do
-      @oshi.save!
-      @user_oshi.save!
-    end
+    UserOshis::Save.call(user_oshi: @user_oshi,
+      new_images: params.fetch(:user_oshi, ActionController::Parameters.new)[:library_images])
 
     redirect_to oshis_path, notice: "推しを登録しました。", status: :see_other
   rescue ActiveRecord::RecordInvalid
     @oshi.valid?
-    @user_oshi.valid?
+    @user_oshi.valid? if @user_oshi.errors.empty?
     @existing_user_oshi = current_user.user_oshis.new
     @oshis = Oshi.visible_to(current_user).search(params[:q]).order(:name, :id)
     render :new, status: :unprocessable_content

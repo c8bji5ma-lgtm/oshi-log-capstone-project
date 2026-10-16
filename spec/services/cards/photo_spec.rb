@@ -44,6 +44,24 @@ RSpec.describe Cards::Photo do
     expect((picture(legacy) - expected).abs.max).to eq(0)
   end
 
+  it "uses the newly selected library representative without changing the photo API or originals" do
+    original = attach_coordinates(record)
+    previous_blob = record.representative_image.blob
+    first_png = render_photo
+    record.library_images.attach(io: StringIO.new(coordinate_image(width: 600, height: 900)), filename: "portrait.png")
+    selected = record.reload.image_library.last
+    selected_bytes = selected.download
+    UserOshis::Save.call(user_oshi: record, representative_image_id: selected.id.to_s)
+    changed_png = render_photo
+    expect(changed_png).not_to eq(first_png)
+    expect(record.reload.image_count).to eq(2)
+    expect(record.representative_image.blob_id).to eq(selected.blob_id)
+    expect(previous_blob.download).to eq(original)
+    expect(selected.download).to eq(selected_bytes)
+    image = Vips::Image.new_from_buffer(changed_png, "")
+    expect([ image.width, image.height ]).to eq([ 1600, 1000 ])
+  end
+
   it "changes the visible extent at zoom three and leaves originals and metadata unchanged" do
     bytes = attach_coordinates(record)
     blob = record.representative_image.blob
