@@ -14,6 +14,8 @@
        data-photo-card-layouts-value="<%= Cards::Photo::LAYOUTS.transform_values { |layout| layout.slice(:width, :height) }.to_json %>"
        data-action="turbo:before-cache@document->photo-card#dispose pagehide@window->photo-card#dispose image-crop:confirm->photo-card#confirmCrop image-crop:activity->photo-card#cropActivity">
   <section class="card" aria-label="テンプレート選択">
+    <button type="button" class="button button-secondary" data-action="photo-card#autoPick">おまかせで選ぶ（試験版）</button>
+    <p>登録画像と活動記録の有無からテンプレートを自動で選びます。写真の内容をAIで分析する機能ではありません。</p>
     <form data-photo-card-target="settingsForm">
       <fieldset class="card-template-choices" aria-describedby="card-template-help">
         <legend>テンプレートを選択</legend>
