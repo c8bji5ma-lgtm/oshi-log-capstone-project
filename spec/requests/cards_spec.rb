@@ -132,7 +132,7 @@ RSpec.describe "Photo cards", type: :request do
     expect(response).to have_http_status(:ok)
     document = Nokogiri::HTML(response.body)
     builder = document.at_css("[data-controller='photo-card']")
-    payload = JSON.parse(builder.fetch("data-photo-card-recommendation-value"))
+    payload = JSON.parse(builder["data-photo-card-recommendation-value"])
     expect(payload).to include("template" => "photo", "user_oshi_ids" => [ record.id.to_s ])
     expect(document.text).to include("おまかせで選ぶ（試験版）")
     expect(profile.reload.attributes).to eq(original)

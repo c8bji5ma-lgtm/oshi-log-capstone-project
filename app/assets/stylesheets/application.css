@@ -137,13 +137,17 @@ h2 {
   color: #fff;
   background: #245b8a;
   text-decoration: none;
+  cursor: pointer;
+}
+
+.button:disabled {
+  cursor: not-allowed;
 }
 
 .button-secondary {
   color: #245b8a;
   background: #fff;
 }
-
 .preparing {
   display: inline-block;
   padding: 0.2rem 0.6rem;
