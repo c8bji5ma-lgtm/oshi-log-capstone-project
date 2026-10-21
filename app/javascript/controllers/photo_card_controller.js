@@ -5,7 +5,7 @@ import { createCard, downloadCard, errorMessage } from "lib/card_png_transport"
 
 export default class extends Controller {
   static targets = ["form", "status", "error", "preview", "image", "generateButton", "downloadButton", "oshi", "frames", "frameTemplate", "template", "panel", "settingsForm", "cropDialog", "memoryStatus", "memoryRetry", "memoryMore", "memoryEmpty", "memoryFrames", "memoryFrameTemplate", "memoryAdd", "dataYear", "dataOshi", "dataStatus", "dataRetry"]
-  static values = { createUrl: String, downloadUrl: String, layouts: Object, memoriesUrl: String, statisticsUrl: String }
+  static values = { createUrl: String, downloadUrl: String, layouts: Object, memoriesUrl: String, memoryMaterialsUrl: String, statisticsUrl: String }
 
   connect() {
     this.sequence = (this.sequence || 0) + 1
@@ -19,6 +19,7 @@ export default class extends Controller {
     })
     this.photoState = new PhotoTemplateState(this.oshiTargets)
     this.memoryState = new MemoryTemplateState()
+    this.memoryMaterialLoads = new Map()
     this.dataState = new DataTemplateState()
     this.dataYearTarget.disabled = true
     this.dataOshiTarget.disabled = true
@@ -48,7 +49,8 @@ export default class extends Controller {
 
   get canGenerate() {
     return !this.disposed && (this.template === "photo" ? this.selectedIds?.length > 0 :
-      (this.template === "memories" ? this.memoryIds?.length > 0 : this.template === "data" && Boolean(this.dataSettings)))
+      (this.template === "memories" ? this.memoryIds?.length > 0 && this.memoryIds.every(id => this.memoryState.material(id, "images").loaded) :
+        this.template === "data" && Boolean(this.dataSettings)))
   }
 
   updateGenerateButtons(busy = this.generating) {
@@ -119,6 +121,7 @@ export default class extends Controller {
       this.memoryStatusTarget.textContent = activities.length ? "最新の活動を選択しました。掲載順と写真を変更できます。" : ""
       this.memoryEmptyTarget.hidden = activities.length > 0
       this.renderMemoryFrames()
+      this.loadSelectedMemoryMaterials()
     } catch (error) {
       if (!this.disposed && this.memoryLoad === operation && error.name !== "AbortError") {
         this.memoryStatusTarget.textContent = `活動記録を取得できません。${error.message}`
@@ -126,6 +129,61 @@ export default class extends Controller {
       }
     } finally {
       if (this.memoryLoad === operation) this.memoryLoad = null
+    }
+  }
+
+  loadSelectedMemoryMaterials() {
+    this.memoryIds.forEach(id => {
+      this.loadMemoryMaterials(id, "oshis")
+      this.loadMemoryMaterials(id, "images")
+    })
+  }
+
+  async loadMemoryMaterials(id, kind) {
+    if (!this.memoryAction() || !this.memoryIds.includes(id)) return
+    const key = `${id}:${kind}`
+    if (this.memoryMaterialLoads.has(key)) return
+    const material = this.memoryState.material(id, kind)
+    if (material.loaded && !material.hasMore) return
+
+    const sequence = this.sequence
+    const operation = new AbortController()
+    this.memoryMaterialLoads.set(key, operation)
+    material.error = null
+    this.renderMemoryFrames()
+    try {
+      const url = new URL(this.memoryMaterialsUrlValue, window.location.href)
+      url.searchParams.set("activity_id", id)
+      url.searchParams.set("kind", kind)
+      if (material.cursor) url.searchParams.set("cursor", material.cursor)
+      const response = await fetch(url, { credentials: "same-origin", signal: operation.signal,
+        headers: { Accept: "application/json" } })
+      if (!response.ok) throw new Error(await errorMessage(response))
+      const result = await response.json()
+      if (!this.current(sequence) || this.template !== "memories" || !this.memoryIds.includes(id) || this.memoryMaterialLoads.get(key) !== operation) return
+      this.memoryState.appendMaterials(id, kind, result.items, result.next_cursor, result.has_more, result.total_count)
+      this.renderMemoryFrames()
+    } catch (error) {
+      if (this.current(sequence) && this.template === "memories" && this.memoryIds.includes(id) &&
+          this.memoryMaterialLoads.get(key) === operation && error.name !== "AbortError") {
+        material.error = `関連情報を取得できません。${error.message}`
+      }
+    } finally {
+      if (this.memoryMaterialLoads.get(key) === operation) {
+        this.memoryMaterialLoads.delete(key)
+        this.renderMemoryFrames()
+      }
+    }
+  }
+
+  loadMoreMemoryOshis(event) { this.loadMemoryMaterials(event.currentTarget.dataset.activityId, "oshis") }
+  loadMoreMemoryImages(event) { this.loadMemoryMaterials(event.currentTarget.dataset.activityId, "images") }
+
+  abortMemoryMaterials(id) {
+    for (const kind of ["oshis", "images"]) {
+      const key = `${id}:${kind}`
+      this.memoryMaterialLoads.get(key)?.abort()
+      this.memoryMaterialLoads.delete(key)
     }
   }
 
@@ -186,6 +244,8 @@ export default class extends Controller {
     this.initializeMemory(next.id)
     this.memoryChanged()
     this.renderMemoryFrames()
+    this.loadMemoryMaterials(next.id, "oshis")
+    this.loadMemoryMaterials(next.id, "images")
     this.memoryFramesTarget.lastElementChild.querySelector("select").focus()
   }
 
@@ -193,7 +253,8 @@ export default class extends Controller {
     if (!this.memoryAction()) return
     const id = event.currentTarget.dataset.activityId
     this.memoryIds = this.memoryIds.filter(item => item !== id)
-    this.memoryEdits.delete(id)
+    this.abortMemoryMaterials(id)
+    this.memoryState.forget(id)
     this.memoryChanged()
     this.renderMemoryFrames()
     this.memoryAddTarget.focus()
@@ -206,10 +267,13 @@ export default class extends Controller {
     if (old === id) return
     if (this.memoryIds.includes(id)) { event.target.value = old; return }
     this.memoryIds[this.memoryIds.indexOf(old)] = id
-    this.memoryEdits.delete(old)
+    this.abortMemoryMaterials(old)
+    this.memoryState.forget(old)
     this.initializeMemory(id)
     this.memoryChanged()
     this.renderMemoryFrames()
+    this.loadMemoryMaterials(id, "oshis")
+    this.loadMemoryMaterials(id, "images")
     this.memoryFramesTarget.querySelector(`[data-memory-activity][data-activity-id="${id}"]`).focus()
   }
 
@@ -251,17 +315,30 @@ export default class extends Controller {
         select.add(option)
       })
       select.value = id
-      row.querySelector("[data-memory-details]").textContent = `${activity.category} / ${activity.oshis.join("・")}`
+      const materialStatus = row.querySelector("[data-memory-material-status]")
+      const oshiMaterial = activity.materials.oshis
+      const imageMaterial = activity.materials.images
+      const oshiText = activity.oshis.map(oshi => oshi.name).join("・")
+      row.querySelector("[data-memory-details]").textContent = `${activity.category} / ${oshiText || (oshiMaterial.loaded ? "推し情報なし" : "推し情報を読み込み中")}`
+      materialStatus.textContent = oshiMaterial.error || imageMaterial.error ||
+        `${activity.oshis.length}/${oshiMaterial.total}件の推し、${activity.images.length}/${imageMaterial.total}枚の写真を読み込み済みです。`
       const photos = row.querySelector("[data-memory-photo]")
       photos.id = `memory-photo-${id}`
       const photoLabel = row.querySelector("[data-memory-photo-label]")
       photoLabel.htmlFor = photos.id
       photoLabel.textContent = `${index + 1}. 活動の写真`
       activity.images.forEach((image, n) => photos.add(new Option(`写真${n + 1}`, image.id)))
-      if (!activity.images.length) photos.add(new Option("写真なし（代替表示）", ""))
-      photos.value = this.memoryEdits.get(id).imageId
-      photos.disabled = !activity.images.length
-      row.querySelector("[data-memory-crop]").disabled = !activity.images.length
+      if (!imageMaterial.loaded) photos.add(new Option("写真を読み込み中", ""))
+      else if (!activity.images.length) photos.add(new Option("写真なし（代替表示）", ""))
+      photos.value = this.memoryEdits.get(id).imageId || ""
+      photos.disabled = !imageMaterial.loaded || !activity.images.length
+      row.querySelector("[data-memory-crop]").disabled = !imageMaterial.loaded || !activity.images.length
+      const moreOshis = row.querySelector("[data-memory-more-oshis]")
+      moreOshis.hidden = oshiMaterial.loaded && !oshiMaterial.hasMore
+      moreOshis.disabled = this.memoryMaterialLoads.has(`${id}:oshis`)
+      const moreImages = row.querySelector("[data-memory-more-images]")
+      moreImages.hidden = imageMaterial.loaded && !imageMaterial.hasMore
+      moreImages.disabled = this.memoryMaterialLoads.has(`${id}:images`)
       row.querySelectorAll("button, select").forEach(input => { input.dataset.activityId = id })
       const up = row.querySelector("[data-memory-up]")
       up.dataset.direction = "-1"
@@ -555,6 +632,8 @@ export default class extends Controller {
     this.memoryLoad?.abort()
     this.memoryLoad = null
     this.memoryState?.reset()
+    this.memoryMaterialLoads?.forEach(operation => operation.abort())
+    this.memoryMaterialLoads?.clear()
     this.memoryFramesTarget.replaceChildren()
     this.memoryAddTarget.disabled = true
     this.memoryRetryTarget.hidden = true

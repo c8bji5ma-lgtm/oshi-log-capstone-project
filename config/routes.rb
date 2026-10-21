@@ -32,6 +32,7 @@ Rails.application.routes.draw do
   resource :profile, only: [ :edit, :update ]
   resource :card, only: [ :new, :create ] do
     get :memories
+    get :memory_materials
     get :statistics
     post :download
   end

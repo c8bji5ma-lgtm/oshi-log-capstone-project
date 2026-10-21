@@ -803,6 +803,35 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     expect(page).not_to have_button("さらに古い活動を読み込む")
   end
 
+  it "loads every related material page without losing the selected photo or crop" do
+    create(:profile, user: user)
+    activity = create(:activity, user: user, occurred_on: Date.current)
+    52.times do |index|
+      create(:activity_oshi, activity: activity, oshi: create(:oshi, name: "関連推し#{index + 1}"))
+      activity.images.attach(io: StringIO.new(coordinate_image), filename: "related-#{index + 1}.png", content_type: "image/png")
+    end
+    sign_in
+    open_card
+    choose "思い出・活動履歴重視", exact: true
+
+    expect(page).to have_text("50/53件の推し、50/52枚の写真を読み込み済みです。", wait: 10)
+    select "写真50", from: "1. 活動の写真"
+    open_memory_crop(activity)
+    zoom_to_maximum
+    click_button "この範囲で確定"
+
+    find("[data-memory-more-oshis][data-activity-id='#{activity.id}']").click
+    find("[data-memory-more-images][data-activity-id='#{activity.id}']").click
+    expect(page).to have_text("53/53件の推し、52/52枚の写真を読み込み済みです。", wait: 10)
+    expect(page).to have_text("関連推し52")
+    expect(page).to have_select("1. 活動の写真", options: Array.new(52) { |index| "写真#{index + 1}" }, selected: "写真50")
+    open_memory_crop(activity)
+    expect(find("#image-crop-zoom").value).to eq("3")
+    click_button "キャンセル"
+    expect(page).not_to have_css("[data-memory-more-oshis][data-activity-id='#{activity.id}']", visible: true)
+    expect(page).not_to have_css("[data-memory-more-images][data-activity-id='#{activity.id}']", visible: true)
+  end
+
   it "ignores an older candidate response after a template switch and permits retrying it" do
     create(:profile, user: user)
     timestamp = Time.current.change(usec: 0)
