@@ -12,51 +12,62 @@ MVPの中心は「記録・振り返り・可視化」とし、プロフィー�
 
 ## 開発環境
 
-- Ruby 4.0.6
-- Ruby on Rails 8.1.4
-- PostgreSQL 18.6
+- Ruby 4.0.6（`.ruby-version`）
+- Ruby on Rails 8.1系（正確なバージョンは`Gemfile.lock`を参照）
+- PostgreSQL 18系
+- libvips
+
+システムテストを実行する場合は、Chrome / ChromeDriverと日本語フォントも必要です。
 
 ## 実行手順
 
-リポジトリをクローンします。
+PostgreSQLを起動し、このリポジトリを取得します。
 
 ```bash
-git clone git@github.com:c8bji5ma-lgtm/my_first_app.git
+git clone https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project.git
+cd oshi-log-capstone-project
 ```
 
-アプリケーションのディレクトリへ移動します。
+ロックファイルで確定したGemをインストールします。
 
 ```bash
-cd my_first_app
+BUNDLE_FROZEN=true bundle install
 ```
 
-必要なGemをインストールします。
+開発用データベースを準備します。
 
 ```bash
-bundle install
+bin/rails db:prepare
 ```
 
-データベースを作成します。
+初期データが必要な場合だけseedを実行します。development環境ではローカル確認用のデモデータも作成されるため、既存データがある環境では内容を確認してから実行してください。
 
 ```bash
-bin/rails db:create
+bin/rails db:seed
 ```
 
-マイグレーションを実行します。
-
-```bash
-bin/rails db:migrate
-```
-
-Railsサーバーを起動します。
+Railsサーバーを起動し、`http://localhost:3000`へアクセスします。
 
 ```bash
 bin/rails server
 ```
 
-ブラウザで以下へアクセスします。
+テストはdevelopment DBと分離された`my_app_test`と`tmp/storage`を使用します。
 
-http://localhost:3000
+```bash
+BUNDLE_FROZEN=true RAILS_ENV=test bundle exec rspec
+```
+
+静的チェックは次のコマンドで実行できます。
+
+```bash
+BUNDLE_FROZEN=true bin/rubocop
+BUNDLE_FROZEN=true bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error
+BUNDLE_FROZEN=true bin/bundler-audit
+BUNDLE_FROZEN=true bin/importmap audit
+```
+
+実装状況とIssue #31の最終QA対応は[Issue #31 QA対応表](docs/issue-31-qa.md)を参照してください。
 
 ## 要件定義資料
 
