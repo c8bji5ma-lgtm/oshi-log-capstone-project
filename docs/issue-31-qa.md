@@ -4,7 +4,8 @@
 
 - 確認日：2026年10月21日
 - Issue：[#31 MVP最終QA・要件照合・README更新](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/issues/31)
-- 実装基準：PR #74のmerge commitと、そのPRに対するGitHub Actions
+- 今回の確認対象commit：`edba87140d2f5d13634942ac9006e63b0555d667`（PR #83 merge後の`main`）
+- 過去の基準：PR #74のmerge commitと、そのPRに対するGitHub Actions。以下では過去の検証証拠としてのみ区別して記載する
 - 正式仕様の優先順：GitHub Issues、READMEから参照する要件資料、ER図・テーブル定義、実装
 
 この文書は確定仕様を変更するものではない。外部の要件資料やER図を更新せず、現行実装との対応、既存の検証結果、残る確認事項を記録する。
@@ -16,13 +17,13 @@
 | カタログ設計の高優先度機能 | 活動CRUD、履歴・絞り込み、集計・固定費のrequest/system spec | 代表導線をChrome/Seleniumで再確認済み |
 | テーブル定義書とDB構造 | `db/schema.rb`、model spec、DB制約spec、test DBメタデータ | 基本9テーブルと承認済み追加差分を照合済み |
 | ER図とモデル関連 | model、association/constraint spec | 基本関連と承認済み追加差分を照合済み。外部ER図自体は変更していない |
-| 主要画面遷移 | authentication、推し管理、活動・データ、固定費、プロフィール・カード、管理者のsystem spec | Chrome/Seleniumの代表10 examplesで再確認済み |
+| 主要画面遷移 | authentication、推し管理、活動・データ、固定費、プロフィール・カード、管理者のsystem spec | 今回のcommitでChrome/Seleniumの代表12 examplesを再確認済み |
 | 主要画面・グローバルナビ | request/system spec、Issue #30の1280px/375px目視 | 主要幅で確認済み。全端末・支援技術の保証ではない |
 | ログイン・ログアウト・管理者 | authentication、admin authorization/merging spec | 自動検証済み |
 | バリデーション・エラー表示 | model、request、system spec | 正常系・主要異常系を自動検証済み |
-| 画像添付 | image attachment、protected image、image library、card spec | 機能・認可は自動検証済み。Issue #60の資源上限は別課題 |
-| テストスイート・CI | PR #74: lint / scan_js / scan_ruby / test | すべて成功 |
-| RuboCop等 | PR #74のlint・security checks | 成功 |
+| 画像添付 | image attachment、protected image、image library、card spec、PR #81・#82 | 10MiB・最大辺2560px・総500万画素、生成gate、クライアント縮小は実装済み。本番資源予算等は未決 |
+| テストスイート・CI | 全RSpec 1423 examples、System spec 63 examples、PR #83 CI | 今回の代表12 examplesとは別の既存検証証拠として、いずれも失敗0・CI成功を確認済み |
+| RuboCop等 | PR #83のlint・security checks | CI成功。今回のQA記録更新では再実行していない |
 | README | リポジトリ名、起動・検証手順 | Issue #31ブランチで更新 |
 | 将来機能の表記 | README、`docs/future-features/` | 公開URL・QR・交流・装飾案を将来機能として区別 |
 | デバッグコード・サンプルデータ | 静的検索、development seedの環境ガード | 不要と断定できるものだけを削除対象とする。seedはdevelopment限定 |
@@ -44,6 +45,8 @@
 - Issue #30最終調整前：非System 1327 examples + System 56 examples、失敗0
 - Issue #30最終調整後：関連9 examples成功、対象3ファイルのRuboCop指摘なし、`git diff --check`成功
 - PR #73：lint / scan_js / scan_ruby / test がすべて成功
+- PR #83 merge前：全RSpec 1423 examples（うちSystem spec 63 examples）、失敗0、pending 0
+- PR #83：最新headに対するCI全項目が成功
 - 1280px / 375px：横スクロール、重なり、文字切れなし
 - プロフィールカードdownload待ちの既知の一過性失敗は再試行成功し、Issue #30では再発なし。原因修正済みとは扱わない
 
@@ -60,7 +63,7 @@
 
 ## 最終ブラウザ一巡
 
-`BUNDLE_FROZEN=true RAILS_ENV=test`、既存Chrome/Selenium、synthetic fixturesだけを使い、代表system spec 10 examplesを実行して失敗0だった。System testのloopbackサーバー以外への通信、実メール、外部API、development DB・画像は使用していない。
+確認対象commit `edba87140d2f5d13634942ac9006e63b0555d667` に対し、`BUNDLE_FROZEN=true RAILS_ENV=test`、既存Chrome/Selenium、synthetic fixturesだけを使い、主要フロー11 examplesと誤パスワード1 exampleの合計12 examplesを実行して失敗0だった。全RSpec 1423 examples、System spec 63 examples、PR #83 CIは、この一巡とは別に実施済みの検証証拠である。System testのloopbackサーバー以外への通信、実メール、外部API、development DB・画像は使用していない。
 
 ### 保存画像を目視した画面
 
@@ -68,6 +71,8 @@
 - 活動履歴・絞り込み：375px
 - 推し一覧・画像管理：1280px / 375px
 - カードの画像選択：1280px / 375px
+
+目視証拠10枚は、Git管理外の`tmp/issue31_qa_20261021/screenshots/`に保存した。秘密情報、実利用者データ、実画像は含めていない。
 
 保存画像では横はみ出し、部品の重なり、文字切れ、操作不能な導線は見つからなかった。
 
@@ -82,6 +87,8 @@
 
 これらはWSL上のChrome/Selenium確認であり、物理スマートフォンや各ブラウザの実機確認ではない。
 
+Issue #60のiPhone Safari確認では、保存後の画像表示が遅いとの報告と、透過PNGが灰色に見える事象があった。遅延の実測区間・透過保持の保存後検査は完了しておらず、ユーザー判断で今回保留した既知リスクであるため、解消済みとは扱わない。
+
 ## 独立PoCバックアップとの照合
 
 指定された非公開バックアップは、Issue #68のAIプロフィール帳PoCを保存した独立スナップショットである。Rails本体・DBを含まず、現在の本体へPoCコードは移植されていない。
@@ -95,13 +102,15 @@
 
 ## 残る確認と優先順位
 
-1. Issue #60の画像デコード資源上限と本番相当環境での並列負荷を検証する
-2. Chrome以外の実ブラウザ、物理スマートフォン、支援技術は未確認として記録する
+1. 外部の要件資料原本・ER図・テーブル定義を、その管理元の最新版と再照合する
+2. Chrome以外の実ブラウザ、物理スマートフォン、支援技術を確認する
+3. 実メール・外部API・本番環境、およびIssue #60の本番資源予算・複数worker・native hard timeoutを確認する
+4. iPhone Safariで保留した保存後表示遅延と透過表示を、原ファイル・保存blob・表示CSSを区別して再確認する
 
 ## Issue #60と本番環境の分離
 
-Issue #60の画像デコード資源制限は未実装である。既存の10MiB・MIME制約では寸法、総画素数、CPU、処理時間、並列実行を制御できない。
+Issue #60ではPR #81・#82により、既存10MiB制約に加えて最大辺2560px・総500万画素のサーバー側検査、プロセス内カード生成同時1件のgateと503 `Retry-After: 5`、対応画像のクライアント側コピー縮小が実装済みである。既存保存画像の原本・通常表示を維持し、カード利用時に制限する方針も実装済みである。
 
-AWSなしで行えるのは、ローカルの実レンダラでJPEG・PNG・WebP、EXIF、細長画像、高圧縮画像を測定し、境界・異常系をtest環境で確認するところまでである。本番インスタンス上の安全な上限、並列負荷、タイムアウト値は本番相当環境の実測を待つ。
+ローカルではJPEG・PNG・WebP、EXIF・ICC・16bit等の代表ケースと実レンダラを隔離測定し、5MP画像4枠の代表値も取得済みである。ただし本番EC2でOS・PostgreSQL等と同居した際の資源予算、複数worker間の同時実行制御、実HTTP並列生成、native処理のhard timeoutは未確定である。寸法・画素制限だけでCPU・時間・本番可用性を保証するものではない。
 
 Issue #60の未達をIssue #31の検証済み事項に含めず、既知の可用性リスクとして分離する。完了条件を満たすまでIssue #31をcloseしない。
