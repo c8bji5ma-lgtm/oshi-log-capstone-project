@@ -3,14 +3,14 @@
     {
       "warning_type": "File Access",
       "warning_code": 16,
-      "fingerprint": "4fc3ea635533d840d0dff1b6ad377ac3e0e87f0d3a44927c5fad0eee92bc1872",
+      "fingerprint": "f111b318c6439b675a383d620a546191de58b4365064cae86297c2ea18fd6219",
       "check_name": "SendFile",
       "message": "Parameter value used in file name",
       "file": "app/controllers/images_controller.rb",
       "line": 11,
       "confidence": "Weak",
       "cwe_id": [22],
-      "note": "Issue #50: ユーザーがBrakeman 8.1.0の警告1件・終了コード3・本フィンガープリントと画像保護RSpec 33件成功を手動確認し、この1件の除外を明示承認。未認証を拒否し、Profile・UserOshi・Activityのuser_idと添付関連名で認可した後にDB上のBlobキーだけをDiskService.path_forへ渡す。Rails 8.1.4のpath_forはドットセグメント・保存ルート外を拒否する。HTTPテストで他ユーザー、削除済み添付・親、不正キー、欠落ファイル、標準URL迂回、Blob再添付の拒否を確認。ユーザー入力をパスへ直接連結しない点を根拠に個別除外する。残存リスク: 保存領域内の悪意あるシンボリックリンク、認可から配信までの競合、本番プロキシ・過去のキャッシュは未検証。保存領域の信頼性を維持し、配信処理・Rails・ストレージ・権限管理の変更時は再評価する。--exit-on-warnと他警告の検出は維持する。"
+      "note": "Issue #50/#60: ユーザーがBrakeman 8.1.0のSendFile weak警告1件を再評価し、この指紋だけの除外更新を明示承認。base bc2d802とPR head 5bf3751でImagesControllerと本ignoreは同一で、base CIは成功した一方、#60の画像形式定数共通化後に指紋が4fc3eaからf111b3へ変化した。定数参照によるBrakeman dataflow変化が原因の可能性は高いが比較変更実験は未実施。未認証を拒否し、Profile・UserOshi・Activityのcurrent_user所有範囲と許可した添付関連名でattachmentを認可した後、DB上のBlob keyだけをDiskService.path_forへ渡す。Rails 8.1.4のpath_forは空key、ドットセグメント、不正encoding、null byte、保存ルート外を拒否する。他ユーザー、削除済み添付・親、不正key、欠落file、標準URL迂回、Blob再添付のrequest specを根拠とし、ユーザー入力をpathへ直接連結しないため個別除外する。残存リスク: 保存領域内の悪意あるsymlink、認可から配信までのTOCTOU、本番proxy・過去cache、将来のstorage変更は未検証。保存領域の信頼性を維持し、配信処理・Rails・storage・権限管理の変更時は再評価する。--exit-on-warnと他警告の検出は維持する。"
     }
   ],
   "brakeman_version": "8.1.0"
