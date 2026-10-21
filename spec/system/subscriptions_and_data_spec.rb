@@ -103,6 +103,27 @@ RSpec.describe "Fixed costs and visualization in the browser", type: :system do
     check_fixed_costs(monthly: "0円", yearly: "2,400円")
   end
 
+  it "shows a conflict without overwriting a newer fixed-cost edit" do
+    record = create(:subscription, user: user, name: "編集前", amount: 500, oshis: [ oshi ])
+    sign_in
+    open_data
+    open_fixed_costs
+    edit_subscription(record.name)
+    stale_version = find("input[name='subscription[lock_version]']", visible: false).value
+    Subscription.find(record.id).update!(name: "別画面の更新", amount: 700)
+
+    fill_in "契約名（必須）", with: "古い画面の入力"
+    fill_in "金額（円・必須）", with: "900"
+    click_button "更新する"
+
+    expect(page).to have_css(".validation-errors", text: "別の画面で更新")
+    expect(page).to have_css(".conflict-summary", text: "別画面の更新")
+    expect(page).to have_field("契約名（必須）", with: "古い画面の入力")
+    expect(find("input[name='subscription[lock_version]']", visible: false).value).to eq(stale_version)
+    expect(page).to have_link("最新内容で編集し直す", href: edit_subscription_path(record))
+    expect(record.reload).to have_attributes(name: "別画面の更新", amount: 700)
+  end
+
   it "keeps a cancelled deletion and removes only the confirmed fixed cost from the list and visualization" do
     monthly = create(:subscription, user: user, name: "残す月額固定費", amount: 300, oshis: [ oshi ])
     yearly = create(:subscription, :yearly, user: user, name: "残す年額固定費", amount: 4800, oshis: [ second_oshi ])

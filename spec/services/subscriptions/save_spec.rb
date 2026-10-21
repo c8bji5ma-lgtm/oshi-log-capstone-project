@@ -1,8 +1,10 @@
 require "rails_helper"
+require "timeout"
 
 RSpec.describe Subscriptions::Save do
-  def save_subscription(record, attributes: {}, oshi_ids: nil)
-    described_class.call(subscription: record, attributes: attributes, oshi_ids: oshi_ids)
+  def save_subscription(record, attributes: {}, oshi_ids: nil, expected_lock_version: nil)
+    described_class.call(subscription: record, attributes: attributes, oshi_ids: oshi_ids,
+      expected_lock_version: expected_lock_version)
   end
 
   [ 0, 1, 2 ].each do |count|
@@ -116,5 +118,71 @@ RSpec.describe Subscriptions::Save do
     expect(lock_index).not_to be_nil
     expect(update_index).not_to be_nil
     expect(lock_index).to be < update_index
+  end
+
+  it "rejects a stale expected version before changing attributes or links" do
+    record = create(:subscription, oshis: [ create(:oshi) ])
+    stale_version = record.lock_version
+    replacement = create(:oshi)
+    described_class.call(subscription: Subscription.find(record.id), attributes: { name: "先行更新" },
+      oshi_ids: [ replacement.id ], expected_lock_version: stale_version)
+    latest = record.reload.attributes
+    latest_ids = record.oshi_ids
+
+    expect do
+      described_class.call(subscription: record, attributes: { name: "古い更新" }, oshi_ids: [ create(:oshi).id ],
+        expected_lock_version: stale_version)
+    end.to raise_error(ActiveRecord::StaleObjectError)
+    expect(record.reload.attributes).to eq(latest)
+    expect(record.oshi_ids).to eq(latest_ids)
+  end
+
+  it "advances the parent version for a links-only update" do
+    record = create(:subscription)
+    version = record.lock_version
+    described_class.call(subscription: record, oshi_ids: [ create(:oshi).id ], expected_lock_version: version)
+    expect(record.reload.lock_version).to be > version
+  end
+
+  describe "concurrent updates on separate connections" do
+    self.use_transactional_tests = false
+
+    it "commits one update and rejects the other snapshot as stale" do
+      record = create(:subscription)
+      subscription_id = record.id
+      user_id = record.user_id
+      ready = Queue.new
+      release = Queue.new
+      results = Queue.new
+      threads = 2.times.map do |index|
+        Thread.new do
+          ActiveRecord::Base.connection_pool.with_connection do
+            candidate = Subscription.find(record.id)
+            expected_version = candidate.lock_version
+            ready << true
+            release.pop
+            described_class.call(subscription: candidate, attributes: { name: "同時更新#{index}" },
+              expected_lock_version: expected_version)
+            results << [ :saved, index ]
+          rescue StandardError => error
+            results << [ :failed, error ]
+          end
+        end
+      end
+      Timeout.timeout(10) { 2.times { ready.pop } }
+      2.times { release << true }
+      threads.each { |thread| expect(thread.join(10)).to eq(thread) }
+      outcomes = 2.times.map { results.pop }
+      saved = outcomes.select { |status, _| status == :saved }
+      failed = outcomes.select { |status, _| status == :failed }
+      expect(saved.size).to eq(1)
+      expect(failed.map(&:last)).to all(be_a(ActiveRecord::StaleObjectError))
+      expect(record.reload.name).to eq("同時更新#{saved.sole.last}")
+    ensure
+      threads&.each { |thread| thread.kill if thread.alive? }
+      SubscriptionOshi.where(subscription_id: subscription_id).delete_all if subscription_id
+      Subscription.where(id: subscription_id).delete_all if subscription_id
+      User.where(id: user_id).delete_all if user_id
+    end
   end
 end

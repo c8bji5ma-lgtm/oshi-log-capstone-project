@@ -226,7 +226,8 @@ RSpec.describe "Authorization and user data isolation", type: :request do
           foreign = create(:activity, user: other_user)
           original = foreign.attributes
           request_with_format(:put, activity_path(own), format,
-            params: { activity: { title: "本人の更新", user_id: other_user.id, oshi_ids: [ oshi.id.to_s ] } })
+            params: { activity: { title: "本人の更新", user_id: other_user.id, oshi_ids: [ oshi.id.to_s ],
+              lock_version: own.lock_version.to_s } })
           expect(response).to have_http_status(:see_other)
           expect(response).to redirect_to(activity_path(own))
           expect(own.reload).to have_attributes(title: "本人の更新", user_id: user.id)

@@ -21,6 +21,10 @@ RSpec.describe "Subscription management", type: :request do
     oshi
   end
 
+  def versioned(subscription, parameters)
+    parameters.merge(lock_version: subscription.lock_version.to_s)
+  end
+
   [ [ :get, "/subscriptions" ], [ :get, "/subscriptions/new" ], [ :post, "/subscriptions" ],
     [ :get, "/subscriptions/1/edit" ], [ :patch, "/subscriptions/1" ], [ :put, "/subscriptions/1" ], [ :delete, "/subscriptions/1" ] ].each do |method, path|
     it "requires authentication for #{method} #{path}" do
@@ -125,7 +129,7 @@ RSpec.describe "Subscription management", type: :request do
         post subscriptions_path, params: { subscription: attributes.merge(oshi_ids: [ oshi.id.to_s ]) }
         expect(response).to redirect_to(subscriptions_path)
         saved = user.subscriptions.last
-        patch subscription_path(saved), params: { subscription: attributes.merge(name: "更新", oshi_ids: [ oshi.id.to_s ]) }
+        patch subscription_path(saved), params: { subscription: versioned(saved, attributes.merge(name: "更新", oshi_ids: [ oshi.id.to_s ])) }
         expect(response).to redirect_to(subscriptions_path)
         expect(saved.reload.oshi_ids).to eq([ oshi.id ])
       end
@@ -151,7 +155,7 @@ RSpec.describe "Subscription management", type: :request do
         counts = [ Subscription.count, SubscriptionOshi.count ]
         post subscriptions_path, params: { subscription: attributes.merge(oshi_ids: ids) }, as: :json
         expect(response).to have_http_status(:unprocessable_content)
-        patch subscription_path(record), params: { subscription: attributes.merge(oshi_ids: ids) }, as: :json
+        patch subscription_path(record), params: { subscription: versioned(record, attributes.merge(oshi_ids: ids)) }, as: :json
         expect(response).to have_http_status(:unprocessable_content)
         expect(record.reload.attributes).to eq(original)
         expect([ Subscription.count, SubscriptionOshi.count ]).to eq(counts)
@@ -176,7 +180,8 @@ RSpec.describe "Subscription management", type: :request do
       get edit_subscription_path(record)
       expect(response).to have_http_status(:ok)
       expect(document.css("#subscription_oshi_ids option[selected]").map { |option| option["value"].to_i }).to match_array([ a.id, b.id ])
-      patch subscription_path(record), params: { subscription: attributes.merge(name: "更新契約", amount: "2000", billing_cycle: "yearly", user_id: other.id, oshi_ids: [ b.id.to_s, c.id.to_s ]) }
+      expect(document.at_css("input[name='subscription[lock_version]']")["value"]).to eq(record.lock_version.to_s)
+      patch subscription_path(record), params: { subscription: versioned(record, attributes.merge(name: "更新契約", amount: "2000", billing_cycle: "yearly", user_id: other.id, oshi_ids: [ b.id.to_s, c.id.to_s ])) }
       expect(response).to have_http_status(:see_other)
       expect(response).to redirect_to(subscriptions_path)
       expect(record.reload).to have_attributes(name: "更新契約", amount: 2000, billing_cycle: "yearly", user_id: user.id, started_on: Date.new(2026, 1, 1), ended_on: Date.new(2026, 12, 31))
@@ -188,19 +193,19 @@ RSpec.describe "Subscription management", type: :request do
 
     it "allows clearing every link and changing yearly back to monthly with inverted dates" do
       record.update!(billing_cycle: "yearly", oshis: [ owned_oshi ])
-      patch subscription_path(record), params: { subscription: attributes.merge(oshi_ids: [ "" ], started_on: "2027-01-01", ended_on: "2026-01-01") }
+      patch subscription_path(record), params: { subscription: versioned(record, attributes.merge(oshi_ids: [ "" ], started_on: "2027-01-01", ended_on: "2026-01-01")) }
       expect(response).to redirect_to(subscriptions_path)
       expect(record.reload.oshi_ids).to be_empty
       expect(record.billing_cycle).to eq("monthly")
       expect(record.started_on).to be > record.ended_on
-      patch subscription_path(record), params: { subscription: attributes.merge(oshi_ids: [ owned_oshi.id.to_s ]) }
+      patch subscription_path(record), params: { subscription: versioned(record, attributes.merge(oshi_ids: [ owned_oshi.id.to_s ])) }
       expect(record.reload.oshi_ids.size).to eq(1)
     end
 
     it "rejects forbidden IDs on update and retains all existing values and joins" do
       original = record.attributes
       join = record.subscription_oshis.create!(oshi: owned_oshi)
-      patch subscription_path(record), params: { subscription: attributes.merge(oshi_ids: [ create(:oshi).id.to_s ]) }
+      patch subscription_path(record), params: { subscription: versioned(record, attributes.merge(oshi_ids: [ create(:oshi).id.to_s ])) }
       expect(response).to have_http_status(:unprocessable_content)
       expect(record.reload.attributes).to eq(original)
       expect(record.subscription_oshis.pluck(:id)).to eq([ join.id ])
@@ -210,12 +215,13 @@ RSpec.describe "Subscription management", type: :request do
       join = record.subscription_oshis.create!(oshi: owned_oshi)
       replacement = owned_oshi
       original = record.attributes
-      patch subscription_path(record), params: { subscription: attributes.merge(name: "", amount: "2000", oshi_ids: [ replacement.id.to_s ]) }
+      patch subscription_path(record), params: { subscription: versioned(record, attributes.merge(name: "", amount: "2000", oshi_ids: [ replacement.id.to_s ])) }
       expect(response).to have_http_status(:unprocessable_content)
       expect(record.reload.attributes).to eq(original)
       expect(record.subscription_oshis.pluck(:id)).to eq([ join.id ])
       expect(document.at_css("#subscription_amount")["value"]).to eq("2000")
       expect(document.css("#subscription_oshi_ids option[selected]").map { |option| option["value"].to_i }).to eq([ replacement.id ])
+      expect(document.at_css("input[name='subscription[lock_version]']")["value"]).to eq(record.lock_version.to_s)
     end
 
     it "rolls back create and update and displays a failed join's errors" do
@@ -231,10 +237,42 @@ RSpec.describe "Subscription management", type: :request do
       post subscriptions_path, params: { subscription: attributes.merge(oshi_ids: [ oshi.id.to_s ]) }
       expect(response).to have_http_status(:unprocessable_content)
       expect(document.at_css(".validation-errors").text).to include("関連保存失敗")
-      patch subscription_path(record), params: { subscription: attributes.merge(oshi_ids: [ oshi.id.to_s ]) }
+      patch subscription_path(record), params: { subscription: versioned(record, attributes.merge(oshi_ids: [ oshi.id.to_s ])) }
       expect(response).to have_http_status(:unprocessable_content)
       expect(record.reload.attributes).to eq(original)
       expect([ Subscription.count, SubscriptionOshi.count ]).to eq(counts)
+    end
+
+    it "renders the submitted values and latest values with 409 when the edit version is stale" do
+      first, second = Array.new(2) { owned_oshi }
+      record.update!(name: "最初の内容", oshis: [ first ])
+      stale_version = record.lock_version
+      Subscriptions::Save.call(subscription: Subscription.find(record.id), attributes: { name: "先に保存した内容", amount: 3000 },
+        oshi_ids: [ second.id ], expected_lock_version: stale_version)
+
+      patch subscription_path(record), params: { subscription: attributes.merge(name: "古い画面の入力", amount: "999",
+        oshi_ids: [ first.id.to_s ], lock_version: stale_version.to_s) }
+
+      expect(response).to have_http_status(:conflict)
+      expect(document.at_css("#subscription_name")["value"]).to eq("古い画面の入力")
+      expect(document.at_css("input[name='subscription[lock_version]']")["value"]).to eq(stale_version.to_s)
+      expect(document.at_css(".conflict-summary").text).to include("先に保存した内容", second.name)
+      expect(document.at_css(".conflict-summary a")["href"]).to eq(edit_subscription_path(record))
+      expect(document.at_css(".validation-errors").text).to include("別の画面で更新")
+      expect(record.reload).to have_attributes(name: "先に保存した内容", amount: 3000)
+      expect(record.oshi_ids).to eq([ second.id ])
+    end
+
+    [ nil, "", "1.0", "-1", "01", "2147483648" ].each do |invalid_version|
+      it "returns 400 and does not save an invalid edit version #{invalid_version.inspect}" do
+        original = record.attributes
+        patch subscription_path(record), params: { subscription: attributes.merge(name: "送信値", lock_version: invalid_version) }
+        expect(response).to have_http_status(:bad_request)
+        expect(document.at_css("#subscription_name")["value"]).to eq("送信値")
+        expect(document.at_css(".validation-errors").text).to include("編集情報が不正")
+        expect(document.at_css(".conflict-summary a")["href"]).to eq(edit_subscription_path(record))
+        expect(record.reload.attributes).to eq(original)
+      end
     end
 
     [ :get, :patch, :put, :delete ].each do |method|
@@ -253,6 +291,8 @@ RSpec.describe "Subscription management", type: :request do
     it "deletes only the owned contract and all its joins, preserving oshis and user registrations" do
       oshis = Array.new(2) { owned_oshi }
       record.update!(oshis: oshis)
+      record.update!(name: "版更新後の削除対象")
+      expect(record.lock_version).to be_positive
       foreign = create(:subscription, user: other, oshis: [ oshis.first ])
       counts = [ Oshi.count, UserOshi.count ]
       delete subscription_path(record)

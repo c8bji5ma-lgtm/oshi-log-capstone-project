@@ -1,10 +1,12 @@
 require "rails_helper"
+require "timeout"
 require_relative "../../support/image_attachments"
 
 RSpec.describe Activities::Save do
   include ImageAttachments
-  def save_activity(activity, oshi_ids: nil, attributes: {})
-    described_class.call(activity: activity, oshi_ids: oshi_ids, attributes: attributes)
+  def save_activity(activity, oshi_ids: nil, attributes: {}, expected_lock_version: nil)
+    described_class.call(activity: activity, oshi_ids: oshi_ids, attributes: attributes,
+      expected_lock_version: expected_lock_version)
   end
 
   describe "creation" do
@@ -182,6 +184,30 @@ RSpec.describe Activities::Save do
       expect(update_index).not_to be_nil
       expect(lock_index).to be < update_index
     end
+
+    it "rejects a stale expected version before changing attributes or links" do
+      activity = create(:activity)
+      stale_version = activity.lock_version
+      replacement = create(:oshi)
+      described_class.call(activity: Activity.find(activity.id), attributes: { title: "先行更新" },
+        oshi_ids: [ replacement.id ], expected_lock_version: stale_version)
+      latest = activity.reload.attributes
+      latest_ids = activity.oshi_ids
+
+      expect do
+        described_class.call(activity: activity, attributes: { title: "古い更新" }, oshi_ids: [ create(:oshi).id ],
+          expected_lock_version: stale_version)
+      end.to raise_error(ActiveRecord::StaleObjectError)
+      expect(activity.reload.attributes).to eq(latest)
+      expect(activity.oshi_ids).to eq(latest_ids)
+    end
+
+    it "advances the parent version for a links-only update" do
+      activity = create(:activity)
+      version = activity.lock_version
+      described_class.call(activity: activity, oshi_ids: [ create(:oshi).id ], expected_lock_version: version)
+      expect(activity.reload.lock_version).to be > version
+    end
   end
 
   describe "emotion tags" do
@@ -292,6 +318,19 @@ RSpec.describe Activities::Save do
       expect(activity.reload.images.map { |image| image.filename.to_s }).to match_array(%w[image.png image.jpg image.webp])
     end
 
+    it "rejects a stale expected version before assigning a pending image" do
+      stale_version = activity.lock_version
+      described_class.call(activity: Activity.find(activity.id), attributes: { title: "先行更新" },
+        expected_lock_version: stale_version)
+      counts = [ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]
+      expect(activity).not_to receive(:images=)
+      expect do
+        described_class.call(activity: activity, new_images: [ image_upload("image.webp") ],
+          expected_lock_version: stale_version)
+      end.to raise_error(ActiveRecord::StaleObjectError)
+      expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq(counts)
+    end
+
     it "rolls back scalar, links and images when the new image is invalid" do
       original_title = activity.title
       original_ids = activity.oshi_ids
@@ -343,6 +382,50 @@ RSpec.describe Activities::Save do
       expect(activity.reload.title).to eq(original_title)
       expect(activity.oshi_ids).to eq(original_ids)
       expect(activity.images).not_to be_attached
+    end
+  end
+
+  describe "concurrent updates on separate connections" do
+    self.use_transactional_tests = false
+
+    it "commits one update and rejects the other snapshot as stale" do
+      activity = create(:activity)
+      activity_id = activity.id
+      user_id = activity.user_id
+      oshi_ids = activity.oshi_ids
+      ready = Queue.new
+      release = Queue.new
+      results = Queue.new
+      threads = 2.times.map do |index|
+        Thread.new do
+          ActiveRecord::Base.connection_pool.with_connection do
+            candidate = Activity.find(activity.id)
+            expected_version = candidate.lock_version
+            ready << true
+            release.pop
+            described_class.call(activity: candidate, attributes: { title: "同時更新#{index}" },
+              expected_lock_version: expected_version)
+            results << [ :saved, index ]
+          rescue StandardError => error
+            results << [ :failed, error ]
+          end
+        end
+      end
+      Timeout.timeout(10) { 2.times { ready.pop } }
+      2.times { release << true }
+      threads.each { |thread| expect(thread.join(10)).to eq(thread) }
+      outcomes = 2.times.map { results.pop }
+      saved = outcomes.select { |status, _| status == :saved }
+      failed = outcomes.select { |status, _| status == :failed }
+      expect(saved.size).to eq(1)
+      expect(failed.map(&:last)).to all(be_a(ActiveRecord::StaleObjectError))
+      expect(activity.reload.title).to eq("同時更新#{saved.sole.last}")
+    ensure
+      threads&.each { |thread| thread.kill if thread.alive? }
+      ActivityOshi.where(activity_id: activity_id).delete_all if activity_id
+      Activity.where(id: activity_id).delete_all if activity_id
+      Oshi.where(id: oshi_ids).delete_all if oshi_ids
+      User.where(id: user_id).delete_all if user_id
     end
   end
 end
