@@ -1,5 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 import { defaultCrop } from "lib/crop_geometry"
+import { DataTemplateState, MemoryTemplateState, PhotoTemplateState } from "lib/card_template_state"
+import { createCard, downloadCard, errorMessage } from "lib/card_png_transport"
 
 export default class extends Controller {
   static targets = ["form", "status", "error", "preview", "image", "generateButton", "downloadButton", "oshi", "frames", "frameTemplate", "template", "panel", "settingsForm", "cropDialog", "memoryStatus", "memoryRetry", "memoryEmpty", "memoryFrames", "memoryFrameTemplate", "memoryAdd", "dataYear", "dataOshi", "dataStatus", "dataRetry"]
@@ -15,17 +17,9 @@ export default class extends Controller {
       form.reset()
       form.querySelectorAll("input, select").forEach(input => { input.disabled = false })
     })
-    this.selectedIds = this.oshiTargets.filter(input => input.checked).map(input => input.value)
-    this.photoLibraries = new Map(this.oshiTargets.map(input => [input.value, {
-      name: input.dataset.name, editUrl: input.dataset.editUrl, images: JSON.parse(input.dataset.images)
-    }]))
-    this.imageSources = new Map(this.selectedIds.map(id => [id, this.defaultImage(id)]))
-    this.crops = new Map()
-    this.photoCropVersion = 0
-    this.memories = null
-    this.memoryIds = []
-    this.memoryEdits = new Map()
-    this.dataSettings = null
+    this.photoState = new PhotoTemplateState(this.oshiTargets)
+    this.memoryState = new MemoryTemplateState()
+    this.dataState = new DataTemplateState()
     this.dataYearTarget.disabled = true
     this.dataOshiTarget.disabled = true
     this.renderFrames()
@@ -73,7 +67,7 @@ export default class extends Controller {
     try {
       const response = await fetch(this.statisticsUrlValue, { credentials: "same-origin", signal: operation.signal,
         headers: { Accept: "application/json" } })
-      if (!response.ok) throw new Error(await this.errorMessage(response))
+      if (!response.ok) throw new Error(await errorMessage(response))
       const options = await response.json()
       if (this.disposed || this.dataLoad !== operation || !this.checkExpiry()) return
       this.dataYearTarget.replaceChildren(...options.years.map(year => new Option(`${year}年`, year)))
@@ -116,12 +110,10 @@ export default class extends Controller {
     try {
       const response = await fetch(this.memoriesUrlValue, { credentials: "same-origin", signal: operation.signal,
         headers: { Accept: "application/json" } })
-      if (!response.ok) throw new Error(await this.errorMessage(response))
+      if (!response.ok) throw new Error(await errorMessage(response))
       const { activities } = await response.json()
       if (this.disposed || this.memoryLoad !== operation || !this.checkExpiry()) return
-      this.memories = activities
-      this.memoryIds = activities.slice(0, 3).map(activity => activity.id)
-      this.memoryIds.forEach(id => this.initializeMemory(id))
+      this.memoryState.load(activities)
       this.memoryStatusTarget.textContent = activities.length ? "最新の活動を選択しました。掲載順と写真を変更できます。" : ""
       this.memoryEmptyTarget.hidden = activities.length > 0
       this.renderMemoryFrames()
@@ -135,10 +127,7 @@ export default class extends Controller {
     }
   }
 
-  initializeMemory(id) {
-    const activity = this.memories.find(item => item.id === id)
-    this.memoryEdits.set(id, { imageId: activity.images[0]?.id || "", crop: defaultCrop() })
-  }
+  initializeMemory(id) { this.memoryState.initialize(id) }
 
   memoryAction() {
     if (this.disposed || !this.checkExpiry() || this.template !== "memories") return false
@@ -345,17 +334,9 @@ export default class extends Controller {
 
   // Attachment IDs are globally unique. The owner is resolved from the
   // selected libraries, never from a URL, filename or the frame's name.
-  defaultImage(ownerId) {
-    return this.photoLibraries.get(ownerId)?.images.find(image => image.representative)?.id || ""
-  }
+  defaultImage(ownerId) { return this.photoState.defaultImage(ownerId) }
 
-  photoImage(attachmentId) {
-    for (const ownerId of this.selectedIds) {
-      const image = this.photoLibraries.get(ownerId)?.images.find(image => image.id === attachmentId)
-      if (image) return { ...image, ownerId }
-    }
-    return null
-  }
+  photoImage(attachmentId) { return this.photoState.image(attachmentId) }
 
   renderFrames() {
     const rows = this.selectedIds.map((id, index) => {
@@ -433,33 +414,13 @@ export default class extends Controller {
     this.generating = true
     this.updateGenerateButtons(true)
     try {
-      const response = await fetch(this.createUrlValue, {
-        method: "POST", credentials: "same-origin", signal: operation.signal,
-        headers: { "Content-Type": "application/json", "X-CSRF-Token": this.csrfToken },
-        body: JSON.stringify({ card: this.template === "data" ? {
-          template: "data", ...this.dataSettings
-        } : this.template === "memories" ? {
-          template: "memory", activity_ids: this.memoryIds,
-          image_attachment_ids: this.memoryIds.map(id => this.memoryEdits.get(id).imageId),
-          crops: this.memoryIds.map(id => this.memoryEdits.get(id).crop)
-        } : {
-          template: "photo", user_oshi_ids: this.selectedIds,
-          image_user_oshi_ids: this.selectedIds.map(id => this.photoImage(this.imageSources.get(id))?.ownerId || ""),
-          image_attachment_ids: this.selectedIds.map(id => this.imageSources.get(id) || ""),
-          crops: this.selectedIds.map(id => this.crops.get(id) || defaultCrop()),
-          show_introduction: this.formTarget.elements.show_introduction.checked
-        } })
-      })
-      if (!response.ok) throw new Error(await this.errorMessage(response))
-      const blob = await response.blob()
-      const digest = await this.sha256(blob)
+      const card = this.template === "data" ? this.dataState.payload() :
+        this.template === "memories" ? this.memoryState.payload() :
+          this.photoState.payload(this.formTarget.elements.show_introduction.checked)
+      const result = await createCard(this.createUrlValue, card, this.csrfToken, operation.signal)
       if (!this.current(sequence)) return
-      const expiresAt = Number(response.headers.get("X-Card-Expires-At")) * 1000
-      if (blob.type !== "image/png" || digest !== response.headers.get("X-PNG-SHA256") || expiresAt <= Date.now()) {
-        throw new Error("完成画像を確認できません。再生成してください。")
-      }
-      this.result = { blob, digest, expiresAt, receipt: response.headers.get("X-Card-Receipt") }
-      this.url = URL.createObjectURL(blob)
+      this.result = result
+      this.url = URL.createObjectURL(result.blob)
       this.imageTarget.src = this.url
       this.previewTarget.hidden = false
       this.downloadButtonTarget.disabled = false
@@ -488,25 +449,8 @@ export default class extends Controller {
     this.errorTarget.textContent = ""
     this.statusTarget.textContent = "保存前の確認をしています。"
     try {
-      const response = await fetch(this.downloadUrlValue, {
-        method: "POST", credentials: "same-origin", signal: operation.signal,
-        headers: { "Content-Type": "image/png", "X-CSRF-Token": this.csrfToken, "X-Card-Receipt": result.receipt },
-        body: result.blob
-      })
-      if (!response.ok) {
-        const message = await this.errorMessage(response)
-        if (!this.current(sequence)) return
-        if ([401, 403, 409, 410, 422].includes(response.status)) {
-          this.invalidate()
-          this.errorTarget.textContent = message
-          return
-        }
-        throw new Error(message)
-      }
-      const blob = await response.blob()
-      const digest = await this.sha256(blob)
+      const blob = await downloadCard(this.downloadUrlValue, result, this.csrfToken, operation.signal)
       if (!this.checkExpiry() || !this.current(sequence) || this.result !== result) return
-      if (digest !== result.digest || blob.size !== result.blob.size) throw new Error("確認したPNGと一致しません。")
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
@@ -518,7 +462,10 @@ export default class extends Controller {
       setTimeout(() => URL.revokeObjectURL(url), 1000)
       this.statusTarget.textContent = "ダウンロードを開始しました。保存先をブラウザーで確認してください。"
     } catch (error) {
-      if (this.current(sequence) && error.name !== "AbortError") this.errorTarget.textContent = error.message
+      if (this.current(sequence) && error.name !== "AbortError") {
+        if (error.invalidatesPreview) this.invalidate()
+        this.errorTarget.textContent = error.message
+      }
     } finally {
       if (this.current(sequence) && this.result) this.downloadButtonTarget.disabled = false
     }
@@ -561,22 +508,17 @@ export default class extends Controller {
     })
     this.template = "photo"
     this.renderPanels()
-    this.selectedIds = []
-    this.imageSources?.clear()
-    this.photoLibraries?.clear()
-    this.crops?.clear()
+    this.photoState?.clear()
     this.dataLoad?.abort()
     this.dataLoad = null
-    this.dataSettings = null
+    this.dataState?.reset()
     this.dataYearTarget.replaceChildren()
     this.dataOshiTarget.replaceChildren()
     this.dataRetryTarget.hidden = true
     this.dataStatusTarget.textContent = ""
     this.memoryLoad?.abort()
     this.memoryLoad = null
-    this.memories = null
-    this.memoryIds = []
-    this.memoryEdits?.clear()
+    this.memoryState?.reset()
     this.memoryFramesTarget.replaceChildren()
     this.memoryAddTarget.disabled = true
     this.memoryRetryTarget.hidden = true
@@ -588,14 +530,18 @@ export default class extends Controller {
   current(sequence) { return !this.disposed && this.sequence === sequence }
   get csrfToken() { return document.querySelector('meta[name="csrf-token"]').content }
 
-  async sha256(blob) {
-    if (!crypto.subtle) throw new Error("HTTPSまたはlocalhostで開いてください。")
-    const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer())
-    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("")
-  }
-
-  async errorMessage(response) {
-    try { return (await response.json()).error || "処理に失敗しました。" }
-    catch { return "通信に失敗しました。もう一度操作してください。" }
-  }
+  get selectedIds() { return this.photoState.selectedIds }
+  set selectedIds(value) { this.photoState.selectedIds = value }
+  get photoLibraries() { return this.photoState.libraries }
+  get imageSources() { return this.photoState.imageSources }
+  get crops() { return this.photoState.crops }
+  get photoCropVersion() { return this.photoState.cropVersion }
+  set photoCropVersion(value) { this.photoState.cropVersion = value }
+  get memories() { return this.memoryState.activities }
+  set memories(value) { this.memoryState.activities = value }
+  get memoryIds() { return this.memoryState.ids }
+  set memoryIds(value) { this.memoryState.ids = value }
+  get memoryEdits() { return this.memoryState.edits }
+  get dataSettings() { return this.dataState.settings }
+  set dataSettings(value) { this.dataState.settings = value }
 }
