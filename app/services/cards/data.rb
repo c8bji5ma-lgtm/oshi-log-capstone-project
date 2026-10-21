@@ -4,6 +4,8 @@ require "vips"
 
 module Cards
   class Data
+    include DrawingPrimitives
+
     WIDTH = 1600
     HEIGHT = 1000
     BAR_COLOUR = [ 143, 101, 190 ].freeze
@@ -67,7 +69,7 @@ module Cards
     def render
       raise Photo::FontUnavailable unless File.file?(Photo::FONT_FILE)
       stats = statistics
-      canvas = solid(WIDTH, HEIGHT, PAPER)
+      canvas = solid_canvas(WIDTH, HEIGHT, PAPER)
       canvas = text(canvas, "推し活データ", x: 72, y: 64, width: 1020, size: 56, limit: 30)
       canvas = text(canvas, "#{@year}年", x: 1150, y: 72, width: 378, size: 32, limit: 10)
       canvas = text(canvas, @oshi&.name || "すべての推し", x: 1150, y: 116, width: 378, size: 26, limit: 24)
@@ -93,32 +95,28 @@ module Cards
         ActiveSupport::NumberHelper.number_to_delimited(number)
       end
 
-      def solid(width, height, colour)
-        Vips::Image.black(width, height, bands: 3).new_from_image(colour).copy(interpretation: :srgb)
-      end
-
       def panel(canvas, x:, label:, value:, colour:)
-        canvas = canvas.composite(solid(700, 170, colour), :over, x: x, y: 234)
+        canvas = canvas.composite(solid_canvas(700, 170, colour), :over, x: x, y: 234)
         canvas = text(canvas, label, x: x + 24, y: 256, width: 652, size: 26, limit: 20)
         text(canvas, value, x: x + 24, y: 312, width: 652, size: 64, minimum_size: 28, limit: 64)
       end
 
       def graph(canvas, months)
-        canvas = canvas.composite(solid(1456, 412, GRAPH), :over, x: 72, y: 436)
+        canvas = canvas.composite(solid_canvas(1456, 412, GRAPH), :over, x: 72, y: 436)
         canvas = text(canvas, "月別活動回数", x: 96, y: 452, width: 900, size: 24, limit: 30)
         maximum = months.filter_map { |month| month[:count] }.max || 0
         caption = @year > @date.year ? "実績はまだありません" : "活動記録がありません"
         canvas = text(canvas, caption, x: 960, y: 452, width: 544, size: 22, limit: 30) if maximum.zero?
         [ 0, maximum / 2, maximum ].uniq.each do |value|
           y = 780 - (maximum.zero? ? 0 : (value * 240.0 / maximum).round)
-          canvas = canvas.composite(solid(1320, 1, [ 214, 204, 228 ]), :over, x: 144, y: y)
+          canvas = canvas.composite(solid_canvas(1320, 1, [ 214, 204, 228 ]), :over, x: 144, y: y)
           canvas = text(canvas, delimited(value), x: 88, y: y - 12, width: 52, size: 20, minimum_size: 12, limit: 20)
         end
         future_months = months.select { |month| month[:future] }
         if future_months.any?
           # A continuous shaded region denotes unelapsed time, not tall bars.
           x = 154 + (future_months.first[:month] - 1) * 110
-          canvas = canvas.composite(solid(future_months.length * 110 - 10, 320, FUTURE), :over, x: x, y: 520)
+          canvas = canvas.composite(solid_canvas(future_months.length * 110 - 10, 320, FUTURE), :over, x: x, y: 520)
         end
         months.each_with_index do |row, index|
           x = 166 + index * 110
@@ -126,16 +124,12 @@ module Cards
             canvas = text(canvas, "未来月", x: x - 10, y: 746, width: 90, size: 18, limit: 10)
           else
             height = maximum.zero? ? 0 : (row[:count] * 240.0 / maximum).round
-            canvas = canvas.composite(solid(56, height, BAR_COLOUR), :over, x: x, y: 780 - height) if height.positive?
+            canvas = canvas.composite(solid_canvas(56, height, BAR_COLOUR), :over, x: x, y: 780 - height) if height.positive?
             canvas = text(canvas, delimited(row[:count]), x: x - 10, y: 748 - height, width: 90, size: 20, minimum_size: 12, limit: 20)
           end
           canvas = text(canvas, "#{row[:month]}月", x: x - 10, y: 806, width: 90, size: 22, limit: 10)
         end
         canvas
-      end
-
-      def glyph_image(value, size)
-        Vips::Image.text(ERB::Util.html_escape(value), font: "Noto Sans CJK JP #{size}", fontfile: Photo::FONT_FILE, dpi: 72)
       end
 
       def text(canvas, value, x:, y:, width:, size:, limit:, minimum_size: size)
@@ -152,7 +146,7 @@ module Cards
         end
         mask = glyph_image(clusters.join + (truncated ? "…" : ""), size)
         raise RenderingError if mask.width > width || mask.height > size * 1.4 || x + mask.width > WIDTH || y + mask.height > HEIGHT
-        ink = mask.new_from_image([ 64, 42, 88 ]).bandjoin(mask).copy(interpretation: :srgb)
+        ink = text_ink(mask, [ 64, 42, 88 ])
         canvas.composite(ink, :over, x: x, y: y)
       end
   end

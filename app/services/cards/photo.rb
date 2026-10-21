@@ -5,9 +5,11 @@ require "vips"
 module Cards
   # Photo-only renderer. Sources are read without modifying their stored bytes.
   class Photo
+    include DrawingPrimitives
+
     WIDTH = 1600
     HEIGHT = 1000
-    FONT_FILE = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+    FONT_FILE = DrawingPrimitives::FONT_FILE
     PNG_SIGNATURE = "\x89PNG\r\n\x1a\n".b.freeze
 
     # Dimensions and font sizes follow STEP 6. Internal XY remain provisional:
@@ -71,7 +73,7 @@ module Cards
     def render
       raise FontUnavailable unless File.file?(FONT_FILE)
 
-      canvas = Vips::Image.black(WIDTH, HEIGHT, bands: 3).new_from_image([ 255, 255, 255 ]).copy(interpretation: :srgb)
+      canvas = solid_canvas(WIDTH, HEIGHT, [ 255, 255, 255 ])
       layout = LAYOUTS.fetch(@user_oshis.length)
       @user_oshis.each_with_index do |record, index|
         x = layout[:xs][index]
@@ -128,7 +130,7 @@ module Cards
         else
           raise Crop::Invalid unless crop == Crop::DEFAULT
 
-          placeholder = Vips::Image.black(width, height, bands: 3).new_from_image([ 240, 243, 246 ]).copy(interpretation: :srgb)
+          placeholder = solid_canvas(width, height, [ 240, 243, 246 ])
           canvas = canvas.composite(placeholder, :over, x: x, y: 176)
           text(canvas, owner ? "画像未登録" : "画像を使用しない", x: x + (width - 272) / 2,
             y: single? ? 460 : 176 + (height - 32) / 2,
@@ -151,10 +153,6 @@ module Cards
         blob = attachment.blob
         return @image_bytes[blob.id] if @image_bytes.key?(blob.id)
         @image_bytes[blob.id] = ImageSource.read(blob)
-      end
-
-      def glyph_image(value, size)
-        Vips::Image.text(ERB::Util.html_escape(value), font: "Noto Sans CJK JP #{size}", fontfile: FONT_FILE, dpi: 72)
       end
 
       def text(canvas, value, x:, y:, width:, size:, limit:, max_lines:, line_height:, multiline: false)
@@ -193,7 +191,7 @@ module Cards
           next if line.empty?
           mask = glyph_image(line, size)
           raise InvalidImage if mask.width > width || mask.height > line_height
-          ink = mask.new_from_image([ 36, 52, 71 ]).bandjoin(mask).copy(interpretation: :srgb)
+          ink = text_ink(mask, [ 36, 52, 71 ])
           canvas = canvas.composite(ink, :over, x: x, y: y + index * line_height)
         end
         canvas
