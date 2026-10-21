@@ -13,6 +13,7 @@ RSpec.describe "Activities", type: :request do
   end
 
   def activity_for(owner = user, oshis: [ oshi ], **attributes)
+    oshis.each { |selected| UserOshi.find_or_create_by!(user: owner, oshi: selected) }
     activity = build(:activity, :without_oshis, user: owner, **attributes)
     Activities::Save.call(activity: activity, oshi_ids: oshis.map(&:id))
   end

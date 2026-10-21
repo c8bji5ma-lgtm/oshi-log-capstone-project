@@ -414,6 +414,8 @@ RSpec.describe Oshis::Merge do
     it "waits for an existing activity save without reversing its parent-first locking order" do
       source_id, target_id = source.id, target.id
       activity = activity_with(source)
+      create(:user_oshi, user: activity.user, oshi: source)
+      create(:user_oshi, user: activity.user, oshi: target)
       locked, release, started, results = Queue.new, Queue.new, Queue.new, Queue.new
       saver = Thread.new do
         ActiveRecord::Base.connection_pool.with_connection do

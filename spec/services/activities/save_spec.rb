@@ -4,12 +4,59 @@ require_relative "../../support/image_attachments"
 
 RSpec.describe Activities::Save do
   include ImageAttachments
-  def save_activity(activity, oshi_ids: nil, attributes: {}, expected_lock_version: nil)
-    described_class.call(activity: activity, oshi_ids: oshi_ids, attributes: attributes,
-      expected_lock_version: expected_lock_version)
+  def save_activity(activity, oshi_ids: nil, attributes: {}, emotion_ids: nil, new_images: [],
+    expected_lock_version: nil)
+    ids = oshi_ids || activity.activity_oshis.map(&:oshi_id)
+    Oshi.where(id: ids).find_each do |oshi|
+      UserOshi.find_or_create_by!(user: activity.user, oshi: oshi)
+    end
+    described_class.call(activity: activity, oshi_ids: oshi_ids, attributes: attributes, emotion_ids: emotion_ids,
+      new_images: new_images, expected_lock_version: expected_lock_version)
   end
 
   describe "creation" do
+    it "rejects an unregistered oshi without leaving a parent or link" do
+      activity = build(:activity, :without_oshis)
+      unregistered = create(:oshi)
+
+      expect do
+        described_class.call(activity: activity, oshi_ids: [ unregistered.id ])
+      end.to raise_error(ActiveRecord::RecordInvalid)
+      expect(activity.errors[:activity_oshis]).to include("must belong to oshis registered by the activity user")
+      expect(activity).not_to be_persisted
+      expect(ActivityOshi.where(oshi: unregistered)).to be_empty
+    end
+
+    it "rejects another user's pending oshi even when it exists" do
+      activity = build(:activity, :without_oshis)
+      other = create(:user)
+      pending = create(:oshi, :pending, created_by_user: other)
+      create(:user_oshi, user: other, oshi: pending)
+
+      expect do
+        described_class.call(activity: activity, oshi_ids: [ pending.id ])
+      end.to raise_error(ActiveRecord::RecordInvalid)
+    end
+    it "validates registrations against an owner supplied in attributes" do
+      original_owner = create(:user)
+      replacement_owner = create(:user)
+      oshi = create(:oshi)
+      create(:user_oshi, user: original_owner, oshi: oshi)
+      activity = build(:activity, :without_oshis, user: original_owner)
+      activity.activity_oshis.build(oshi: oshi)
+      activity.save!
+      original = activity.attributes
+      links = activity.activity_oshis.pluck(:id, :oshi_id)
+
+      expect do
+        described_class.call(activity: activity, attributes: { user: replacement_owner, title: "保存しない" },
+          oshi_ids: [ oshi.id ])
+      end.to raise_error(ActiveRecord::RecordInvalid)
+      expect(activity.reload.attributes).to eq(original)
+      expect(activity.activity_oshis.pluck(:id, :oshi_id)).to eq(links)
+    end
+
+
     [ 1, 2 ].each do |count|
       it "saves an activity with #{count} oshis" do
         activity = build(:activity, :without_oshis)
@@ -189,13 +236,16 @@ RSpec.describe Activities::Save do
       activity = create(:activity)
       stale_version = activity.lock_version
       replacement = create(:oshi)
+      create(:user_oshi, user: activity.user, oshi: replacement)
       described_class.call(activity: Activity.find(activity.id), attributes: { title: "先行更新" },
         oshi_ids: [ replacement.id ], expected_lock_version: stale_version)
       latest = activity.reload.attributes
       latest_ids = activity.oshi_ids
 
+      stale_replacement = create(:oshi)
+      create(:user_oshi, user: activity.user, oshi: stale_replacement)
       expect do
-        described_class.call(activity: activity, attributes: { title: "古い更新" }, oshi_ids: [ create(:oshi).id ],
+        described_class.call(activity: activity, attributes: { title: "古い更新" }, oshi_ids: [ stale_replacement.id ],
           expected_lock_version: stale_version)
       end.to raise_error(ActiveRecord::StaleObjectError)
       expect(activity.reload.attributes).to eq(latest)
@@ -205,7 +255,9 @@ RSpec.describe Activities::Save do
     it "advances the parent version for a links-only update" do
       activity = create(:activity)
       version = activity.lock_version
-      described_class.call(activity: activity, oshi_ids: [ create(:oshi).id ], expected_lock_version: version)
+      replacement = create(:oshi)
+      create(:user_oshi, user: activity.user, oshi: replacement)
+      described_class.call(activity: activity, oshi_ids: [ replacement.id ], expected_lock_version: version)
       expect(activity.reload.lock_version).to be > version
     end
   end
@@ -229,12 +281,12 @@ RSpec.describe Activities::Save do
     it "preserves omitted tags, replaces explicit selections and permits clearing all tags" do
       activity = create(:activity, emotions: [ happy ])
       link_id = activity.activity_emotions.first.id
-      described_class.call(activity: activity, attributes: { title: "本文変更" })
+      save_activity(activity, attributes: { title: "本文変更" })
       expect(activity.reload.emotions).to eq([ happy ])
       expect(activity.activity_emotions.first.id).to eq(link_id)
-      described_class.call(activity: activity, emotion_ids: [ moved.id ])
+      save_activity(activity, emotion_ids: [ moved.id ])
       expect(activity.reload.emotions).to eq([ moved ])
-      described_class.call(activity: activity, emotion_ids: [])
+      save_activity(activity, emotion_ids: [])
       expect(activity.reload.emotions).to be_empty
     end
 
@@ -264,6 +316,7 @@ RSpec.describe Activities::Save do
     it "rolls back tags when a later oshi removal fails" do
       activity = create(:activity, emotions: [ happy ])
       replacement = create(:oshi)
+      create(:user_oshi, user: activity.user, oshi: replacement)
       original = activity.attributes
       original_oshi_ids = activity.oshi_ids
       allow(activity).to receive(:save!).and_wrap_original do |method|
@@ -282,7 +335,7 @@ RSpec.describe Activities::Save do
       activity = create(:activity, emotions: [ happy ])
       activity.emotions.load
       Activity.find(activity.id).emotions << moved
-      described_class.call(activity: activity, emotion_ids: [ happy.id ])
+      save_activity(activity, emotion_ids: [ happy.id ])
       expect(activity.reload.emotions).to eq([ happy ])
     end
   end
@@ -297,14 +350,14 @@ RSpec.describe Activities::Save do
     [ nil, [] ].each do |uploads|
       it "retains existing images when new_images is #{uploads.inspect}" do
         original = activity.images.first.blob_id
-        described_class.call(activity: activity, attributes: { title: "更新" }, new_images: uploads)
+        save_activity(activity, attributes: { title: "更新" }, new_images: uploads)
         expect(activity.reload.images.map(&:blob_id)).to eq([ original ])
       end
     end
 
     it "appends images and retains original bytes" do
       original = activity.images.first.blob_id
-      described_class.call(activity: activity, new_images: [ image_upload("image.webp") ])
+      save_activity(activity, new_images: [ image_upload("image.webp") ])
       expect(activity.reload.images.count).to eq(2)
       expect(activity.images.map(&:blob_id)).to include(original)
       expect(activity.images.last.download).to eq(File.binread(Rails.root.join("spec/fixtures/files/image.webp")))
@@ -314,18 +367,18 @@ RSpec.describe Activities::Save do
       activity.images.blobs.load
       other_instance = Activity.find(activity.id)
       other_instance.images.attach(image_upload("image.jpg"))
-      described_class.call(activity: activity, new_images: [ image_upload("image.webp") ])
+      save_activity(activity, new_images: [ image_upload("image.webp") ])
       expect(activity.reload.images.map { |image| image.filename.to_s }).to match_array(%w[image.png image.jpg image.webp])
     end
 
     it "rejects a stale expected version before assigning a pending image" do
       stale_version = activity.lock_version
-      described_class.call(activity: Activity.find(activity.id), attributes: { title: "先行更新" },
+      save_activity(Activity.find(activity.id), attributes: { title: "先行更新" },
         expected_lock_version: stale_version)
       counts = [ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]
       expect(activity).not_to receive(:images=)
       expect do
-        described_class.call(activity: activity, new_images: [ image_upload("image.webp") ],
+        save_activity(activity, new_images: [ image_upload("image.webp") ],
           expected_lock_version: stale_version)
       end.to raise_error(ActiveRecord::StaleObjectError)
       expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq(counts)
@@ -391,6 +444,7 @@ RSpec.describe Activities::Save do
     it "commits one update and rejects the other snapshot as stale" do
       activity = create(:activity)
       activity_id = activity.id
+      create(:user_oshi, user: activity.user, oshi: activity.oshis.sole)
       user_id = activity.user_id
       oshi_ids = activity.oshi_ids
       ready = Queue.new
@@ -424,6 +478,7 @@ RSpec.describe Activities::Save do
       threads&.each { |thread| thread.kill if thread.alive? }
       ActivityOshi.where(activity_id: activity_id).delete_all if activity_id
       Activity.where(id: activity_id).delete_all if activity_id
+      UserOshi.where(user_id: user_id, oshi_id: oshi_ids).delete_all if user_id && oshi_ids
       Oshi.where(id: oshi_ids).delete_all if oshi_ids
       User.where(id: user_id).delete_all if user_id
     end

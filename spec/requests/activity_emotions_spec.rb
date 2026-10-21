@@ -20,6 +20,7 @@ RSpec.describe "Activity emotion tags", type: :request do
 
   def activity_for(owner = user, emotions: [])
     record = build(:activity, :without_oshis, user: owner)
+    UserOshi.find_or_create_by!(user: owner, oshi: oshi)
     Activities::Save.call(activity: record, oshi_ids: [ oshi.id ], emotion_ids: emotions.map(&:id))
   end
 

@@ -16,6 +16,7 @@ RSpec.describe Cards::Data do
 
   def activity(oshis: [ oshi ], owner: user, **options)
     record = build(:activity, :without_oshis, user: owner, occurred_on: date, **options)
+    oshis.each { |selected| UserOshi.find_or_create_by!(user: owner, oshi: selected) }
     Activities::Save.call(activity: record, oshi_ids: oshis.map(&:id))
   end
 
