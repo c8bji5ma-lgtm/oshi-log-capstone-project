@@ -74,7 +74,7 @@
   <div class="form-field">
     <%= f.label :images, "画像（複数可）" %>
     <%= f.file_field :images, multiple: true, accept: "image/jpeg,image/png,image/webp", aria: { describedby: "activity-image-help", invalid: @activity.errors[:images].any? } %>
-    <p id="activity-image-help">JPEG・PNG・WebP、各画像10 MiB以下。新しく選択した画像は既存画像に追加されます。画像の登録に失敗した場合は、画像をもう一度選択してください。</p>
+    <p id="activity-image-help">JPEG・PNG・WebP、各画像10 MiB以下・最大辺2560px・500万画素以下。新しく選択した画像は既存画像に追加されます。画像の登録に失敗した場合は、画像をもう一度選択してください。</p>
   </div>
   <%= f.submit(@activity.persisted? ? "更新する" : "記録する", class: "button") %>
 <% end %>

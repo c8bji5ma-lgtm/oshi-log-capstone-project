@@ -1,5 +1,5 @@
 <div class="form-field">
   <%= f.label :library_images, label %>
   <%= f.file_field :library_images, multiple: true, accept: "image/jpeg,image/png,image/webp", aria: { invalid: f.object.errors[:library_images].any?, describedby: help_id } %>
-  <p id="<%= help_id %>">JPEG・PNG・WebP、1枚10 MiB以下。代表画像を含めて最大30枚。複数選択できます。入力エラー後は画像を再選択してください。</p>
+  <p id="<%= help_id %>">JPEG・PNG・WebP、1枚10 MiB以下・最大辺2560px・500万画素以下。代表画像を含めて最大30枚。複数選択できます。入力エラー後は画像を再選択してください。</p>
 </div>

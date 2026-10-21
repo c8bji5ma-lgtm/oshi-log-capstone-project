@@ -68,6 +68,19 @@ module UserOshis
       def build_blob(file)
         blob = ActiveStorage::Blob.build_after_unfurling(io: file.open,
           filename: file.original_filename, content_type: file.content_type)
+        unless ImageAttachmentInspector::CONTENT_TYPES.include?(blob.content_type)
+          invalid_image("はJPEG・PNG・WebP形式の画像を指定してください")
+        end
+        if blob.byte_size > ImageAttachmentInspector::MAX_BYTE_SIZE
+          invalid_image("は1画像あたり10 MiB以下にしてください")
+        end
+        begin
+          ImageAttachmentInspector.read_attachable(file, blob)
+        rescue ImageAttachmentInspector::DimensionsExceeded
+          invalid_image("は最大辺2560px・総画素数500万以下にしてください")
+        rescue ImageAttachmentInspector::Invalid
+          invalid_image("を画像として読み取れません")
+        end
         @uploads << [ blob, file ]
         blob
       end

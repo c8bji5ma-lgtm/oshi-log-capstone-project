@@ -75,6 +75,16 @@ RSpec.describe UserOshis::Save do
     expect(record.reload.library_images.first.byte_size).to eq(10.megabytes)
   end
 
+  it "rejects an oversized-dimension image before uploading any original" do
+    record
+    counts = stored_counts
+    oversized = library_upload_data(flat_png(2561, 100))
+
+    expect { save_images([ oversized ]) }.to raise_error(ActiveRecord::RecordInvalid, /最大辺2560px/)
+    expect(stored_counts).to eq(counts)
+    expect(record.reload.library_images).not_to be_attached
+  end
+
   it "rejects 31 uploads together without saving any original" do
     target = build(:user_oshi, user: create(:user), oshi: create(:oshi))
     counts = stored_counts

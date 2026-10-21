@@ -341,6 +341,40 @@ RSpec.describe "Photo cards", type: :request do
     expect(response.headers["Cache-Control"]).to include("private", "no-store")
   end
 
+  it "returns a reasoned 422 for a legacy image over the dimension limit without changing it" do
+    profile
+    bytes = flat_png(2561, 100)
+    blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new(bytes), filename: "legacy.png", content_type: "image/png", identify: false
+    )
+    ActiveStorage::Attachment.create!(name: "representative_image", record: user_oshi, blob: blob)
+    original = blob.reload.attributes
+    login
+
+    generate_card
+
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body["error"]).to include("最大辺2560px・総画素数500万以下")
+    expect(response.headers["X-Card-Receipt"]).to be_nil
+    expect(blob.reload.attributes).to eq(original)
+    expect(blob.download).to eq(bytes)
+  end
+
+  it "returns 503 with Retry-After while another render owns the process gate" do
+    profile
+    login
+    expect(Cards::Photo).not_to receive(:new)
+    allow(Cards::RenderGate).to receive(:with).and_raise(Cards::RenderGate::Busy)
+
+    generate_card
+
+    expect(response).to have_http_status(:service_unavailable)
+    expect(response.headers["Retry-After"]).to eq("5")
+    expect(response.parsed_body).to eq("error" => "カード生成が混み合っています。5秒後にもう一度お試しください。")
+    expect(response.headers["X-Card-Receipt"]).to be_nil
+    expect(response.headers["Cache-Control"]).to include("private", "no-store")
+  end
+
   %w[image.jpg image.webp].each do |filename|
     it "generates from a registered static #{File.extname(filename)} image" do
       profile
@@ -357,7 +391,7 @@ RSpec.describe "Photo cards", type: :request do
     profile
     blob = ActiveStorage::Blob.create_and_upload!(**image_upload,
       content_type: "image/jpeg", identify: false)
-    user_oshi.representative_image.attach(blob)
+    ActiveStorage::Attachment.create!(name: "representative_image", record: user_oshi, blob: blob)
     login
     generate_card
     expect(response).to have_http_status(:unprocessable_content)

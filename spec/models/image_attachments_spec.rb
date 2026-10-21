@@ -81,6 +81,31 @@ RSpec.describe "Image attachments", type: :model do
     end
   end
 
+  it "rejects a newly attached image over the dimension limit" do
+    record = build(:profile)
+    upload = image_upload_data(flat_png(2561, 100))
+    record.profile_image.attach(upload)
+
+    expect(record).not_to be_valid
+    expect(record.errors[:profile_image]).to include("は最大辺2560px・総画素数500万以下にしてください")
+  end
+
+  it "does not reapply new dimension limits when an existing attachment is unchanged" do
+    record = create(:profile)
+    bytes = flat_png(2561, 100)
+    blob = ActiveStorage::Blob.create_and_upload!(
+      io: StringIO.new(bytes), filename: "legacy.png", content_type: "image/png", identify: false
+    )
+    ActiveStorage::Attachment.create!(name: "profile_image", record: record, blob: blob)
+    original = blob.reload.attributes
+
+    expect { record.update!(introduction: "既存画像を変更しない編集") }.not_to change {
+      [ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]
+    }
+    expect(record.reload.profile_image.blob.attributes).to eq(original)
+    expect(record.profile_image.download).to eq(bytes)
+  end
+
   it "keeps the common Oshi master free of attachments" do
     expect(Oshi.reflect_on_all_attachments).to be_empty
   end

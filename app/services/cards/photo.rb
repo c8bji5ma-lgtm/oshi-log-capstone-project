@@ -22,6 +22,7 @@ module Cards
     }.transform_values(&:freeze).freeze
 
     class InvalidImage < StandardError; end
+    class ImageDimensionsExceeded < InvalidImage; end
     class FontUnavailable < StandardError; end
     class ProfileRequired < StandardError; end
 
