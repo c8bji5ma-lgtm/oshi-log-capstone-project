@@ -40,21 +40,49 @@ RSpec.describe "Top and home pages", type: :request do
       post user_session_path, params: { user: { email: user.email, password: "password123" } }
     end
 
-    it "renders home at root without another redirect or sample data" do
+    it "renders useful empty home sections at root without another redirect or sample data" do
       get root_path
 
       expect(response).to have_http_status(:ok)
       expect(document.at_css("title").text).to eq("ホーム | OshiLog")
       expect(document.at_css("main h1").text).to eq("ホーム")
       expect(document.css("main h2").map(&:text)).to eq(
-        [ "今月の推し活", "推し活の積み重ね", "最近の記録", "思い出を振り返る", "今日の気づき" ]
+        [ "今月の推し活", "登録している推し", "最近の記録", "推し活の積み重ね", "今日の気づき" ]
       )
-      expect(document.css("main section").map { |section| section.text.include?("準備中") }).to all(be(true))
+      expect(document.at_css(".home-summary-card").text).to include("活動回数", "0回", "活動支出", "記録なし")
+      expect(document.at_css(".home-recent-card").text).to include("記録はまだありません")
+      expect(document.at_css(".home-insight-card").text).to include("比較できる記録が増えると")
+      expect(document.at_css("main").text).not_to include("準備中")
       expect(document.at_css("main").text).not_to include("18,400", "CANDY TUNE", "活動 5回")
       expect(document.css("nav a").map(&:text)).to eq(%w[トップ 推し一覧 活動記録一覧 マイページ])
       expect(document.at_css("nav button").text).to eq("ログアウト")
       expect(document.at_css("nav a[href='#{new_user_session_path}']")).to be_nil
       expect(document.at_css("nav a[href='#{new_user_registration_path}']")).to be_nil
+    end
+
+    it "shows only owned non-future activities, current-month totals, oshis and an existing insight" do
+      first_oshi = create(:oshi, :approved, name: "青い推し")
+      second_oshi = create(:oshi, :approved, name: "星の推し")
+      create(:user_oshi, user: user, oshi: first_oshi)
+      create(:user_oshi, user: user, oshi: second_oshi)
+      previous = build(:activity, :without_oshis, user: user, title: "前期の記録", occurred_on: Date.current.beginning_of_month - 3.months, activity_type: "その他", amount: 9000)
+      previous.activity_oshis.build(oshi: first_oshi)
+      previous.save!
+      recent = build(:activity, :without_oshis, user: user, title: "今月のライブ", occurred_on: Date.current, amount: 2400)
+      recent.activity_oshis.build(oshi: first_oshi)
+      recent.save!
+      future = build(:activity, :without_oshis, user: user, title: "未来の記録", occurred_on: Date.current + 1, amount: 50_000)
+      future.activity_oshis.build(oshi: second_oshi)
+      future.save!
+      other = create(:activity, title: "他人の記録", occurred_on: Date.current, amount: 80_000)
+
+      get home_path
+
+      expect(document.at_css(".home-summary-card").text).to include("1回", "2,400円")
+      expect(document.css(".home-oshi-list li").map(&:text)).to eq([ "星の推し", "青い推し" ])
+      expect(document.css(".home-recent-list a").map(&:text)).to include(recent.title, previous.title)
+      expect(document.at_css(".home-insight-card").text).to include("ライブ・イベント")
+      expect(document.at_css("main").text).not_to include(future.title, other.title, "50,000", "80,000")
     end
 
     it "renders the same home content at the direct home URL" do
