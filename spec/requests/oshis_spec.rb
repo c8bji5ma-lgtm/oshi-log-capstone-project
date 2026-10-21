@@ -51,6 +51,16 @@ RSpec.describe "Oshi search and registration", type: :request do
       expect(document.at_css("main").text).not_to include("所属だけ", "他人")
     end
 
+    it "limits broad search results, keeps stable ordering and identifies same-name candidates" do
+      matching = create_list(:oshi, 52, :approved, name: "同名候補").sort_by(&:id)
+      get new_oshi_path, params: { q: "同名候補" }
+
+      options = document.css("select[name='oshi_id'] option[value]").reject { |option| option["value"].empty? }
+      expect(options.map { |option| option["value"] }).to eq(matching.first(50).map { |oshi| oshi.id.to_s })
+      expect(options.first.text).to include("ID：#{matching.first.id}", "名前：同名候補", "状態：承認済み")
+      expect(document.css("[role='status']").map(&:text).join).to include("最大50件", "絞り込んでください")
+    end
+
     [ "%", "_", "\\" ].each do |query|
       it "escapes #{query.inspect} in the search request" do
         match = create(:oshi, :approved, name: "literal#{query}target")

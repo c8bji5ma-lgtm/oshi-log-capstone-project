@@ -11,11 +11,18 @@
   <% end %>
   <%= render "shared/validation_errors", resource: @existing_user_oshi %>
   <% if @oshis.any? %>
+    <% if @oshi_search_has_more %>
+      <p role="status">候補は最大50件まで表示しています。見つからない場合は名前・別名を追加して絞り込んでください。</p>
+    <% end %>
     <%= form_with model: @existing_user_oshi, url: user_oshis_path, namespace: :existing do |f| %>
       <%= hidden_field_tag :q, params[:q], id: "existing_query" %>
       <div class="form-field">
         <%= label_tag :oshi_id, "既存候補" %>
-        <%= select_tag :oshi_id, options_from_collection_for_select(@oshis, :id, :name, @existing_user_oshi.oshi_id), include_blank: "候補から選択", required: true %>
+        <% options = @oshis.map do |oshi| %>
+          <% status = oshi.approved? ? "承認済み" : "承認待ち" %>
+          <% [ "ID：#{oshi.id} | 名前：#{oshi.name} | 種別：#{oshi.oshi_type} | 所属：#{oshi.affiliation.presence || '未設定'} | 状態：#{status}", oshi.id ] %>
+        <% end %>
+        <%= select_tag :oshi_id, options_for_select(options, @existing_user_oshi.oshi_id), include_blank: "候補から選択", required: true %>
       </div>
       <div class="form-field">
         <%= f.label :started_period, "推し始め" %>

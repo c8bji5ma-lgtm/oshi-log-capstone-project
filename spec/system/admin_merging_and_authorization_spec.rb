@@ -87,14 +87,14 @@ RSpec.describe "Admin merging and authorization in the browser", type: :system d
       click_link "推し承認管理"
       expect(page).to have_css("main h1", text: "推し承認管理", exact_text: true)
       click_link "重複した推しを統合"
-      expect(page).to have_current_path(new_merge_admin_oshis_path)
+      expect(page).to have_current_path(new_merge_admin_oshis_path, ignore_query: true)
       expect(page).to have_css("main h1", text: "推しの重複統合", exact_text: true)
-      find("details summary", text: "候補の詳細を確認").click
-      within("details") do
-        expect(page).to have_css("li", text: "名前：#{source.name}")
-        expect(page).to have_css("li", text: "名前：#{target.name}")
-      end
       expect(page).to have_text("統合元の推しは削除されます。")
+      fill_in "統合元を検索", with: source.name
+      fill_in "統合先を検索", with: target.name
+      click_button "候補を検索・選択内容を確認"
+      expect(page).to have_css("select[name='oshi_merge[source_id]'] option[value='#{source.id}']", text: "ID：#{source.id}")
+      expect(page).to have_css("select[name='oshi_merge[target_id]'] option[value='#{target.id}']", text: "ID：#{target.id}")
     end
 
     def select_merge_candidates
@@ -103,6 +103,10 @@ RSpec.describe "Admin merging and authorization in the browser", type: :system d
         select label, from: field
         expect(page).to have_select(field, selected: label)
       end
+      click_button "候補を検索・選択内容を確認"
+      expect(page).to have_css("#merge-selection-heading", text: "選択内容", exact_text: true)
+      expect(page).to have_text("統合元：ID：#{source.id}")
+      expect(page).to have_text("統合先：ID：#{target.id}")
     end
 
     def confirm_merge
@@ -131,7 +135,7 @@ RSpec.describe "Admin merging and authorization in the browser", type: :system d
       dismiss_confirm("統合元の推しを削除して統合します。選択内容は正しいですか？") do
         click_button "選んだ推しを統合"
       end
-      expect(page).to have_current_path(new_merge_admin_oshis_path)
+      expect(page).to have_current_path(new_merge_admin_oshis_path, ignore_query: true)
       expect(page).to have_button("選んだ推しを統合", disabled: false)
       expect(merge_state).to eq(before)
       select_merge_candidates
@@ -178,7 +182,7 @@ RSpec.describe "Admin merging and authorization in the browser", type: :system d
         open_merge
         select_merge_candidates
         confirm_merge
-        expect(page).to have_current_path(new_merge_admin_oshis_path)
+        expect(page).to have_current_path(new_merge_admin_oshis_path, ignore_query: true)
         expect(page).to have_css("[role='alert']", text: "ユーザーID：#{user.id}の#{label}が競合するため、統合を中止しました。登録内容を確認してください。")
         expect(page).to have_button("選んだ推しを統合")
         expect(merge_state).to eq(before)

@@ -1,31 +1,47 @@
 <% content_for :title, "推しの重複統合 | OshiLog" %>
 <h1>推しの重複統合</h1>
 <p id="merge-warning" class="validation-errors">統合が成功すると、統合元の推しは削除されます。関連データ・別名・代表画像を統合先へ引き継ぐ操作です。統合元と統合先を確認してから実行してください。</p>
-<% if @oshis.size < 2 %>
+<% if !@enough_oshis_to_merge %>
   <p>統合するには推しが2件以上必要です。</p>
 <% else %>
   <% statuses = { "pending" => "承認待ち", "approved" => "承認済み", "rejected" => "却下済み" } %>
-  <% options = @oshis.map do |oshi|
+  <% candidate_label = ->(oshi) do
     [ "ID：#{oshi.id} | 名前：#{oshi.name} | 種別：#{oshi.oshi_type} | 所属：#{oshi.affiliation.presence || '未設定'} | 状態：#{statuses.fetch(oshi.status, oshi.status)}", oshi.id ]
   end %>
-  <details>
-    <summary>候補の詳細を確認</summary>
-    <ul>
-      <% options.each do |label, _id| %>
-        <li><%= label %></li>
+  <%= form_with url: new_merge_admin_oshis_path, scope: :oshi_merge, method: :get do |f| %>
+    <div class="form-field">
+      <%= f.label :source_query, "統合元を検索" %>
+      <%= f.search_field :source_query, value: @source_query, placeholder: "名前・別名で検索" %>
+      <% if @source_has_more %>
+        <p role="status">統合元候補は最大50件まで表示しています。見つからない場合は名前・別名を追加して絞り込んでください。</p>
       <% end %>
-    </ul>
-  </details>
-  <%= form_with url: merge_admin_oshis_path, scope: :oshi_merge, method: :post, data: { turbo_confirm: "統合元の推しを削除して統合します。選択内容は正しいですか？" } do |f| %>
-    <div class="form-field">
       <%= f.label :source_id, "統合元（削除する推し）" %>
-      <%= f.select :source_id, options, { include_blank: "統合元を選択してください" }, required: true, aria: { describedby: "merge-warning" } %>
+      <%= f.select :source_id, options_for_select(@source_candidates.map(&candidate_label), @selected_source&.id), { include_blank: "統合元を選択してください" }, aria: { describedby: "merge-warning" } %>
     </div>
     <div class="form-field">
+      <%= f.label :target_query, "統合先を検索" %>
+      <%= f.search_field :target_query, value: @target_query, placeholder: "名前・別名で検索" %>
+      <% if @target_has_more %>
+        <p role="status">統合先候補は最大50件まで表示しています。見つからない場合は名前・別名を追加して絞り込んでください。</p>
+      <% end %>
       <%= f.label :target_id, "統合先（残す推し）" %>
-      <%= f.select :target_id, options, { include_blank: "統合先を選択してください" }, required: true, aria: { describedby: "merge-warning" } %>
+      <%= f.select :target_id, options_for_select(@target_candidates.map(&candidate_label), @selected_target&.id), { include_blank: "統合先を選択してください" }, aria: { describedby: "merge-warning" } %>
     </div>
-    <%= f.submit "選んだ推しを統合", class: "button" %>
+    <%= f.submit "候補を検索・選択内容を確認", class: "button button-secondary" %>
+  <% end %>
+  <% if @selected_source && @selected_target %>
+    <section class="card" aria-labelledby="merge-selection-heading">
+      <h2 id="merge-selection-heading">選択内容</h2>
+      <p>統合元：<%= candidate_label.call(@selected_source).first %></p>
+      <p>統合先：<%= candidate_label.call(@selected_target).first %></p>
+    </section>
+    <%= form_with url: merge_admin_oshis_path, scope: :oshi_merge, method: :post, data: { turbo_confirm: "統合元の推しを削除して統合します。選択内容は正しいですか？" } do |f| %>
+      <%= f.hidden_field :source_query, value: @source_query %>
+      <%= f.hidden_field :target_query, value: @target_query %>
+      <%= f.hidden_field :source_id, value: @selected_source.id %>
+      <%= f.hidden_field :target_id, value: @selected_target.id %>
+      <%= f.submit "選んだ推しを統合", class: "button" %>
+    <% end %>
   <% end %>
 <% end %>
 <p><%= link_to "推し承認管理へ戻る", admin_oshis_path %></p>

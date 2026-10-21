@@ -43,7 +43,7 @@ RSpec.describe "Admin oshi merging", type: :request do
 
   def expect_failure_notice(text)
     expect(response).to have_http_status(:see_other)
-    expect(response).to redirect_to(new_merge_admin_oshis_path)
+    expect(response.headers["Location"]).to include(new_merge_admin_oshis_path)
     follow_redirect!
     expect(response).to have_http_status(:ok)
     expect(document.at_css("[role='alert']").text).to include(text)
@@ -97,32 +97,50 @@ RSpec.describe "Admin oshi merging", type: :request do
       expect(document.at_css("a[href='#{new_merge_admin_oshis_path}']").text).to eq("重複した推しを統合")
     end
 
-    it "shows all statuses and candidate details, warning and a POST form" do
+    it "searches source and target separately across all statuses and confirms IDs before POST" do
       source
       target
       rejected = create(:oshi, :rejected, name: "旧名称", oshi_type: "声優")
-      get new_merge_admin_oshis_path
+      get new_merge_admin_oshis_path, params: { oshi_merge: {
+        source_query: "旧名称", target_query: "正式名称", source_id: rejected.id, target_id: target.id
+      } }
       expect(response).to have_http_status(:ok)
       expect(document.at_css("main h1").text).to eq("推しの重複統合")
       expect(document.at_css("#merge-warning").text).to include("統合元の推しは削除されます")
-      expect(document.at_css("details summary").text).to eq("候補の詳細を確認")
-      expect(document.css("details li").size).to eq(3)
-      form = document.at_css("form[action='#{merge_admin_oshis_path}']")
-      expect(form["method"]).to eq("post")
-      expect(form["data-turbo-confirm"]).to include("統合元の推しを削除")
-      expect(form.at_css("input[type='submit']")["value"]).to eq("選んだ推しを統合")
-      [ "source_id", "target_id" ].each do |field|
-        select = form.at_css("select[name='oshi_merge[#{field}]']")
-        expect(select["required"]).to be_present
-        expect(document.at_css("label[for='#{select['id']}']")).to be_present
-        expect(select.css("option").map { |option| option["value"] }.reject(&:empty?)).to contain_exactly(source.id.to_s, target.id.to_s, rejected.id.to_s)
-        [ [ source, "承認待ち" ], [ target, "承認済み" ], [ rejected, "却下済み" ] ].each do |oshi, status|
-          label = select.at_css("option[value='#{oshi.id}']").text
-          expect(label)
-            .to include("ID：#{oshi.id}", "名前：#{oshi.name}", "種別：#{oshi.oshi_type}", "所属：#{oshi.affiliation.presence || '未設定'}", "状態：#{status}")
-          expect(document.css("details li").map(&:text)).to include(label)
-        end
+      search_form = document.at_css("form[action='#{new_merge_admin_oshis_path}']")
+      expect(search_form["method"]).to eq("get")
+      expect(search_form.at_css("input[name='oshi_merge[source_query]']")["value"]).to eq("旧名称")
+      source_select = search_form.at_css("select[name='oshi_merge[source_id]']")
+      target_select = search_form.at_css("select[name='oshi_merge[target_id]']")
+      expect(source_select.css("option[value]").map { |option| option["value"] }.reject(&:empty?))
+        .to contain_exactly(source.id.to_s, rejected.id.to_s)
+      expect(target_select.css("option[value]").map { |option| option["value"] }.reject(&:empty?)).to eq([ target.id.to_s ])
+      expect(source_select.at_css("option[selected]")["value"]).to eq(rejected.id.to_s)
+      [ [ rejected, "却下済み" ], [ target, "承認済み" ] ].each do |oshi, status|
+        expect(document.at_css("option[value='#{oshi.id}']").text)
+          .to include("ID：#{oshi.id}", "名前：#{oshi.name}", "種別：#{oshi.oshi_type}", "状態：#{status}")
       end
+      post_form = document.at_css("form[action='#{merge_admin_oshis_path}']")
+      expect(post_form["method"]).to eq("post")
+      expect(post_form["data-turbo-confirm"]).to include("統合元の推しを削除")
+      expect(post_form.at_css("input[name='oshi_merge[source_id]']")["value"]).to eq(rejected.id.to_s)
+      expect(post_form.at_css("input[name='oshi_merge[target_id]']")["value"]).to eq(target.id.to_s)
+      expect(document.at_css("#merge-selection-heading").parent.text).to include("ID：#{rejected.id}", "ID：#{target.id}")
+    end
+
+    it "limits broad candidate searches and preserves selected IDs outside the new result set" do
+      records = create_list(:oshi, 52, :approved, name: "大量同名")
+      selected_source = records.last
+      get new_merge_admin_oshis_path, params: { oshi_merge: {
+        source_query: "大量同名", target_query: "見つからない", source_id: selected_source.id, target_id: target.id
+      } }
+
+      source_options = document.css("select[name='oshi_merge[source_id]'] option[value]").reject { |option| option["value"].empty? }
+      expect(source_options.size).to eq(51)
+      expect(source_options.map { |option| option["value"] }).to include(selected_source.id.to_s)
+      expect(document.at_css("select[name='oshi_merge[source_id]'] option[selected]")["value"]).to eq(selected_source.id.to_s)
+      expect(document.at_css("select[name='oshi_merge[target_id]'] option[selected]")["value"]).to eq(target.id.to_s)
+      expect(document.css("[role='status']").map(&:text).join).to include("統合元候補は最大50件", "絞り込んでください")
     end
 
     [ 0, 1 ].each do |count|

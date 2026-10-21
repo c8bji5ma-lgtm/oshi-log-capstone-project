@@ -1,9 +1,10 @@
 class OshisController < ApplicationController
+  SEARCH_LIMIT = 50
   def new
     @oshi = Oshi.new
     @user_oshi = current_user.user_oshis.new
     @existing_user_oshi = current_user.user_oshis.new
-    @oshis = Oshi.visible_to(current_user).search(params[:q]).order(:name, :id)
+    load_search_candidates
   end
 
   def create
@@ -20,11 +21,17 @@ class OshisController < ApplicationController
     @oshi.valid?
     @user_oshi.valid? if @user_oshi.errors.empty?
     @existing_user_oshi = current_user.user_oshis.new
-    @oshis = Oshi.visible_to(current_user).search(params[:q]).order(:name, :id)
+    load_search_candidates
     render :new, status: :unprocessable_content
   end
 
   private
+
+    def load_search_candidates
+      candidates = Oshi.visible_to(current_user).search(params[:q]).order(:name, :id).limit(SEARCH_LIMIT + 1).to_a
+      @oshi_search_has_more = candidates.size > SEARCH_LIMIT
+      @oshis = candidates.first(SEARCH_LIMIT)
+    end
 
     def oshi_params
       params.require(:oshi).permit(:name, :oshi_type, :affiliation)
