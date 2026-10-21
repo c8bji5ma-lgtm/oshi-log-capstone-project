@@ -73,6 +73,38 @@ RSpec.describe "Memory cards", type: :request do
     expect(response).to have_http_status(:unauthorized)
   end
 
+  it "returns at most fifty candidates per keyset page and reaches every older eligible activity" do
+    timestamp = Time.current.change(usec: 0)
+    records = Array.new(52) { create(:activity, user: user, occurred_on: Date.current, created_at: timestamp) }
+    create(:activity, user: user, occurred_on: Date.current + 1, created_at: timestamp + 1)
+    create(:activity, occurred_on: Date.current, created_at: timestamp + 1)
+
+    get memories_card_path
+    expect(response).to have_http_status(:ok)
+    first = response.parsed_body
+    expect(first.fetch("activities").map { |item| item.fetch("id") }).to eq(records.reverse.first(50).map { |record| record.id.to_s })
+    expect(first).to include("has_more" => true)
+    expect(first.fetch("next_cursor")).to be_present
+
+    create(:activity, user: user, occurred_on: Date.current, created_at: timestamp + 2)
+    get memories_card_path, params: { cursor: first.fetch("next_cursor") }
+    second = response.parsed_body
+    expect(second.fetch("activities").map { |item| item.fetch("id") }).to eq(records.first(2).reverse.map { |record| record.id.to_s })
+    expect(second).to include("has_more" => false, "next_cursor" => nil)
+  end
+
+  it "rejects malformed and activity-list cursors" do
+    get memories_card_path, params: { cursor: "invalid" }
+    expect(response).to have_http_status(:bad_request)
+    expect(response.parsed_body.fetch("error")).to include("ページ情報が正しくありません")
+
+    activity = create(:activity, user: user, occurred_on: Date.current)
+    cursor = Activities::KeysetPage.call(scope: user.activities, cursor: nil, direction: "older", purpose: "index").older_cursor
+    expect(activity).to be_present
+    get memories_card_path, params: { cursor: cursor }
+    expect(response).to have_http_status(:bad_request)
+  end
+
   [ 1, 2, 3 ].each do |count|
     it "generates #{count} activities and downloads exactly the signed PNG without DB writes" do
       records = Array.new(count) { create(:activity, user: user, occurred_on: Date.current) }

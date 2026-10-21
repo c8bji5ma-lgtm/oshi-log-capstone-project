@@ -80,6 +80,7 @@
     <p>今日以前の活動を1〜3件、左から順に並べます。表示名・活動日・タイトル・カテゴリ・推し名を掲載します。自己紹介・メモ・金額・場所は掲載しません。</p>
     <p role="status" data-photo-card-target="memoryStatus">活動記録を読み込みます。</p>
     <button type="button" class="button button-secondary" data-photo-card-target="memoryRetry" data-action="photo-card#loadMemories" hidden>活動記録を再読み込み</button>
+    <button type="button" class="button button-secondary" data-photo-card-target="memoryMore" data-action="photo-card#loadMoreMemories" hidden>さらに古い活動を読み込む</button>
     <p data-photo-card-target="memoryEmpty" hidden>掲載できる活動記録がありません。<%= link_to "活動を登録", new_activity_path %></p>
     <form data-photo-card-target="settingsForm" data-action="submit->photo-card#generate">
       <div class="memory-card-frames" data-photo-card-target="memoryFrames"></div>

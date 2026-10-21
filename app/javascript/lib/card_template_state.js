@@ -53,6 +53,13 @@ export class MemoryTemplateState {
     this.ids.forEach(id => this.initialize(id))
   }
 
+  append(activities) {
+    const known = new Set(this.activities.map(activity => activity.id))
+    const additions = activities.filter(activity => !known.has(activity.id))
+    this.activities.push(...additions)
+    return additions.length
+  }
+
   payload() {
     return {
       template: "memory", activity_ids: this.ids,

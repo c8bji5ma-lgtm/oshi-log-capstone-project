@@ -46,4 +46,12 @@
       </ul>
     </section>
   <% end %>
+  <nav class="actions" aria-label="活動記録のページ移動">
+    <% if @newer_cursor %>
+      <%= link_to "新しい記録へ戻る", activities_path(@filters.merge(cursor: @newer_cursor, direction: "newer")), class: "button button-secondary" %>
+    <% end %>
+    <% if @older_cursor %>
+      <%= link_to "さらに古い記録", activities_path(@filters.merge(cursor: @older_cursor, direction: "older")), class: "button button-secondary" %>
+    <% end %>
+  </nav>
 <% end %>
