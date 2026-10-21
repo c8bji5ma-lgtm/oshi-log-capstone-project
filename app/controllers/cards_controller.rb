@@ -3,6 +3,7 @@ require "digest"
 class CardsController < ApplicationController
   LIFETIME = 15.minutes
   PURPOSE = "photo-card-download-v2"
+  RETRY_AFTER = 5
 
   prepend_before_action :private_response
 
@@ -34,10 +35,13 @@ class CardsController < ApplicationController
 
   def create
     settings = card_settings
-    card = card_renderer(settings)
-    fingerprint = card.fingerprint
-    png = card.render
-    raise SourceChanged unless card_renderer(settings).fingerprint == fingerprint
+    fingerprint, png = Cards::RenderGate.with do
+      card = card_renderer(settings)
+      source = card.fingerprint
+      rendered = card.render
+      raise SourceChanged unless card_renderer(settings).fingerprint == source
+      [ source, rendered ]
+    end
 
     generated_at = Time.current
     payload = {
@@ -75,12 +79,17 @@ class CardsController < ApplicationController
     render_error(message, :not_found)
   rescue Cards::Photo::ProfileRequired
     render_error("プロフィールを保存してから作成してください。", :unprocessable_content)
+  rescue Cards::Photo::ImageDimensionsExceeded
+    render_error("画像が大きすぎます。最大辺4096px・総画素数1,250万以下の画像を選んでください。", :unprocessable_content)
   rescue Cards::Photo::InvalidImage
     render_error("登録画像を読み取れません。未登録とは異なる状態です。画像を確認してください。", :unprocessable_content)
   rescue Cards::Photo::FontUnavailable
     render_error("描画用フォントを利用できません。", :service_unavailable)
   rescue SourceChanged
     render_error("元データが変更されました。もう一度プレビューを作成してください。", :conflict)
+  rescue Cards::RenderGate::Busy
+    response.headers["Retry-After"] = RETRY_AFTER.to_s
+    render_error("カード生成が混み合っています。5秒後にもう一度お試しください。", :service_unavailable)
   end
 
   def download
