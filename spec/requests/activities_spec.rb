@@ -399,6 +399,69 @@ RSpec.describe "Activities", type: :request do
       end
     end
 
+    { json: "application/json", turbo_stream: "text/vnd.turbo-stream.html" }.each do |format, accept|
+      [ :missing, "invalid" ].each do |invalid_version|
+        it "renders HTML with 400 for a #{invalid_version} edit version requested as #{format}" do
+          activity = activity_for(title: "保存済み")
+          original = activity.attributes
+          parameters = input(title: "送信値")
+          parameters[:lock_version] = invalid_version unless invalid_version == :missing
+
+          patch activity_path(activity), params: { activity: parameters }, headers: { "Accept" => accept }
+
+          expect(response).to have_http_status(:bad_request)
+          expect(response.media_type).to eq("text/html")
+          expect(document.at_css("#activity_title")["value"]).to eq("送信値")
+          expect(activity.reload.attributes).to eq(original)
+        end
+      end
+
+      it "renders HTML with 409 and preserves the latest attributes, links and images when requested as #{format}" do
+        activity = activity_for(title: "最初の内容")
+        activity.images.attach(upload)
+        stale_version = activity.reload.lock_version
+        Activities::Save.call(activity: Activity.find(activity.id), attributes: { title: "先に保存した内容" },
+          oshi_ids: [ second_oshi.id ], new_images: [ upload("image.jpg") ], expected_lock_version: stale_version)
+        latest = activity.reload.attributes
+        latest_oshi_ids = activity.oshi_ids
+        latest_blob_ids = activity.images.map(&:blob_id)
+        counts = [ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]
+
+        patch activity_path(activity), params: { activity: input(title: "古い画面の入力",
+          oshi_ids: [ oshi.id.to_s ], images: [ upload("image.webp") ], lock_version: stale_version.to_s) },
+          headers: { "Accept" => accept }
+
+        expect(response).to have_http_status(:conflict)
+        expect(response.media_type).to eq("text/html")
+        expect(document.at_css("#activity_title")["value"]).to eq("古い画面の入力")
+        expect(document.at_css("input[name='activity[lock_version]']")["value"]).to eq(stale_version.to_s)
+        expect(activity.reload.attributes).to eq(latest)
+        expect(activity.oshi_ids).to eq(latest_oshi_ids)
+        expect(activity.images.map(&:blob_id)).to eq(latest_blob_ids)
+        expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq(counts)
+      end
+
+      it "renders HTML with 422 and rolls back attributes, links and images when requested as #{format}" do
+        activity = activity_for(title: "保存済み")
+        activity.images.attach(upload)
+        activity.reload
+        original = activity.attributes
+        original_oshi_ids = activity.oshi_ids
+        original_blob_ids = activity.images.map(&:blob_id)
+        counts = [ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]
+
+        patch activity_path(activity), params: { activity: versioned(activity, input(title: "",
+          oshi_ids: [ second_oshi.id.to_s ], images: [ upload("image.webp") ])) }, headers: { "Accept" => accept }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.media_type).to eq("text/html")
+        expect(activity.reload.attributes).to eq(original)
+        expect(activity.oshi_ids).to eq(original_oshi_ids)
+        expect(activity.images.map(&:blob_id)).to eq(original_blob_ids)
+        expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq(counts)
+      end
+    end
+
     it "returns 404 for another user's activity" do
       activity = activity_for(other_user, title: "秘密")
       patch activity_path(activity), params: { activity: input }

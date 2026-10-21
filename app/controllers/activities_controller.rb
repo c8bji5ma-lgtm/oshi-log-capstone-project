@@ -81,11 +81,11 @@ class ActivitiesController < ApplicationController
     if result == true
       redirect_to activity_path(@activity), notice: "活動記録を更新しました。", status: :see_other
     elsif result == :conflict
-      render :edit, status: :conflict
+      render :edit, formats: [ :html ], status: :conflict
     elsif result == :bad_request
-      render :edit, status: :bad_request
+      render :edit, formats: [ :html ], status: :bad_request
     else
-      render :edit, status: :unprocessable_content
+      render :edit, formats: [ :html ], status: :unprocessable_content
     end
   end
 
