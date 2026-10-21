@@ -416,9 +416,7 @@ export default class extends Controller {
     }
     this.invalidate()
     this.errorTarget.textContent = ""
-    this.statusTarget.textContent = this.template === "photo"
-      ? "設定を変更しました。プレビューを作成してください。"
-      : "設定を変更しました。このテンプレートのPNG生成は未実装です。"
+    this.statusTarget.textContent = "設定を変更しました。プレビューを作成してください。"
   }
 
   async generate(event) {

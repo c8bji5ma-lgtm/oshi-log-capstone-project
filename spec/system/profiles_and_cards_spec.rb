@@ -970,6 +970,7 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     find("#card-data-year").execute_script("this.dispatchEvent(new Event('change',{bubbles:true}))")
     expect(find("[data-photo-card-target='image']")["src"]).to eq(url)
     select ended.oshi.name, from: "集計対象"
+    expect(page).to have_css("[role='status']", text: "設定を変更しました。プレビューを作成してください。")
     check_invalidated_preview
     generate_preview
     selected = Cards::Data.new(user: user, year: current_year.to_s, oshi_id: ended.oshi_id.to_s).render
