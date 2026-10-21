@@ -4,7 +4,7 @@
 
 - 確認日：2026年10月21日
 - Issue：[#31 MVP最終QA・要件照合・README更新](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/issues/31)
-- 実装基準：PR #73の最終commitと、そのcommitに対するGitHub Actions
+- 実装基準：PR #74のmerge commitと、そのPRに対するGitHub Actions
 - 正式仕様の優先順：GitHub Issues、READMEから参照する要件資料、ER図・テーブル定義、実装
 
 この文書は確定仕様を変更するものではない。外部の要件資料やER図を更新せず、現行実装との対応、既存の検証結果、残る確認事項を記録する。
@@ -13,16 +13,16 @@
 
 | Issue #31の確認項目 | 現在の根拠 | 状態・残る確認 |
 |---|---|---|
-| カタログ設計の高優先度機能 | 活動CRUD、履歴・絞り込み、集計・固定費のrequest/system spec | 自動検証済み。主要フローの最終目視を残す |
+| カタログ設計の高優先度機能 | 活動CRUD、履歴・絞り込み、集計・固定費のrequest/system spec | 代表導線をChrome/Seleniumで再確認済み |
 | テーブル定義書とDB構造 | `db/schema.rb`、model spec、DB制約spec、test DBメタデータ | 基本9テーブルと承認済み追加差分を照合済み |
-| ER図とモデル関連 | model、association/constraint spec | 基本関連は自動検証済み。追加差分の外部ER図反映確認を残す |
-| 主要画面遷移 | authentication、推し管理、活動・データ、固定費、プロフィール・カード、管理者のsystem spec | Chrome headlessで自動検証済み。実ブラウザ一巡を残す |
+| ER図とモデル関連 | model、association/constraint spec | 基本関連と承認済み追加差分を照合済み。外部ER図自体は変更していない |
+| 主要画面遷移 | authentication、推し管理、活動・データ、固定費、プロフィール・カード、管理者のsystem spec | Chrome/Seleniumの代表10 examplesで再確認済み |
 | 主要画面・グローバルナビ | request/system spec、Issue #30の1280px/375px目視 | 主要幅で確認済み。全端末・支援技術の保証ではない |
 | ログイン・ログアウト・管理者 | authentication、admin authorization/merging spec | 自動検証済み |
 | バリデーション・エラー表示 | model、request、system spec | 正常系・主要異常系を自動検証済み |
 | 画像添付 | image attachment、protected image、image library、card spec | 機能・認可は自動検証済み。Issue #60の資源上限は別課題 |
-| テストスイート・CI | PR #73: lint / scan_js / scan_ruby / test | すべて成功 |
-| RuboCop等 | PR #73のlint・security checks | 成功 |
+| テストスイート・CI | PR #74: lint / scan_js / scan_ruby / test | すべて成功 |
+| RuboCop等 | PR #74のlint・security checks | 成功 |
 | README | リポジトリ名、起動・検証手順 | Issue #31ブランチで更新 |
 | 将来機能の表記 | README、`docs/future-features/` | 公開URL・QR・交流・装飾案を将来機能として区別 |
 | デバッグコード・サンプルデータ | 静的検索、development seedの環境ガード | 不要と断定できるものだけを削除対象とする。seedはdevelopment限定 |
@@ -58,6 +58,30 @@
 - `git diff --check`：成功
 - test storageは`tmp/storage`およびspecごとの一時ディレクトリを使用し、development画像には触れていない
 
+## 最終ブラウザ一巡
+
+`BUNDLE_FROZEN=true RAILS_ENV=test`、既存Chrome/Selenium、synthetic fixturesだけを使い、代表system spec 10 examplesを実行して失敗0だった。System testのloopbackサーバー以外への通信、実メール、外部API、development DB・画像は使用していない。
+
+### 保存画像を目視した画面
+
+- ホーム：1280px / 375px
+- 活動履歴・絞り込み：375px
+- 推し一覧・画像管理：1280px / 375px
+- カードの画像選択：1280px / 375px
+
+保存画像では横はみ出し、部品の重なり、文字切れ、操作不能な導線は見つからなかった。
+
+### 自動assertionで確認した導線
+
+- ログインからマイページ
+- 推し登録、管理者承認、別利用者による追加
+- 活動登録、履歴絞り込み、編集、集計更新
+- 固定費登録、編集、推し関連変更、可視化更新
+- プロフィール保存、写真カード、思い出カード、データカードの生成・download
+- 一般利用者の管理者画面拒否とlogout後の認証要求
+
+これらはWSL上のChrome/Selenium確認であり、物理スマートフォンや各ブラウザの実機確認ではない。
+
 ## 独立PoCバックアップとの照合
 
 指定された非公開バックアップは、Issue #68のAIプロフィール帳PoCを保存した独立スナップショットである。Rails本体・DBを含まず、現在の本体へPoCコードは移植されていない。
@@ -71,9 +95,8 @@
 
 ## 残る確認と優先順位
 
-1. PC / スマートフォン幅で主要ユーザーフローを一巡し、画面遷移図・ワイヤーフレームとの重大な乖離がないことを確認
-2. GitHub Actionsの全ジョブ成功を最終確認
-3. Chrome以外の実ブラウザ、実端末、支援技術は未確認として記録
+1. Issue #60の画像デコード資源上限と本番相当環境での並列負荷を検証する
+2. Chrome以外の実ブラウザ、物理スマートフォン、支援技術は未確認として記録する
 
 ## Issue #60と本番環境の分離
 
