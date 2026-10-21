@@ -38,7 +38,8 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
 
   def add_candidate(name, started_period:)
     within("form[action='#{user_oshis_path}']") do
-      select name, from: "既存候補"
+      option = find("select[name='oshi_id'] option", text: name, match: :first).text
+      select option, from: "既存候補"
       fill_in "推し始め", with: started_period
       click_button "選んだ推しを追加"
     end
