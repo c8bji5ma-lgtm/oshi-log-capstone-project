@@ -3,8 +3,56 @@ require "timeout"
 
 RSpec.describe Subscriptions::Save do
   def save_subscription(record, attributes: {}, oshi_ids: nil, expected_lock_version: nil)
+    ids = oshi_ids || record.subscription_oshis.map(&:oshi_id)
+    Oshi.where(id: ids).find_each do |oshi|
+      UserOshi.find_or_create_by!(user: record.user, oshi: oshi)
+    end
     described_class.call(subscription: record, attributes: attributes, oshi_ids: oshi_ids,
       expected_lock_version: expected_lock_version)
+  end
+
+  it "rejects an unregistered oshi and rolls back scalar and link changes" do
+    registered = create(:oshi)
+    record = create(:subscription, oshis: [ registered ])
+    create(:user_oshi, user: record.user, oshi: registered)
+    unregistered = create(:oshi)
+    original = record.attributes
+    links = record.subscription_oshis.pluck(:id, :oshi_id)
+
+    expect do
+      described_class.call(subscription: record, attributes: { name: "保存しない" }, oshi_ids: [ unregistered.id ])
+    end.to raise_error(ActiveRecord::RecordInvalid)
+    expect(record.errors[:subscription_oshis]).to include("must belong to oshis registered by the subscription user")
+    expect(record.reload.attributes).to eq(original)
+    expect(record.subscription_oshis.pluck(:id, :oshi_id)).to eq(links)
+  end
+
+  it "rejects another user's pending oshi even when it exists" do
+    record = build(:subscription)
+    other = create(:user)
+    pending = create(:oshi, :pending, created_by_user: other)
+    create(:user_oshi, user: other, oshi: pending)
+
+    expect do
+      described_class.call(subscription: record, oshi_ids: [ pending.id ])
+    end.to raise_error(ActiveRecord::RecordInvalid)
+  end
+
+  it "validates registrations against an owner supplied in attributes" do
+    original_owner = create(:user)
+    replacement_owner = create(:user)
+    oshi = create(:oshi)
+    create(:user_oshi, user: original_owner, oshi: oshi)
+    record = create(:subscription, user: original_owner, oshis: [ oshi ])
+    original = record.attributes
+    links = record.subscription_oshis.pluck(:id, :oshi_id)
+
+    expect do
+      described_class.call(subscription: record, attributes: { user: replacement_owner, name: "保存しない" },
+        oshi_ids: [ oshi.id ])
+    end.to raise_error(ActiveRecord::RecordInvalid)
+    expect(record.reload.attributes).to eq(original)
+    expect(record.subscription_oshis.pluck(:id, :oshi_id)).to eq(links)
   end
 
   [ 0, 1, 2 ].each do |count|
@@ -124,13 +172,16 @@ RSpec.describe Subscriptions::Save do
     record = create(:subscription, oshis: [ create(:oshi) ])
     stale_version = record.lock_version
     replacement = create(:oshi)
+    create(:user_oshi, user: record.user, oshi: replacement)
     described_class.call(subscription: Subscription.find(record.id), attributes: { name: "先行更新" },
       oshi_ids: [ replacement.id ], expected_lock_version: stale_version)
     latest = record.reload.attributes
     latest_ids = record.oshi_ids
 
+    stale_replacement = create(:oshi)
+    create(:user_oshi, user: record.user, oshi: stale_replacement)
     expect do
-      described_class.call(subscription: record, attributes: { name: "古い更新" }, oshi_ids: [ create(:oshi).id ],
+      described_class.call(subscription: record, attributes: { name: "古い更新" }, oshi_ids: [ stale_replacement.id ],
         expected_lock_version: stale_version)
     end.to raise_error(ActiveRecord::StaleObjectError)
     expect(record.reload.attributes).to eq(latest)
@@ -140,7 +191,9 @@ RSpec.describe Subscriptions::Save do
   it "advances the parent version for a links-only update" do
     record = create(:subscription)
     version = record.lock_version
-    described_class.call(subscription: record, oshi_ids: [ create(:oshi).id ], expected_lock_version: version)
+    replacement = create(:oshi)
+    create(:user_oshi, user: record.user, oshi: replacement)
+    described_class.call(subscription: record, oshi_ids: [ replacement.id ], expected_lock_version: version)
     expect(record.reload.lock_version).to be > version
   end
 

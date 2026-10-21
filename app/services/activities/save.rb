@@ -5,6 +5,7 @@ module Activities
     # new_images appends uploads under the parent lock; omitted or empty retains images.
     # Returns the saved Activity; failures raise and roll back all database changes.
     # Omitted emotion_ids preserves tags; [] clears them within the same transaction.
+    # Every linked Oshi must be registered to the Activity owner through UserOshi.
     # expected_lock_version is supplied by persisted edit forms. Programmatic
     # callers may omit it when they are not acting on a user-visible snapshot.
     def self.call(activity:, attributes: {}, oshi_ids: nil, emotion_ids: nil, new_images: [], expected_lock_version: nil)
@@ -26,6 +27,11 @@ module Activities
         end
 
         activity.assign_attributes(attributes)
+        registered_ids = UserOshi.where(user_id: activity.user_id || activity.user&.id, oshi_id: ids).pluck(:oshi_id)
+        if (ids - registered_ids).any?
+          activity.errors.add(:activity_oshis, "must belong to oshis registered by the activity user")
+          raise ActiveRecord::RecordInvalid, activity
+        end
         unless emotion_ids.nil?
           activity.emotion_ids = emotion_ids.map { |id| Emotion.type_for_attribute("id").cast(id) }.uniq
         end

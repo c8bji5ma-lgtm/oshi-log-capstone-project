@@ -13,6 +13,7 @@ RSpec.describe OshiData::Summary do
 
   def activity(oshis: [ oshi ], owner: user, **attributes)
     record = build(:activity, :without_oshis, user: owner, **attributes)
+    oshis.each { |selected| UserOshi.find_or_create_by!(user: owner, oshi: selected) }
     Activities::Save.call(activity: record, oshi_ids: oshis.map(&:id))
   end
 
@@ -168,7 +169,6 @@ RSpec.describe OshiData::Summary do
   it "excludes other users' activities, histories and subscriptions even for shared oshis" do
     other = create(:user)
     activity(owner: other, amount: 100_000)
-    create(:user_oshi, user: other, oshi: oshi, started_period: "1990")
     create(:subscription, user: other, amount: 90_000, oshis: [ oshi ])
     result = summary(oshi: oshi)
     expect(result.activity_count).to eq(0)
