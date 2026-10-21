@@ -32,14 +32,15 @@
       <h2><%= month %></h2>
       <ul class="activity-list">
         <% activities.each do |activity| %>
-          <li>
-            <time datetime="<%= activity.occurred_on.iso8601 %>"><%= activity.occurred_on.strftime("%-m/%-d") %></time>
-            <span><%= activity.activity_type %></span>
-            <%= link_to activity.title, activity_path(activity) %>
-            <% if activity.emotions.any? %>
-              <span class="activity-emotions" aria-label="感情タグ"><%= activity.emotions.map(&:name).join("、") %></span>
-            <% end %>
-            <span><%= activity.amount.nil? ? "—" : "#{number_with_delimiter(activity.amount)}円" %></span>
+          <li class="activity-entry">
+            <time class="activity-entry-date" datetime="<%= activity.occurred_on.iso8601 %>"><span><%= activity.occurred_on.strftime("%-m/%-d") %></span></time>
+            <div class="activity-entry-body">
+              <p class="activity-entry-meta"><span><%= activity.activity_type %></span><span><%= activity.amount.nil? ? "—" : "#{number_with_delimiter(activity.amount)}円" %></span></p>
+              <h3><%= link_to activity.title, activity_path(activity) %></h3>
+              <% if activity.emotions.any? %>
+                <p class="activity-emotions" aria-label="感情タグ"><%= activity.emotions.map(&:name).join("、") %></p>
+              <% end %>
+            </div>
           </li>
         <% end %>
       </ul>
