@@ -14,10 +14,11 @@
       <%= f.label :introduction, "自己紹介" %>
       <%= f.text_area :introduction, rows: 5, aria: { invalid: @profile.errors[:introduction].any? } %>
     </div>
-    <div class="form-field">
+    <div class="form-field" data-controller="image-upload">
       <%= f.label :profile_image, "プロフィール画像" %>
-      <%= f.file_field :profile_image, accept: "image/jpeg,image/png,image/webp", aria: { invalid: @profile.errors[:profile_image].any?, describedby: "profile-image-help" } %>
+      <%= f.file_field :profile_image, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { invalid: @profile.errors[:profile_image].any?, describedby: "profile-image-help profile-image-status" } %>
       <p id="profile-image-help">JPEG・PNG・WebP、10 MiB以下・最大辺2560px・500万画素以下。変更する場合だけ選択してください。入力エラー後は画像を再選択してください。</p>
+      <p id="profile-image-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
     </div>
     <%= f.submit "プロフィールを保存", class: "button" %>
   <% end %>

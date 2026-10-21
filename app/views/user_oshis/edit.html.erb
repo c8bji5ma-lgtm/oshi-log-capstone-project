@@ -20,10 +20,11 @@
       <%= f.label :ended_period, "推し終了時期" %>
       <%= f.text_field :ended_period, aria: { invalid: @user_oshi.errors[:ended_period].any?, describedby: "edit-period-help" } %>
     </div>
-    <div class="form-field">
+    <div class="form-field" data-controller="image-upload">
       <%= f.label :representative_image, "代表画像" %>
-      <%= f.file_field :representative_image, accept: "image/jpeg,image/png,image/webp", aria: { invalid: @user_oshi.errors[:representative_image].any?, describedby: "image-help" } %>
+      <%= f.file_field :representative_image, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { invalid: @user_oshi.errors[:representative_image].any?, describedby: "image-help image-status" } %>
       <p id="image-help">JPEG・PNG・WebP、10 MiB以下・最大辺2560px・500万画素以下。新しい代表画像を追加する場合に選択してください。以前の画像も保持されます。入力エラー後は画像を再選択してください。</p>
+      <p id="image-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
     </div>
     <%= f.submit "推し情報を更新", class: "button" %>
   <% end %>

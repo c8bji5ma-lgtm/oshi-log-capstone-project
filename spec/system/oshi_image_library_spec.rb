@@ -104,7 +104,7 @@ RSpec.describe "Managing an oshi image library in the browser", type: :system do
     page.current_window.resize_to(1280, 1024)
   end
 
-  it "uploads multiple originals through the new-oshi form and preserves input on a failed batch" do
+  it "uploads multiple originals and blocks a failed batch before submitting the new-oshi form" do
     login
     visit new_oshi_path
     within("form[action='#{oshis_path}']") do
@@ -112,9 +112,9 @@ RSpec.describe "Managing an oshi image library in the browser", type: :system do
       fill_in "推し名（必須）", with: "画像付きの新規推し"
       select "アイドル", from: "種別（必須）"
       attach_file "登録画像", [ fixture_path("image.jpg"), fixture_path("invalid.txt") ]
-      click_button "新しい推しを登録"
+      expect(page).to have_css("#new-image-help-status[role='alert']", text: "JPEG・PNG・WebP")
+      expect(page.evaluate_script("arguments[0].files.length", find_field("登録画像"))).to eq(0)
     end
-    expect(page).to have_css(".validation-errors", text: "JPEG")
     expect(page).to have_field("推し名（必須）", with: "画像付きの新規推し")
     expect(user.user_oshis).to be_empty
     within("form[action='#{oshis_path}']") do
