@@ -1,5 +1,6 @@
-<div class="form-field">
+<div class="form-field" data-controller="image-upload">
   <%= f.label :library_images, label %>
-  <%= f.file_field :library_images, multiple: true, accept: "image/jpeg,image/png,image/webp", aria: { invalid: f.object.errors[:library_images].any?, describedby: help_id } %>
+  <%= f.file_field :library_images, multiple: true, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { invalid: f.object.errors[:library_images].any?, describedby: "#{help_id} #{help_id}-status" } %>
   <p id="<%= help_id %>">JPEG・PNG・WebP、1枚10 MiB以下・最大辺2560px・500万画素以下。代表画像を含めて最大30枚。複数選択できます。入力エラー後は画像を再選択してください。</p>
+  <p id="<%= help_id %>-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
 </div>

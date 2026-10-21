@@ -203,6 +203,12 @@ h2 {
   border: 2px solid #812c2c;
 }
 
+.image-upload-status {
+  min-height: 1.5em;
+  margin-block: 0.35rem 0;
+  color: #33485e;
+}
+
 fieldset {
   margin-block: 1rem;
   border: 1px solid #d5dee8;
