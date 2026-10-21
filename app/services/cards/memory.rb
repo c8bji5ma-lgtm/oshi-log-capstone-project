@@ -15,7 +15,6 @@ module Cards
 
     def self.candidates(user)
       user.activities.where(occurred_on: ..Date.current)
-        .includes(:oshis, :activity_oshis, images_attachments: :blob)
         .order(occurred_on: :desc, created_at: :desc, id: :desc)
     end
 
@@ -41,7 +40,8 @@ module Cards
     def initialize(user:, **input)
       settings = self.class.settings(input)
       @profile = Profile.find_by(user_id: user.id) || raise(Photo::ProfileRequired)
-      records = self.class.candidates(user).where(id: settings[:activity_ids]).index_by { |activity| activity.id.to_s }
+      records = self.class.candidates(user).where(id: settings[:activity_ids])
+        .includes(:oshis, :activity_oshis, images_attachments: :blob).index_by { |activity| activity.id.to_s }
       raise ActiveRecord::RecordNotFound unless records.length == settings[:activity_ids].length
       @activities = settings[:activity_ids].map { |id| records.fetch(id) }
       @attachments = @activities.each_with_index.map do |activity, index|

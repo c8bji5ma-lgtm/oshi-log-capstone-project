@@ -60,17 +60,76 @@ RSpec.describe "Memory cards", type: :request do
     candidates = response.parsed_body.fetch("activities")
     expect(candidates.map { |item| item["id"] }).to eq([ newest, second, first, old ].map { |record| record.id.to_s })
     expect(candidates.map { |item| item["id"] }).not_to include(future.id.to_s, other.id.to_s)
-    expect(candidates.first.keys).to match_array(%w[id date title category oshis images])
-    images = candidates.first.fetch("images")
+    expect(response.body.bytesize).to be <= CardsController::MAX_JSON_BYTES
+    expect(candidates.first.keys).to match_array(%w[id date title category oshi_count image_count])
+    expect(candidates.first).to include("oshi_count" => newest.oshis.count, "image_count" => 2)
+    get memory_materials_card_path, params: { activity_id: newest.id, kind: "images" }
+    images = response.parsed_body.fetch("items")
     expect(images.map { |image| image["id"] }).to eq(newest.images_attachments.order(:id).pluck(:id).map(&:to_s))
     expect(images.first["url"]).to eq(protected_image_path(newest.images_attachments.order(:id).first))
+    expect(response.body.bytesize).to be <= CardsController::MAX_JSON_BYTES
+    get memory_materials_card_path, params: { activity_id: newest.id, kind: "oshis" }
+    expect(response.parsed_body.fetch("items").map { |oshi| oshi.fetch("name") }).to eq(newest.oshis.order(:id).pluck(:name))
     get images.first["url"]
     expect(response).to have_http_status(:ok)
     delete destroy_user_session_path
     get memories_card_path
     expect(response).to have_http_status(:unauthorized)
+    get memory_materials_card_path, params: { activity_id: newest.id, kind: "images" }
+    expect(response).to have_http_status(:unauthorized)
     get images.first["url"]
     expect(response).to have_http_status(:unauthorized)
+  end
+
+  it "pages every related oshi and image within the encoded response budget without crossing ownership" do
+    record = create(:activity, user: user, occurred_on: Date.current)
+    Array.new(51) do |index|
+      create(:activity_oshi, activity: record, oshi: create(:oshi, name: "関連推し#{index}-#{'名' * 120}"))
+    end
+    links = record.activity_oshis.order(:id).to_a
+    bytes = Rails.root.join("spec/fixtures/files/image.jpg").binread
+    52.times do |index|
+      record.images.attach(io: StringIO.new(bytes), filename: "related-#{index}.jpg", content_type: "image/jpeg")
+    end
+
+    get memory_materials_card_path, params: { activity_id: record.id, kind: "oshis" }
+    first_oshis = response.parsed_body
+    expect(response.body.bytesize).to be <= CardsController::MAX_JSON_BYTES
+    expect(first_oshis.fetch("items").map { |item| item.fetch("id") }).to eq(links.first(50).map { |link| link.oshi_id.to_s })
+    expect(first_oshis).to include("has_more" => true, "total_count" => 52)
+    get memory_materials_card_path, params: { activity_id: record.id, kind: "oshis", cursor: first_oshis.fetch("next_cursor") }
+    expect(response.parsed_body.fetch("items").map { |item| item.fetch("id") }).to eq(links.last(2).map { |link| link.oshi_id.to_s })
+
+    attachments = record.images_attachments.order(:id).to_a
+    get memory_materials_card_path, params: { activity_id: record.id, kind: "images" }
+    first_images = response.parsed_body
+    expect(response.body.bytesize).to be <= CardsController::MAX_JSON_BYTES
+    expect(first_images.fetch("items").map { |item| item.fetch("id") }).to eq(attachments.first(50).map { |image| image.id.to_s })
+    expect(first_images).to include("has_more" => true, "total_count" => 52)
+    get memory_materials_card_path, params: { activity_id: record.id, kind: "images", cursor: first_images.fetch("next_cursor") }
+    expect(response.parsed_body.fetch("items").map { |item| item.fetch("id") }).to eq(attachments.last(2).map { |image| image.id.to_s })
+
+    get memory_materials_card_path, params: { activity_id: record.id, kind: "oshis", cursor: first_images.fetch("next_cursor") }
+    expect(response).to have_http_status(:bad_request)
+    another = create(:activity, user: user, occurred_on: Date.current)
+    get memory_materials_card_path, params: { activity_id: another.id, kind: "oshis", cursor: first_oshis.fetch("next_cursor") }
+    expect(response).to have_http_status(:bad_request)
+    get memory_materials_card_path, params: { activity_id: record.id, kind: "invalid" }
+    expect(response).to have_http_status(:bad_request)
+    get memory_materials_card_path, params: { activity_id: create(:activity).id, kind: "images" }
+    expect(response).to have_http_status(:not_found)
+  end
+
+  it "returns a non-secret error when one encoded material page exceeds the response budget" do
+    record = create(:activity, user: user, occurred_on: Date.current)
+    attach_photo(record)
+    allow_any_instance_of(CardsController).to receive(:protected_image_path)
+      .and_return("/images/#{'x' * CardsController::MAX_JSON_BYTES}")
+
+    get memory_materials_card_path, params: { activity_id: record.id, kind: "images" }
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.parsed_body).to eq("error" => "応答量の上限を超えました。関連情報をより小さい単位で読み込んでください。")
+    expect(response.body).not_to include("/images/")
   end
 
   it "returns at most fifty candidates per keyset page and reaches every older eligible activity" do

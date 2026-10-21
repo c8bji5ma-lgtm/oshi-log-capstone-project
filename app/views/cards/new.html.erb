@@ -9,6 +9,7 @@
        data-photo-card-create-url-value="<%= card_path %>"
        data-photo-card-statistics-url-value="<%= statistics_card_path %>"
        data-photo-card-memories-url-value="<%= memories_card_path %>"
+       data-photo-card-memory-materials-url-value="<%= memory_materials_card_path %>"
        data-photo-card-download-url-value="<%= download_card_path %>"
        data-photo-card-layouts-value="<%= Cards::Photo::LAYOUTS.transform_values { |layout| layout.slice(:width, :height) }.to_json %>"
        data-action="turbo:before-cache@document->photo-card#dispose pagehide@window->photo-card#dispose image-crop:confirm->photo-card#confirmCrop image-crop:activity->photo-card#cropActivity">
@@ -97,6 +98,11 @@
           <select data-memory-activity data-action="change->photo-card#changeMemory"></select>
         </div>
         <p data-memory-details></p>
+        <p data-memory-material-status role="status"></p>
+        <div class="actions">
+          <button type="button" class="button button-secondary" data-memory-more-oshis data-action="photo-card#loadMoreMemoryOshis">推し情報を読み込む</button>
+          <button type="button" class="button button-secondary" data-memory-more-images data-action="photo-card#loadMoreMemoryImages">写真を読み込む</button>
+        </div>
         <div class="form-field">
           <label data-memory-photo-label></label>
           <select data-memory-photo data-action="change->photo-card#changeMemoryPhoto"></select>

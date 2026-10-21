@@ -4,6 +4,7 @@ class CardsController < ApplicationController
   LIFETIME = 15.minutes
   PURPOSE = "photo-card-download-v2"
   RETRY_AFTER = 5
+  MAX_JSON_BYTES = 256.kilobytes
 
   prepend_before_action :private_response
 
@@ -16,14 +17,36 @@ class CardsController < ApplicationController
   def memories
     page = Activities::KeysetPage.call(scope: Cards::Memory.candidates(current_user),
       cursor: params[:cursor], direction: "older", purpose: "card-memories")
+    ids = page.records.map(&:id)
+    oshi_counts = ActivityOshi.where(activity_id: ids).group(:activity_id).count
+    image_counts = ActiveStorage::Attachment.where(record_type: "Activity", name: "images", record_id: ids).group(:record_id).count
     activities = page.records.map do |activity|
       { id: activity.id.to_s, date: activity.occurred_on.strftime("%Y.%m.%d"), title: activity.title,
-        category: activity.activity_type, oshis: activity.oshis.sort_by(&:id).map(&:name),
-        images: activity.images_attachments.sort_by(&:id).map { |image| { id: image.id.to_s, url: protected_image_path(image) } } }
+        category: activity.activity_type, oshi_count: oshi_counts.fetch(activity.id, 0),
+        image_count: image_counts.fetch(activity.id, 0) }
     end
-    render json: { activities:, next_cursor: (page.older_cursor if page.has_older), has_more: page.has_older }
+    render_bounded_json(activities:, next_cursor: (page.older_cursor if page.has_older), has_more: page.has_older)
   rescue Activities::KeysetPage::InvalidCursor
     render_error("ページ情報が正しくありません。活動記録を最初から読み込み直してください。", :bad_request)
+  end
+
+  def memory_materials
+    activity = Cards::Memory.candidates(current_user).find(params[:activity_id])
+    page = Cards::MemoryMaterialsPage.call(activity:, kind: params[:kind], cursor: params[:cursor])
+    items = case params[:kind]
+    when "oshis"
+      page.records.map { |link| { id: link.oshi_id.to_s, name: link.oshi.name } }
+    when "images"
+      page.records.map { |image| { id: image.id.to_s, url: protected_image_path(image) } }
+    end
+    render_bounded_json(activity_id: activity.id.to_s, kind: params[:kind], items:,
+      next_cursor: page.next_cursor, has_more: page.has_more, total_count: page.total_count)
+  rescue ActiveRecord::RecordNotFound
+    render_error("活動記録が見つかりません。", :not_found)
+  rescue Cards::MemoryMaterialsPage::InvalidCursor
+    render_error("関連情報のページ情報が正しくありません。最初から読み込み直してください。", :bad_request)
+  rescue Cards::MemoryMaterialsPage::InvalidKind
+    render_error("関連情報の種類が正しくありません。", :bad_request)
   end
 
   def statistics
@@ -200,5 +223,12 @@ class CardsController < ApplicationController
 
     def render_error(message, status)
       render json: { error: message }, status: status
+    end
+
+    def render_bounded_json(payload)
+      json = JSON.generate(payload)
+      return render body: json, content_type: "application/json" if json.bytesize <= MAX_JSON_BYTES
+
+      render_error("応答量の上限を超えました。関連情報をより小さい単位で読み込んでください。", :unprocessable_content)
     end
 end

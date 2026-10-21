@@ -44,7 +44,13 @@ export class MemoryTemplateState {
 
   initialize(id) {
     const activity = this.activities.find(item => item.id === id)
-    this.edits.set(id, { imageId: activity.images[0]?.id || "", crop: defaultCrop() })
+    if (!activity.oshis) activity.oshis = []
+    if (!activity.images) activity.images = []
+    activity.materials ||= {
+      oshis: { cursor: null, hasMore: activity.oshi_count > 0, loaded: false, total: activity.oshi_count, error: null },
+      images: { cursor: null, hasMore: activity.image_count > 0, loaded: false, total: activity.image_count, error: null }
+    }
+    if (!this.edits.has(id)) this.edits.set(id, { imageId: null, crop: defaultCrop() })
   }
 
   load(activities) {
@@ -58,6 +64,29 @@ export class MemoryTemplateState {
     const additions = activities.filter(activity => !known.has(activity.id))
     this.activities.push(...additions)
     return additions.length
+  }
+
+  appendMaterials(id, kind, items, nextCursor, hasMore, totalCount) {
+    const activity = this.activities.find(item => item.id === id)
+    if (!activity || !["oshis", "images"].includes(kind)) return 0
+    this.initialize(id)
+    const known = new Set(activity[kind].map(item => item.id))
+    const additions = items.filter(item => !known.has(item.id))
+    activity[kind].push(...additions)
+    Object.assign(activity.materials[kind], { cursor: nextCursor, hasMore, loaded: true, total: totalCount, error: null })
+    const edit = this.edits.get(id)
+    if (kind === "images" && edit.imageId === null) edit.imageId = activity.images[0]?.id || ""
+    return additions.length
+  }
+
+  material(id, kind) {
+    const activity = this.activities.find(item => item.id === id)
+    this.initialize(id)
+    return activity.materials[kind]
+  }
+
+  forget(id) {
+    this.edits.delete(id)
   }
 
   payload() {
