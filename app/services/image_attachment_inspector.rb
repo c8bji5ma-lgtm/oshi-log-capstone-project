@@ -4,8 +4,8 @@ require "vips"
 class ImageAttachmentInspector
   CONTENT_TYPES = %w[image/jpeg image/png image/webp].freeze
   MAX_BYTE_SIZE = 10 * 1024 * 1024
-  MAX_DIMENSION = 4096
-  MAX_PIXELS = 12_500_000
+  MAX_DIMENSION = 2560
+  MAX_PIXELS = 5_000_000
   PNG_SIGNATURE = "\x89PNG\r\n\x1a\n".b.freeze
   INSPECTED_IVAR = :@image_attachment_inspected
 

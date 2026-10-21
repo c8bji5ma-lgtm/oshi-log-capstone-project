@@ -24,7 +24,7 @@ class ImageAttachmentValidator < ActiveModel::EachValidator
         attachable = pending_attachable(record, attribute, blob)
         attachable ? ImageAttachmentInspector.read_attachable(attachable, blob) : ImageAttachmentInspector.read(blob)
       rescue ImageAttachmentInspector::DimensionsExceeded
-        record.errors.add(attribute, "は最大辺4096px・総画素数1,250万以下にしてください")
+        record.errors.add(attribute, "は最大辺2560px・総画素数500万以下にしてください")
       rescue ImageAttachmentInspector::Invalid
         record.errors.add(attribute, "を画像として読み取れません")
       end

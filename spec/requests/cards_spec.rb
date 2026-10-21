@@ -343,7 +343,7 @@ RSpec.describe "Photo cards", type: :request do
 
   it "returns a reasoned 422 for a legacy image over the dimension limit without changing it" do
     profile
-    bytes = flat_png(4097, 100)
+    bytes = flat_png(2561, 100)
     blob = ActiveStorage::Blob.create_and_upload!(
       io: StringIO.new(bytes), filename: "legacy.png", content_type: "image/png", identify: false
     )
@@ -354,7 +354,7 @@ RSpec.describe "Photo cards", type: :request do
     generate_card
 
     expect(response).to have_http_status(:unprocessable_content)
-    expect(response.parsed_body["error"]).to include("最大辺4096px・総画素数1,250万以下")
+    expect(response.parsed_body["error"]).to include("最大辺2560px・総画素数500万以下")
     expect(response.headers["X-Card-Receipt"]).to be_nil
     expect(blob.reload.attributes).to eq(original)
     expect(blob.download).to eq(bytes)

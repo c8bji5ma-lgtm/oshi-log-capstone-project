@@ -20,22 +20,26 @@
 | Photo4・12.2MP WebP×4・zoom3 | 約528.2MB | 3.584 / 3.578秒 |
 | Photo4・24MP WebP×4・zoom3 | 約793.6MB | 1.738 / 1.743秒 |
 | Rails preload + Photo4・12.2MP WebP×4・zoom3 | 約614.1MB | 3.564 / 3.508秒 |
+| Rails preload + Photo4・8MP WebP×4・zoom3 | 約517.9MB | 2.353 / 2.333秒 |
+| Rails preload + Photo4・5MP WebP×4・zoom3 | 約366.7MB | 1.763 / 1.759秒 |
 
 Rails込み代表ケースの sampled process VmRSS peak は626,028KiB、VmHWMは626,384KiBだった。process RSSとcgroup値は共有ページ・ページキャッシュ・課金方法が異なるため同一指標として比較しない。
+
+候補測定はいずれも同一画像4枚の保守的な代表ケースで、入力SHA-256不変と正常出力を確認した。12.2MPケースに対して5MPはcgroup peakが約247MB（約40%）低く、安全余裕を優先して5MPを選択した。
 
 EXIF orientation=6、588-byte sRGB ICC、true 16-bit PNGもactual `Cards::Photo` のzoom3で正常終了し、入力SHA-256が不変であることを確認した。Photo1の16:9・zoom3も既存の表示範囲を維持して正常終了した。
 
 ## 採用する入力制限
 
 - 既存の1画像10MiB以下を維持
-- 最大辺4096px以下
-- 総画素数12,500,000以下
+- 最大辺2560px以下
+- 総画素数5,000,000以下
 - JPEG・PNG・WebP、単一ページ、非animationという既存条件を維持
 - 新規uploadとカード利用時の両方で共通検査
 - 原画像を加工・上書き・削除しない
 - 既存の上限超過画像は通常表示を維持し、カード利用時に理由付き422
 
-4096pxだけでは4096×4096（約16.8MP）を許すため、最大辺と総画素数を同時に適用する。
+2560pxだけでは2560×2560（約6.55MP）を許すため、最大辺と総画素数を同時に適用する。固定の中間画素数上限は設けず、既存のzoom 1〜3と16:9 zoom3に必要な内部拡大を維持する。
 
 ## 同時実行
 

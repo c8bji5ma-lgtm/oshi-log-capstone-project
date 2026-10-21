@@ -83,16 +83,16 @@ RSpec.describe "Image attachments", type: :model do
 
   it "rejects a newly attached image over the dimension limit" do
     record = build(:profile)
-    upload = image_upload_data(flat_png(4097, 100))
+    upload = image_upload_data(flat_png(2561, 100))
     record.profile_image.attach(upload)
 
     expect(record).not_to be_valid
-    expect(record.errors[:profile_image]).to include("は最大辺4096px・総画素数1,250万以下にしてください")
+    expect(record.errors[:profile_image]).to include("は最大辺2560px・総画素数500万以下にしてください")
   end
 
   it "does not reapply new dimension limits when an existing attachment is unchanged" do
     record = create(:profile)
-    bytes = flat_png(4097, 100)
+    bytes = flat_png(2561, 100)
     blob = ActiveStorage::Blob.create_and_upload!(
       io: StringIO.new(bytes), filename: "legacy.png", content_type: "image/png", identify: false
     )

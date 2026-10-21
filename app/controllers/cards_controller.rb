@@ -80,7 +80,7 @@ class CardsController < ApplicationController
   rescue Cards::Photo::ProfileRequired
     render_error("プロフィールを保存してから作成してください。", :unprocessable_content)
   rescue Cards::Photo::ImageDimensionsExceeded
-    render_error("画像が大きすぎます。最大辺4096px・総画素数1,250万以下の画像を選んでください。", :unprocessable_content)
+    render_error("画像が大きすぎます。最大辺2560px・総画素数500万以下の画像を選んでください。", :unprocessable_content)
   rescue Cards::Photo::InvalidImage
     render_error("登録画像を読み取れません。未登録とは異なる状態です。画像を確認してください。", :unprocessable_content)
   rescue Cards::Photo::FontUnavailable

@@ -77,7 +77,7 @@ module UserOshis
         begin
           ImageAttachmentInspector.read_attachable(file, blob)
         rescue ImageAttachmentInspector::DimensionsExceeded
-          invalid_image("は最大辺4096px・総画素数1,250万以下にしてください")
+          invalid_image("は最大辺2560px・総画素数500万以下にしてください")
         rescue ImageAttachmentInspector::Invalid
           invalid_image("を画像として読み取れません")
         end

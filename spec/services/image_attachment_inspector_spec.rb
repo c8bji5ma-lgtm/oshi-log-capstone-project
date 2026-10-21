@@ -12,29 +12,29 @@ RSpec.describe ImageAttachmentInspector do
   end
 
   it "accepts the exact pixel boundary and returns the original bytes" do
-    bytes = flat_png(4000, 3125)
+    bytes = flat_png(2500, 2000)
     expect(described_class.read(blob_for(bytes))).to eq(bytes)
   end
 
   it "accepts a thin image at the exact dimension boundary" do
-    bytes = flat_png(4096, 1)
+    bytes = flat_png(2560, 1)
     expect(described_class.read(blob_for(bytes))).to eq(bytes)
   end
 
   it "rejects a small upload whose header exceeds the maximum dimension" do
-    bytes = flat_png(4097, 100)
+    bytes = flat_png(2561, 100)
     expect(bytes.bytesize).to be < 100.kilobytes
     expect { described_class.read(blob_for(bytes)) }.to raise_error(described_class::DimensionsExceeded)
   end
 
   it "rejects a small upload whose header exceeds the total pixel limit" do
-    bytes = flat_png(4000, 3126)
+    bytes = flat_png(2500, 2001)
     expect(bytes.bytesize).to be < 100.kilobytes
     expect { described_class.read(blob_for(bytes)) }.to raise_error(described_class::DimensionsExceeded)
   end
 
   it "accepts EXIF orientation without decoding or modifying the original" do
-    image = Vips::Image.black(4032, 3024, bands: 3).copy
+    image = Vips::Image.black(1953, 2560, bands: 3).copy
     image.set_type(GObject::GINT_TYPE, "orientation", 6)
     bytes = image.write_to_buffer(".jpg", Q: 80, strip: false)
     loaded = Vips::Image.new_from_buffer(bytes, "")

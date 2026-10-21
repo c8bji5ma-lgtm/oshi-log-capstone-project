@@ -78,9 +78,9 @@ RSpec.describe UserOshis::Save do
   it "rejects an oversized-dimension image before uploading any original" do
     record
     counts = stored_counts
-    oversized = library_upload_data(flat_png(4097, 100))
+    oversized = library_upload_data(flat_png(2561, 100))
 
-    expect { save_images([ oversized ]) }.to raise_error(ActiveRecord::RecordInvalid, /最大辺4096px/)
+    expect { save_images([ oversized ]) }.to raise_error(ActiveRecord::RecordInvalid, /最大辺2560px/)
     expect(stored_counts).to eq(counts)
     expect(record.reload.library_images).not_to be_attached
   end
