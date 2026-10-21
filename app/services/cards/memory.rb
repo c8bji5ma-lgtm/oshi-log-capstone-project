@@ -4,6 +4,8 @@ require "vips"
 
 module Cards
   class Memory
+    include DrawingPrimitives
+
     WIDTH = 1600
     HEIGHT = 1000
     PHOTO_WIDTH = 424
@@ -84,13 +86,13 @@ module Cards
 
     def render
       raise Photo::FontUnavailable unless File.file?(Photo::FONT_FILE)
-      canvas = solid(WIDTH, HEIGHT, [ 251, 243, 230 ])
+      canvas = solid_canvas(WIDTH, HEIGHT, [ 251, 243, 230 ])
       canvas = text(canvas, @profile.display_name, x: 72, y: 72, width: 1456, size: 56, limit: 20, max_lines: 1, line_height: 76)
       @activities.each_with_index do |activity, index|
         x = XS.fetch(@activities.length)[index]
-        canvas = canvas.composite(solid(464, 680, [ 255, 253, 249 ]), :over, x: x, y: 194)
+        canvas = canvas.composite(solid_canvas(464, 680, [ 255, 253, 249 ]), :over, x: x, y: 194)
         # Paper tape stays outside the image and text areas.
-        canvas = canvas.composite(solid(120, 12, [ 230, 201, 184 ]), :over, x: x + 172, y: 194)
+        canvas = canvas.composite(solid_canvas(120, 12, [ 230, 201, 184 ]), :over, x: x + 172, y: 194)
         canvas = picture(canvas, @attachments[index], @crops[index], x + 20)
         canvas = text(canvas, activity.occurred_on.strftime("%Y.%m.%d"), x: x + 20, y: 633, width: 424, size: 24, limit: 10, max_lines: 1, line_height: 34)
         canvas = text(canvas, activity.title, x: x + 20, y: 678, width: 424, size: 32, limit: 24, max_lines: 2, line_height: 44)
@@ -106,10 +108,6 @@ module Cards
     end
 
     private
-      def solid(width, height, colour)
-        Vips::Image.black(width, height, bands: 3).new_from_image(colour).copy(interpretation: :srgb)
-      end
-
       def image_bytes(attachment)
         @image_bytes[attachment.blob_id] ||= ImageSource.read(attachment.blob)
       end
@@ -122,14 +120,10 @@ module Cards
           canvas.composite(image, :over, x: x, y: 214)
         else
           raise Crop::Invalid unless crop == Crop::DEFAULT
-          canvas = canvas.composite(solid(PHOTO_WIDTH, PHOTO_HEIGHT, [ 235, 226, 214 ]), :over, x: x, y: 214)
-          canvas = canvas.composite(solid(72, 8, [ 218, 189, 165 ]), :over, x: x + 176, y: 378)
+          canvas = canvas.composite(solid_canvas(PHOTO_WIDTH, PHOTO_HEIGHT, [ 235, 226, 214 ]), :over, x: x, y: 214)
+          canvas = canvas.composite(solid_canvas(72, 8, [ 218, 189, 165 ]), :over, x: x + 176, y: 378)
           text(canvas, "写真なし", x: x + 112, y: 414, width: 200, size: 28, limit: 10, max_lines: 1, line_height: 40)
         end
-      end
-
-      def glyph_image(value, size)
-        Vips::Image.text(ERB::Util.html_escape(value), font: "Noto Sans CJK JP #{size}", fontfile: Photo::FONT_FILE, dpi: 72)
       end
 
       def text(canvas, value, x:, y:, width:, size:, limit:, max_lines:, line_height:)
@@ -166,7 +160,7 @@ module Cards
           next if line.empty?
           mask = glyph_image(line, size)
           raise Photo::InvalidImage if mask.width > width || mask.height > line_height
-          ink = mask.new_from_image([ 66, 51, 44 ]).bandjoin(mask).copy(interpretation: :srgb)
+          ink = text_ink(mask, [ 66, 51, 44 ])
           canvas = canvas.composite(ink, :over, x: x, y: y + index * line_height)
         end
         canvas
