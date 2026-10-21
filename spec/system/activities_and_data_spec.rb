@@ -118,6 +118,27 @@ RSpec.describe "Activity records and visualization in the browser", type: :syste
     end
   end
 
+  it "shows a conflict without overwriting a newer activity edit" do
+    activity = recorded_activity(oshi: oshi, title: "編集前", occurred_on: Date.new(2025, 5, 10), amount: 500)
+    sign_in
+    open_activity_list
+    click_link activity.title, exact: true
+    click_link "編集", exact: true
+    stale_version = find("input[name='activity[lock_version]']", visible: false).value
+    Activity.find(activity.id).update!(title: "別画面の更新", amount: 700)
+
+    fill_in "タイトル（必須）", with: "古い画面の入力"
+    fill_in "金額（円）", with: "900"
+    click_button "更新する"
+
+    expect(page).to have_css(".validation-errors", text: "別の画面で更新")
+    expect(page).to have_css(".conflict-summary", text: "別画面の更新")
+    expect(page).to have_field("タイトル（必須）", with: "古い画面の入力")
+    expect(find("input[name='activity[lock_version]']", visible: false).value).to eq(stale_version)
+    expect(page).to have_link("最新内容で編集し直す", href: edit_activity_path(activity))
+    expect(activity.reload).to have_attributes(title: "別画面の更新", amount: 700)
+  end
+
   it "keeps an activity when deletion is cancelled and updates the list and aggregates after confirmation" do
     retained = recorded_activity(oshi: oshi, title: "残す活動記録", occurred_on: Date.new(2025, 5, 10), amount: 500)
     deleted = recorded_activity(oshi: second_oshi, title: "削除する活動記録", occurred_on: Date.new(2025, 6, 12), amount: 2500)

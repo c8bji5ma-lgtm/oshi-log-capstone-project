@@ -5,10 +5,19 @@ module Activities
     # new_images appends uploads under the parent lock; omitted or empty retains images.
     # Returns the saved Activity; failures raise and roll back all database changes.
     # Omitted emotion_ids preserves tags; [] clears them within the same transaction.
-    def self.call(activity:, attributes: {}, oshi_ids: nil, emotion_ids: nil, new_images: [])
+    # expected_lock_version is supplied by persisted edit forms. Programmatic
+    # callers may omit it when they are not acting on a user-visible snapshot.
+    def self.call(activity:, attributes: {}, oshi_ids: nil, emotion_ids: nil, new_images: [], expected_lock_version: nil)
       Activity.transaction do
-        activity.lock! if activity.persisted?
-        activity.activity_oshis.reload if activity.persisted?
+        starting_lock_version = nil
+        if activity.persisted?
+          activity.lock!
+          starting_lock_version = activity.lock_version
+          if !expected_lock_version.nil? && expected_lock_version != starting_lock_version
+            raise ActiveRecord::StaleObjectError.new(activity, "update")
+          end
+          activity.activity_oshis.reload
+        end
 
         ids = if oshi_ids.nil?
           activity.activity_oshis.map(&:oshi_id)
@@ -38,6 +47,10 @@ module Activities
         unless activity.activity_oshis.exists?
           activity.errors.add(:activity_oshis, "must include at least one oshi")
           raise ActiveRecord::RecordInvalid, activity
+        end
+
+        if starting_lock_version && activity.lock_version == starting_lock_version
+          activity.touch
         end
 
         activity

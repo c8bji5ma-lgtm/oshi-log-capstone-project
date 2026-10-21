@@ -142,13 +142,17 @@ RSpec.describe Subscription, type: :model do
         "started_on" => [ :date, nil, true ],
         "ended_on" => [ :date, nil, true ],
         "created_at" => [ :datetime, nil, false ],
-        "updated_at" => [ :datetime, nil, false ]
+        "updated_at" => [ :datetime, nil, false ],
+        "lock_version" => [ :integer, 4, false ]
       }
       expect(described_class.column_names).to match_array(expected.keys)
       expected.each do |name, definition|
         column = described_class.columns_hash.fetch(name)
         expect([ column.type, column.limit, column.null ]).to eq(definition)
-        unless name == "id"
+        if name == "lock_version"
+          expect(column.default).to eq("0")
+          expect(column.default_function).to be_nil
+        elsif name != "id"
           expect(column.default).to be_nil
           expect(column.default_function).to be_nil
         end

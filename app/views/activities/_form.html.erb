@@ -2,7 +2,29 @@
   <p>先に推しを登録してください。<%= link_to "推しを登録", new_oshi_path %></p>
 <% end %>
 <%= render "shared/validation_errors", resource: @activity %>
+<% if @latest_activity %>
+  <section class="conflict-summary" aria-labelledby="activity-conflict-heading">
+    <h2 id="activity-conflict-heading">現在保存されている内容</h2>
+    <p>下のフォームには送信した内容を残しています。内容を比較し、必要な値を控えてから最新内容を読み込み直してください。</p>
+    <dl>
+      <dt>活動日</dt><dd><%= @latest_activity.occurred_on %></dd>
+      <dt>カテゴリ</dt><dd><%= @latest_activity.activity_type %></dd>
+      <dt>タイトル</dt><dd><%= @latest_activity.title %></dd>
+      <dt>場所</dt><dd><%= @latest_activity.place.presence || "—" %></dd>
+      <dt>金額</dt><dd><%= @latest_activity.amount.nil? ? "—" : "#{@latest_activity.amount}円" %></dd>
+      <dt>推し</dt><dd><%= @latest_activity.oshis.map(&:name).join("、") %></dd>
+      <dt>感情タグ</dt><dd><%= @latest_activity.emotions.map(&:name).join("、").presence || "—" %></dd>
+      <dt>メモ</dt><dd><%= @latest_activity.memo.presence || "—" %></dd>
+      <dt>画像</dt><dd><%= @latest_activity.images.size %>件</dd>
+    </dl>
+    <p><%= link_to "最新内容で編集し直す", edit_activity_path(@latest_activity), class: "button" %></p>
+    <p>選択した画像ファイルは保持できません。編集し直す場合は、必要な画像をもう一度選択してください。</p>
+  </section>
+<% end %>
 <%= form_with model: @activity do |f| %>
+  <% if @activity.persisted? %>
+    <%= f.hidden_field :lock_version, value: @submitted_lock_version || @activity.lock_version %>
+  <% end %>
   <div class="activity-form-grid">
     <div class="form-field">
       <%= f.label :oshi_ids, "推し（必須・1件以上）" %>

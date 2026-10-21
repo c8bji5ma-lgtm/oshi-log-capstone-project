@@ -21,6 +21,10 @@ RSpec.describe "Activities", type: :request do
     { occurred_on: "2026-10-01", activity_type: "ライブ・イベント", title: "福岡公演", place: "福岡", memo: "感想", amount: "18400", oshi_ids: [ "", oshi.id.to_s ] }.merge(changes)
   end
 
+  def versioned(activity, parameters)
+    parameters.merge(lock_version: activity.lock_version.to_s)
+  end
+
   def upload(filename = "image.png")
     fixture_file_upload(Rails.root.join("spec/fixtures/files", filename), filename == "invalid.txt" ? "text/plain" : "image/png")
   end
@@ -273,6 +277,7 @@ RSpec.describe "Activities", type: :request do
       expect(response).to have_http_status(:ok)
       expect(document.css("select[name='activity[oshi_ids][]'] option[selected]").map { |option| option["value"] }).to eq([ second_oshi.id.to_s ])
       expect(document.at_css("input[name='activity[title]']")["value"]).to eq("既存")
+      expect(document.at_css("input[name='activity[lock_version]']")["value"]).to eq(activity.lock_version.to_s)
       expect(document.css(".image-gallery img").size).to eq(1)
       expect(response.body).to include("新しく選択した画像は既存画像に追加されます")
       expect(document.css("input[type='checkbox']")).to be_empty
@@ -289,7 +294,7 @@ RSpec.describe "Activities", type: :request do
   describe "update" do
     it "updates scalars and selection, preserves owner, redirects to detail with notice" do
       activity = activity_for
-      patch activity_path(activity), params: { activity: input(title: "更新", amount: "0", user_id: other_user.id, oshi_ids: [ second_oshi.id.to_s ]) }
+      patch activity_path(activity), params: { activity: versioned(activity, input(title: "更新", amount: "0", user_id: other_user.id, oshi_ids: [ second_oshi.id.to_s ])) }
       expect(response).to have_http_status(:see_other)
       expect(response).to redirect_to(activity_path(activity))
       expect(activity.reload.title).to eq("更新")
@@ -301,24 +306,25 @@ RSpec.describe "Activities", type: :request do
 
     it "changes one to multiple and multiple to one" do
       activity = activity_for
-      patch activity_path(activity), params: { activity: input(oshi_ids: [ oshi.id.to_s, second_oshi.id.to_s ]) }
+      patch activity_path(activity), params: { activity: versioned(activity, input(oshi_ids: [ oshi.id.to_s, second_oshi.id.to_s ])) }
       expect(activity.reload.oshi_ids).to match_array([ oshi.id, second_oshi.id ])
-      patch activity_path(activity), params: { activity: input(oshi_ids: [ oshi.id.to_s ]) }
+      patch activity_path(activity), params: { activity: versioned(activity, input(oshi_ids: [ oshi.id.to_s ])) }
       expect(activity.reload.oshi_ids).to eq([ oshi.id ])
     end
 
     it "rejects zero selection and keeps persisted values" do
       activity = activity_for(title: "元")
-      patch activity_path(activity), params: { activity: input(title: "失敗", oshi_ids: []) }
+      patch activity_path(activity), params: { activity: versioned(activity, input(title: "失敗", oshi_ids: [])) }
       expect(response).to have_http_status(:unprocessable_content)
       expect(activity.reload.title).to eq("元")
       expect(activity.oshi_ids).to eq([ oshi.id ])
+      expect(document.at_css("input[name='activity[lock_version]']")["value"]).to eq(activity.lock_version.to_s)
     end
 
     it "rejects forbidden ids and keeps persisted values" do
       activity = activity_for(title: "元")
       forbidden = create(:oshi)
-      patch activity_path(activity), params: { activity: input(oshi_ids: [ forbidden.id.to_s ]) }
+      patch activity_path(activity), params: { activity: versioned(activity, input(oshi_ids: [ forbidden.id.to_s ])) }
       expect(response).to have_http_status(:unprocessable_content)
       expect(activity.reload.title).to eq("元")
       expect(activity.oshi_ids).to eq([ oshi.id ])
@@ -328,9 +334,9 @@ RSpec.describe "Activities", type: :request do
       activity = activity_for
       activity.images.attach(upload)
       original = activity.images.first.blob_id
-      patch activity_path(activity), params: { activity: input(images: [ "" ]) }
+      patch activity_path(activity), params: { activity: versioned(activity, input(images: [ "" ])) }
       expect(activity.reload.images.map(&:blob_id)).to eq([ original ])
-      patch activity_path(activity), params: { activity: input(images: [ upload ]) }
+      patch activity_path(activity), params: { activity: versioned(activity, input(images: [ upload ])) }
       expect(activity.reload.images.count).to eq(2)
       expect(activity.images.map(&:blob_id)).to include(original)
     end
@@ -340,7 +346,7 @@ RSpec.describe "Activities", type: :request do
       activity.images.attach(upload)
       original = activity.images.first.blob_id
       counts = [ ActiveStorage::Attachment.count, ActiveStorage::Blob.count ]
-      patch activity_path(activity), params: { activity: input(title: "失敗", oshi_ids: [ second_oshi.id.to_s ], images: [ upload("invalid.txt") ]) }
+      patch activity_path(activity), params: { activity: versioned(activity, input(title: "失敗", oshi_ids: [ second_oshi.id.to_s ], images: [ upload("invalid.txt") ])) }
       expect(response).to have_http_status(:unprocessable_content)
       expect(document.css(".image-gallery img").size).to eq(1)
       expect(document.at_css("input[name='activity[title]']")["value"]).to eq("失敗")
@@ -352,10 +358,108 @@ RSpec.describe "Activities", type: :request do
 
     it "keeps persisted data when a scalar is invalid" do
       activity = activity_for(title: "元")
-      patch activity_path(activity), params: { activity: input(title: "", oshi_ids: [ second_oshi.id.to_s ]) }
+      patch activity_path(activity), params: { activity: versioned(activity, input(title: "", oshi_ids: [ second_oshi.id.to_s ])) }
       expect(response).to have_http_status(:unprocessable_content)
       expect(activity.reload.title).to eq("元")
       expect(activity.oshi_ids).to eq([ oshi.id ])
+    end
+
+    it "renders the submitted values and latest values with 409 when the edit version is stale" do
+      activity = activity_for(title: "最初の内容")
+      activity.images.attach(upload)
+      stale_version = activity.reload.lock_version
+      Activities::Save.call(activity: Activity.find(activity.id), attributes: { title: "先に保存した内容" },
+        oshi_ids: [ second_oshi.id ], new_images: [ upload("image.jpg") ], expected_lock_version: stale_version)
+      latest_blob_ids = activity.reload.images.map(&:blob_id)
+
+      patch activity_path(activity), params: { activity: input(title: "古い画面の入力", amount: "999",
+        oshi_ids: [ oshi.id.to_s ], images: [ upload("image.webp") ], lock_version: stale_version.to_s) }
+
+      expect(response).to have_http_status(:conflict)
+      expect(document.at_css("#activity_title")["value"]).to eq("古い画面の入力")
+      expect(document.at_css("input[name='activity[lock_version]']")["value"]).to eq(stale_version.to_s)
+      expect(document.at_css(".conflict-summary").text).to include("先に保存した内容", second_oshi.name)
+      expect(document.at_css(".conflict-summary a")["href"]).to eq(edit_activity_path(activity))
+      expect(document.at_css(".validation-errors").text).to include("別の画面で更新")
+      expect(activity.reload).to have_attributes(title: "先に保存した内容")
+      expect(activity.oshi_ids).to eq([ second_oshi.id ])
+      expect(activity.images.map(&:blob_id)).to eq(latest_blob_ids)
+    end
+
+    [ nil, "", "1.0", "-1", "01", "2147483648" ].each do |invalid_version|
+      it "returns 400 and does not save an invalid edit version #{invalid_version.inspect}" do
+        activity = activity_for(title: "保存済み")
+        original = activity.attributes
+        patch activity_path(activity), params: { activity: input(title: "送信値", lock_version: invalid_version) }
+        expect(response).to have_http_status(:bad_request)
+        expect(document.at_css("#activity_title")["value"]).to eq("送信値")
+        expect(document.at_css(".validation-errors").text).to include("編集情報が不正")
+        expect(document.at_css(".conflict-summary a")["href"]).to eq(edit_activity_path(activity))
+        expect(activity.reload.attributes).to eq(original)
+      end
+    end
+
+    { json: "application/json", turbo_stream: "text/vnd.turbo-stream.html" }.each do |format, accept|
+      [ :missing, "invalid" ].each do |invalid_version|
+        it "renders HTML with 400 for a #{invalid_version} edit version requested as #{format}" do
+          activity = activity_for(title: "保存済み")
+          original = activity.attributes
+          parameters = input(title: "送信値")
+          parameters[:lock_version] = invalid_version unless invalid_version == :missing
+
+          patch activity_path(activity), params: { activity: parameters }, headers: { "Accept" => accept }
+
+          expect(response).to have_http_status(:bad_request)
+          expect(response.media_type).to eq("text/html")
+          expect(document.at_css("#activity_title")["value"]).to eq("送信値")
+          expect(activity.reload.attributes).to eq(original)
+        end
+      end
+
+      it "renders HTML with 409 and preserves the latest attributes, links and images when requested as #{format}" do
+        activity = activity_for(title: "最初の内容")
+        activity.images.attach(upload)
+        stale_version = activity.reload.lock_version
+        Activities::Save.call(activity: Activity.find(activity.id), attributes: { title: "先に保存した内容" },
+          oshi_ids: [ second_oshi.id ], new_images: [ upload("image.jpg") ], expected_lock_version: stale_version)
+        latest = activity.reload.attributes
+        latest_oshi_ids = activity.oshi_ids
+        latest_blob_ids = activity.images.map(&:blob_id)
+        counts = [ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]
+
+        patch activity_path(activity), params: { activity: input(title: "古い画面の入力",
+          oshi_ids: [ oshi.id.to_s ], images: [ upload("image.webp") ], lock_version: stale_version.to_s) },
+          headers: { "Accept" => accept }
+
+        expect(response).to have_http_status(:conflict)
+        expect(response.media_type).to eq("text/html")
+        expect(document.at_css("#activity_title")["value"]).to eq("古い画面の入力")
+        expect(document.at_css("input[name='activity[lock_version]']")["value"]).to eq(stale_version.to_s)
+        expect(activity.reload.attributes).to eq(latest)
+        expect(activity.oshi_ids).to eq(latest_oshi_ids)
+        expect(activity.images.map(&:blob_id)).to eq(latest_blob_ids)
+        expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq(counts)
+      end
+
+      it "renders HTML with 422 and rolls back attributes, links and images when requested as #{format}" do
+        activity = activity_for(title: "保存済み")
+        activity.images.attach(upload)
+        activity.reload
+        original = activity.attributes
+        original_oshi_ids = activity.oshi_ids
+        original_blob_ids = activity.images.map(&:blob_id)
+        counts = [ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]
+
+        patch activity_path(activity), params: { activity: versioned(activity, input(title: "",
+          oshi_ids: [ second_oshi.id.to_s ], images: [ upload("image.webp") ])) }, headers: { "Accept" => accept }
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.media_type).to eq("text/html")
+        expect(activity.reload.attributes).to eq(original)
+        expect(activity.oshi_ids).to eq(original_oshi_ids)
+        expect(activity.images.map(&:blob_id)).to eq(original_blob_ids)
+        expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq(counts)
+      end
     end
 
     it "returns 404 for another user's activity" do
@@ -371,6 +475,8 @@ RSpec.describe "Activities", type: :request do
       activity = activity_for(oshis: [ oshi, second_oshi ])
       another = activity_for(other_user)
       activity.images.attach(upload)
+      activity.update!(title: "版更新後の削除対象")
+      expect(activity.lock_version).to be_positive
       attachment_id = activity.images.first.id
       delete activity_path(activity)
       expect(response).to have_http_status(:see_other)

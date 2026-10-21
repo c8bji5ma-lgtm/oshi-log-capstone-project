@@ -1,5 +1,23 @@
 <%= render "shared/validation_errors", resource: @subscription %>
+<% if @latest_subscription %>
+  <section class="conflict-summary" aria-labelledby="subscription-conflict-heading">
+    <h2 id="subscription-conflict-heading">現在保存されている内容</h2>
+    <p>下のフォームには送信した内容を残しています。内容を比較し、必要な値を控えてから最新内容を読み込み直してください。</p>
+    <dl>
+      <dt>契約名</dt><dd><%= @latest_subscription.name %></dd>
+      <dt>金額</dt><dd><%= @latest_subscription.amount %>円</dd>
+      <dt>請求周期</dt><dd><%= billing_cycle_label(@latest_subscription.billing_cycle) %></dd>
+      <dt>対象の推し</dt><dd><%= @latest_subscription.oshis.map(&:name).join("、").presence || "指定なし" %></dd>
+      <dt>開始日</dt><dd><%= @latest_subscription.started_on || "—" %></dd>
+      <dt>終了日</dt><dd><%= @latest_subscription.ended_on || "—" %></dd>
+    </dl>
+    <p><%= link_to "最新内容で編集し直す", edit_subscription_path(@latest_subscription), class: "button" %></p>
+  </section>
+<% end %>
 <%= form_with model: @subscription do |f| %>
+  <% if @subscription.persisted? %>
+    <%= f.hidden_field :lock_version, value: @submitted_lock_version || @subscription.lock_version %>
+  <% end %>
   <div class="form-field">
     <%= f.label :name, "契約名（必須）" %>
     <%= f.text_field :name, required: true, maxlength: 255, aria: { invalid: @subscription.errors[:name].any? } %>

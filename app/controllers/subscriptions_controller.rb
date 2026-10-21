@@ -26,8 +26,13 @@ class SubscriptionsController < ApplicationController
   end
 
   def update
-    if save_subscription
+    result = save_subscription
+    if result == true
       redirect_to subscriptions_path, notice: "固定費を更新しました。", status: :see_other
+    elsif result == :conflict
+      render :edit, formats: [ :html ], status: :conflict
+    elsif result == :bad_request
+      render :edit, formats: [ :html ], status: :bad_request
     else
       render :edit, formats: [ :html ], status: :unprocessable_content
     end
@@ -59,22 +64,48 @@ class SubscriptionsController < ApplicationController
       input = params.require(:subscription)
       raise ActionController::BadRequest unless input.is_a?(ActionController::Parameters)
       attributes = input.permit(:name, :amount, :billing_cycle, :started_on, :ended_on)
+      expected_lock_version = nil
+      lock_version_valid = true
+      if @subscription.persisted?
+        @submitted_lock_version = input[:lock_version]
+        expected_lock_version = parse_lock_version(@submitted_lock_version)
+        lock_version_valid = !expected_lock_version.nil?
+      end
       raw_ids = input.key?(:oshi_ids) ? input[:oshi_ids] : []
       @selected_oshi_ids = []
       valid_shape = raw_ids.is_a?(Array) && raw_ids.all? { |id| id.is_a?(String) && (id.blank? || id.match?(/\A[1-9][0-9]*\z/)) }
       @selected_oshi_ids = raw_ids.reject(&:blank?).map(&:to_i).uniq if valid_shape
+      unless lock_version_valid
+        @subscription.assign_attributes(attributes)
+        @subscription.errors.add(:base, "編集情報が不正です。最新の編集画面を読み込み直してください。")
+        @latest_subscription = current_user.subscriptions.includes(:oshis).find(@subscription.id)
+        return :bad_request
+      end
       unless valid_shape && (@selected_oshi_ids - @selectable_oshis.map(&:id)).empty?
         @subscription.assign_attributes(attributes)
         @subscription.errors.add(:base, "対象の推しは登録済みの推しを正しい形式で選択してください。")
         return false
       end
-      Subscriptions::Save.call(subscription: @subscription, attributes: attributes, oshi_ids: @selected_oshi_ids)
+      Subscriptions::Save.call(subscription: @subscription, attributes: attributes, oshi_ids: @selected_oshi_ids,
+        expected_lock_version: expected_lock_version)
       true
+    rescue ActiveRecord::StaleObjectError
+      @subscription.assign_attributes(attributes)
+      @subscription.errors.add(:base, "この固定費は別の画面で更新されています。最新内容を確認して編集し直してください。")
+      @latest_subscription = current_user.subscriptions.includes(:oshis).find(@subscription.id)
+      :conflict
     rescue ActiveRecord::RecordInvalid => error
       @subscription.errors.add(:base, "対象の推しを保存できませんでした。#{error.record.errors.full_messages.join('、')}") unless error.record == @subscription
       false
     rescue ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotDestroyed
       @subscription.errors.add(:base, "固定費と対象の推しを保存できませんでした。")
       false
+    end
+
+    def parse_lock_version(value)
+      return unless value.is_a?(String) && value.match?(/\A(?:0|[1-9][0-9]*)\z/)
+
+      version = value.to_i
+      version if version <= 2_147_483_647
     end
 end

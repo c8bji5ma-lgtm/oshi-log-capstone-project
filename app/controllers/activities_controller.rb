@@ -77,10 +77,15 @@ class ActivitiesController < ApplicationController
   end
 
   def update
-    if save_activity
+    result = save_activity
+    if result == true
       redirect_to activity_path(@activity), notice: "活動記録を更新しました。", status: :see_other
+    elsif result == :conflict
+      render :edit, formats: [ :html ], status: :conflict
+    elsif result == :bad_request
+      render :edit, formats: [ :html ], status: :bad_request
     else
-      render :edit, status: :unprocessable_content
+      render :edit, formats: [ :html ], status: :unprocessable_content
     end
   end
 
@@ -116,6 +121,13 @@ class ActivitiesController < ApplicationController
       input = params.require(:activity)
       raise ActionController::BadRequest unless input.is_a?(ActionController::Parameters)
       attributes = input.permit(:occurred_on, :activity_type, :title, :place, :amount, :memo)
+      expected_lock_version = nil
+      lock_version_valid = true
+      if @activity.persisted?
+        @submitted_lock_version = input[:lock_version]
+        expected_lock_version = parse_lock_version(@submitted_lock_version)
+        lock_version_valid = !expected_lock_version.nil?
+      end
       raw_ids = input[:oshi_ids] || []
       @selected_oshi_ids = []
       ids_valid = raw_ids.is_a?(Array) && raw_ids.all? { |id| id == "" || positive_id(id) }
@@ -128,6 +140,13 @@ class ActivitiesController < ApplicationController
       images_valid = uploads.is_a?(Array) && uploads.all? { |image| image == "" || image.is_a?(ActionDispatch::Http::UploadedFile) }
       allowed = @selectable_oshis.map(&:id)
       selection_valid = ids_valid && (@selected_oshi_ids - allowed).empty?
+      unless lock_version_valid
+        @activity.assign_attributes(attributes)
+        @activity.errors.add(:base, "編集情報が不正です。最新の編集画面を読み込み直してください。")
+        @latest_activity = current_user.activities.with_attached_images.includes(:oshis, :emotions).find(@activity.id)
+        @existing_images = @latest_activity.images.attachments.to_a
+        return :bad_request
+      end
       if !selection_valid || @selected_oshi_ids.empty? || !images_valid || !emotions_valid
         @activity.assign_attributes(attributes)
         @activity.errors.add(:base, "登録済みの推しを正しい形式で選択してください。") unless selection_valid
@@ -138,10 +157,23 @@ class ActivitiesController < ApplicationController
       end
       Activities::Save.call(activity: @activity, attributes: attributes, oshi_ids: @selected_oshi_ids,
         emotion_ids: input.key?(:emotion_ids) ? @selected_emotion_ids : nil,
-        new_images: uploads.reject { |image| image == "" })
+        new_images: uploads.reject { |image| image == "" }, expected_lock_version: expected_lock_version)
       true
+    rescue ActiveRecord::StaleObjectError
+      @activity.assign_attributes(attributes)
+      @activity.errors.add(:base, "この活動記録は別の画面で更新されています。最新内容を確認して編集し直してください。")
+      @latest_activity = current_user.activities.with_attached_images.includes(:oshis, :emotions).find(@activity.id)
+      @existing_images = @latest_activity.images.attachments.to_a
+      :conflict
     rescue ActiveRecord::RecordInvalid
       false
+    end
+
+    def parse_lock_version(value)
+      return unless value.is_a?(String) && value.match?(/\A(?:0|[1-9][0-9]*)\z/)
+
+      version = value.to_i
+      version if version <= 2_147_483_647
     end
 
     def destroy_activity

@@ -23,6 +23,10 @@ RSpec.describe "Activity emotion tags", type: :request do
     Activities::Save.call(activity: record, oshi_ids: [ oshi.id ], emotion_ids: emotions.map(&:id))
   end
 
+  def versioned(record, values)
+    values.merge(lock_version: record.lock_version.to_s)
+  end
+
   def document
     Nokogiri::HTML(response.body)
   end
@@ -64,15 +68,15 @@ RSpec.describe "Activity emotion tags", type: :request do
 
   it "replaces and clears tags, and preserves them when the parameter is omitted" do
     record = activity_for(emotions: [ happy, moved ])
-    patch activity_path(record), params: { activity: input(title: "本文だけ更新") }
+    patch activity_path(record), params: { activity: versioned(record, input(title: "本文だけ更新")) }
     expect(response).to redirect_to(activity_path(record))
     expect(record.reload.emotions).to eq([ happy, moved ])
-    patch activity_path(record), params: { activity: input(emotion_ids: [ moved.id.to_s, lonely.id.to_s ]) }
+    patch activity_path(record), params: { activity: versioned(record, input(emotion_ids: [ moved.id.to_s, lonely.id.to_s ])) }
     expect(response).to redirect_to(activity_path(record))
     expect(record.reload.emotions).to eq([ moved, lonely ])
     [ [], [ "" ] ].each do |ids|
       record.emotions = [ happy ]
-      patch activity_path(record), params: { activity: input(emotion_ids: ids) }
+      patch activity_path(record), params: { activity: versioned(record, input(emotion_ids: ids)) }
       expect(response).to redirect_to(activity_path(record))
       expect(record.reload.emotions).to be_empty
     end
@@ -85,7 +89,7 @@ RSpec.describe "Activity emotion tags", type: :request do
       counts = [ Activity.count, ActivityOshi.count, ActivityEmotion.count ]
       post activities_path, params: { activity: input(emotion_ids: ids) }, as: :json, headers: { "ACCEPT" => "text/html" }
       expect(response).to have_http_status(:unprocessable_content)
-      patch activity_path(record), params: { activity: input(emotion_ids: ids) }, as: :json, headers: { "ACCEPT" => "text/html" }
+      patch activity_path(record), params: { activity: versioned(record, input(emotion_ids: ids)) }, as: :json, headers: { "ACCEPT" => "text/html" }
       expect(response).to have_http_status(:unprocessable_content)
       expect(document.at_css("select[name='activity[emotion_ids][]']")["aria-invalid"]).to eq("true")
       expect(record.reload.attributes).to eq(original)
@@ -100,7 +104,7 @@ RSpec.describe "Activity emotion tags", type: :request do
     post activities_path, params: { activity: input(emotion_ids: [ moved.id.to_s, missing ]) }
     expect(response).to have_http_status(:unprocessable_content)
     expect(user.activities.count).to eq(1)
-    patch activity_path(record), params: { activity: input(emotion_ids: [ moved.id.to_s, missing ]) }
+    patch activity_path(record), params: { activity: versioned(record, input(emotion_ids: [ moved.id.to_s, missing ])) }
     expect(response).to have_http_status(:unprocessable_content)
     expect(record.reload.emotions).to eq([ happy ])
   end
@@ -108,7 +112,7 @@ RSpec.describe "Activity emotion tags", type: :request do
   [ { title: "" }, { oshi_ids: [] }, { images: [ "untrusted-signed-id" ] } ].each do |invalid|
     it "retains submitted tags in an invalid form and leaves stored values unchanged for #{invalid.inspect}" do
       record = activity_for(emotions: [ happy ])
-      patch activity_path(record), params: { activity: input(emotion_ids: [ moved.id.to_s ], **invalid) }
+      patch activity_path(record), params: { activity: versioned(record, input(emotion_ids: [ moved.id.to_s ], **invalid)) }
       expect(response).to have_http_status(:unprocessable_content)
       expect(selected_ids).to eq([ moved.id.to_s ])
       expect(record.reload.emotions).to eq([ happy ])
@@ -131,7 +135,7 @@ RSpec.describe "Activity emotion tags", type: :request do
     expect(document.at_css(".activity-emotions").text).to eq("嬉しい、感動")
     get activity_path(untagged)
     expect(document.at_css(".activity-emotions").text).to eq("—")
-    patch activity_path(untagged), params: { activity: input }
+    patch activity_path(untagged), params: { activity: versioned(untagged, input) }
     expect(response).to redirect_to(activity_path(untagged))
   end
 
@@ -154,8 +158,8 @@ RSpec.describe "Activity emotion tags", type: :request do
     other = activity_for(create(:user), emotions: [ happy ])
     owned = activity_for
     link = other.activity_emotions.first
-    patch activity_path(owned), params: { activity: input(emotion_ids: [ moved.id.to_s ], user_id: other.user_id,
-      activity_emotions_attributes: [ { id: link.id, activity_id: owned.id, emotion_id: lonely.id, _destroy: true } ]) }
+    patch activity_path(owned), params: { activity: versioned(owned, input(emotion_ids: [ moved.id.to_s ], user_id: other.user_id,
+      activity_emotions_attributes: [ { id: link.id, activity_id: owned.id, emotion_id: lonely.id, _destroy: true } ])) }
     expect(response).to redirect_to(activity_path(owned))
     expect(owned.reload.user_id).to eq(user.id)
     expect(owned.emotions).to eq([ moved ])

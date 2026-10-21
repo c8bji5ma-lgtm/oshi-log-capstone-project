@@ -210,7 +210,8 @@ RSpec.describe "Protected images", type: :request do
     own = attach_image(:activity, user)
     login
     expect do
-      patch activity_path(own.record), params: { activity: { oshi_ids: own.record.oshi_ids.map(&:to_s), images: [ foreign.blob.signed_id ] } }
+      patch activity_path(own.record), params: { activity: { oshi_ids: own.record.oshi_ids.map(&:to_s),
+        images: [ foreign.blob.signed_id ], lock_version: own.record.lock_version.to_s } }
     end.not_to change(ActiveStorage::Attachment, :count)
     expect(response).to have_http_status(:unprocessable_content)
     expect(own.record.reload.images.blobs.pluck(:id)).to eq([ own.blob_id ])
@@ -245,6 +246,7 @@ RSpec.describe "Protected images", type: :request do
     activity = user.activities.last!
     patch activity_path(activity), params: { activity: {
       oshi_ids: [ personal_oshi.oshi_id.to_s ],
+      lock_version: activity.lock_version.to_s,
       images: [ Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/image.jpg"), "image/jpeg") ]
     } }
     expect(response).to redirect_to(activity_path(activity))

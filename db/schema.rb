@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_16_020000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_080000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,6 +52,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_020000) do
     t.text "memo"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "lock_version", default: 0, null: false
     t.index ["user_id", "occurred_on"], name: "index_activities_on_user_id_and_occurred_on"
   end
 
@@ -133,6 +134,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_16_020000) do
     t.date "ended_on"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "lock_version", default: 0, null: false
     t.index ["user_id"], name: "index_subscriptions_on_user_id"
   end
 
