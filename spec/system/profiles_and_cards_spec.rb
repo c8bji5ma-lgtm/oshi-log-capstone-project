@@ -754,6 +754,91 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     download_png
   end
 
+  it "loads older candidates once per request and preserves selected order, photo and crop across a failed retry" do
+    create(:profile, user: user)
+    timestamp = Time.current.change(usec: 0)
+    records = Array.new(52) { create(:activity, user: user, occurred_on: Date.current, created_at: timestamp) }
+    newest = records.last
+    attach_memory_photo(newest)
+    attach_memory_photo(newest)
+    sign_in
+    open_card
+    choose "思い出・活動履歴重視", exact: true
+    expect(page).to have_button("さらに古い活動を読み込む", disabled: false)
+    select "写真2", from: "1. 活動の写真"
+    open_memory_crop(newest)
+    zoom_to_maximum
+    click_button "この範囲で確定"
+    find("[data-memory-down][data-activity-id='#{newest.id}']").click
+    expect(page).to have_select("2. 掲載する活動", selected: memory_choice(newest))
+
+    page.execute_script(<<~JS)
+      window.memoryPageFetches = 0;
+      window.failMemoryPage = true;
+      const originalMemoryFetch = window.fetch.bind(window);
+      window.fetch = (...args) => {
+        if (String(args[0]).includes('cursor=')) {
+          window.memoryPageFetches += 1;
+          if (window.failMemoryPage) {
+            window.failMemoryPage = false;
+            return Promise.reject(new TypeError('offline'));
+          }
+        }
+        return originalMemoryFetch(...args);
+      };
+    JS
+    click_button "さらに古い活動を読み込む"
+    expect(page).to have_text("古い活動記録を取得できません")
+    page.execute_script("const button = document.querySelector('[data-photo-card-target=memoryMore]'); button.click(); button.click();")
+    expect(page).to have_text("2件の古い活動を追加しました", wait: 10)
+    expect(page.evaluate_script("window.memoryPageFetches")).to eq(2)
+    options = find("#memory-activity-#{newest.id}").all("option").map(&:value)
+    expect(options.size).to eq(52)
+    expect(options.uniq.size).to eq(52)
+    expect(page).to have_select("2. 掲載する活動", selected: memory_choice(newest))
+    expect(page).to have_select("2. 活動の写真", selected: "写真2")
+    open_memory_crop(newest)
+    expect(find("#image-crop-zoom").value).to eq("3")
+    click_button "キャンセル"
+    expect(page).not_to have_button("さらに古い活動を読み込む")
+  end
+
+  it "ignores an older candidate response after a template switch and permits retrying it" do
+    create(:profile, user: user)
+    timestamp = Time.current.change(usec: 0)
+    records = Array.new(51) { create(:activity, user: user, occurred_on: Date.current, created_at: timestamp) }
+    sign_in
+    open_card
+    choose "思い出・活動履歴重視", exact: true
+    newest = records.last
+    expect(find("#memory-activity-#{newest.id}").all("option").size).to eq(50)
+    page.execute_script(<<~JS)
+      const originalMemoryFetch = window.fetch.bind(window);
+      window.memoryPageHeld = false;
+      window.memoryPageReleased = false;
+      window.fetch = (...args) => {
+        if (String(args[0]).includes('cursor=') && !window.memoryPageHeld) {
+          window.memoryPageHeld = true;
+          return new Promise((resolve, reject) => {
+            window.releaseMemoryPage = () => originalMemoryFetch(...args).then(resolve, reject).finally(() => { window.memoryPageReleased = true; });
+          });
+        }
+        return originalMemoryFetch(...args);
+      };
+    JS
+    click_button "さらに古い活動を読み込む"
+    choose "ビジュアル重視", exact: true
+    page.execute_script("window.releaseMemoryPage()")
+    page.document.synchronize(10, errors: [ Capybara::ExpectationNotMet ]) do
+      raise Capybara::ExpectationNotMet unless page.evaluate_script("window.memoryPageReleased")
+    end
+    choose "思い出・活動履歴重視", exact: true
+    expect(find("#memory-activity-#{newest.id}").all("option").size).to eq(50)
+    click_button "さらに古い活動を読み込む"
+    expect(page).to have_text("1件の古い活動を追加しました", wait: 10)
+    expect(find("#memory-activity-#{newest.id}").all("option").size).to eq(51)
+  end
+
   it "keeps per-activity photos and crops through reordering and template changes, resets only a changed photo and matches the cropped PNG" do
     create(:profile, user: user)
     first = create(:activity, user: user, occurred_on: Date.current)

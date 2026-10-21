@@ -80,6 +80,57 @@ RSpec.describe "Activities", type: :request do
       expect(document.at_css("a[href='#{new_activity_path}']").text).to eq("記録する")
     end
 
+    it "pages through every owned record by a stable keyset and returns to newer records" do
+      timestamp = Time.utc(2026, 10, 1, 2)
+      records = Array.new(52) { |index| activity_for(title: "ページ#{index}", created_at: timestamp) }
+      activity_for(other_user, title: "秘密", created_at: timestamp + 1)
+
+      get activities_path
+      expect(response).to have_http_status(:ok)
+      expect(titles).to eq(records.reverse.first(50).map(&:title))
+      older = document.css("a").find { |link| link.text == "さらに古い記録" }["href"]
+      expect(older).to include("cursor=", "direction=older")
+      expect(response.body).not_to include("秘密")
+
+      activity_for(title: "後から追加", created_at: timestamp + 2)
+      get older
+      expect(titles).to eq(records.first(2).reverse.map(&:title))
+      expect(document.css("a").none? { |link| link.text == "さらに古い記録" }).to be(true)
+      newer = document.css("a").find { |link| link.text == "新しい記録へ戻る" }["href"]
+
+      get newer
+      expect(titles).to eq(records.reverse.first(50).map(&:title))
+      expect(titles).not_to include("後から追加")
+      newest = document.css("a").find { |link| link.text == "新しい記録へ戻る" }["href"]
+      get newest
+      expect(titles).to eq([ "後から追加" ])
+      expect(document.css("a").none? { |link| link.text == "新しい記録へ戻る" }).to be(true)
+    end
+
+    it "preserves filters across pages and resets the cursor when filters are submitted again" do
+      Array.new(51) { |index| activity_for(title: "対象#{index}") }
+      activity_for(title: "対象外", activity_type: "配信視聴")
+      filters = { month: "2026-10", oshi_id: oshi.id.to_s, activity_type: "ライブ・イベント", q: "対象" }
+
+      get activities_path, params: filters
+      older = URI.parse(document.css("a").find { |link| link.text == "さらに古い記録" }["href"])
+      query = Rack::Utils.parse_nested_query(older.query)
+      expect(query.slice(*filters.keys.map(&:to_s))).to eq(filters.stringify_keys)
+      expect(query).to include("cursor", "direction" => "older")
+      expect(document.css("form.activity-filter input[name='cursor'], form.activity-filter input[name='direction']")).to be_empty
+
+      get activities_path, params: filters
+      expect(titles.size).to eq(50)
+    end
+
+    it "rejects malformed or cross-purpose page cursors without exposing records" do
+      activity_for(title: "本人記録")
+      get activities_path, params: { cursor: "invalid", direction: "older" }
+      expect(response).to have_http_status(:bad_request)
+      expect(titles).to be_empty
+      expect(document.at_css("[role='alert']").text).to include("ページ情報が正しくありません")
+    end
+
     it "combines month, oshi, category, and keyword filters without duplicates" do
       target = activity_for(title: "探す", oshis: [ oshi, second_oshi ], amount: 3200)
       activity_for(title: "別月", occurred_on: "2026-09-30")

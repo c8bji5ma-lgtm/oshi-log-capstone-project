@@ -13,12 +13,16 @@ class CardsController < ApplicationController
   end
 
   def memories
-    activities = Cards::Memory.candidates(current_user).map do |activity|
+    page = Activities::KeysetPage.call(scope: Cards::Memory.candidates(current_user),
+      cursor: params[:cursor], direction: "older", purpose: "card-memories")
+    activities = page.records.map do |activity|
       { id: activity.id.to_s, date: activity.occurred_on.strftime("%Y.%m.%d"), title: activity.title,
         category: activity.activity_type, oshis: activity.oshis.sort_by(&:id).map(&:name),
         images: activity.images_attachments.sort_by(&:id).map { |image| { id: image.id.to_s, url: protected_image_path(image) } } }
     end
-    render json: { activities: activities }
+    render json: { activities:, next_cursor: (page.older_cursor if page.has_older), has_more: page.has_older }
+  rescue Activities::KeysetPage::InvalidCursor
+    render_error("ページ情報が正しくありません。活動記録を最初から読み込み直してください。", :bad_request)
   end
 
   def statistics

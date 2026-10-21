@@ -46,8 +46,16 @@ class ActivitiesController < ApplicationController
       pattern = "%#{Activity.sanitize_sql_like(@filters['q'])}%"
       scope = scope.where("activities.title ILIKE :query OR activities.place ILIKE :query OR activities.memo ILIKE :query", query: pattern)
     end
-    @activities = (@filter_errors.empty? ? scope : scope.none).includes(:emotions).order(occurred_on: :desc, created_at: :desc, id: :desc)
+    page = Activities::KeysetPage.call(scope: (@filter_errors.empty? ? scope : scope.none).includes(:emotions),
+      cursor: params[:cursor], direction: params[:direction], purpose: "index")
+    @activities = page.records
+    @older_cursor = page.older_cursor if page.has_older
+    @newer_cursor = page.newer_cursor if page.has_newer
     render :index, status: :bad_request if @filter_errors.any?
+  rescue Activities::KeysetPage::InvalidCursor
+    @activities = []
+    @filter_errors << "ページ情報が正しくありません。絞り込み条件からやり直してください。"
+    render :index, status: :bad_request
   end
 
   def new

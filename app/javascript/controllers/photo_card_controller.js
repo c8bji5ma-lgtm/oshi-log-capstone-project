@@ -4,7 +4,7 @@ import { DataTemplateState, MemoryTemplateState, PhotoTemplateState } from "lib/
 import { createCard, downloadCard, errorMessage } from "lib/card_png_transport"
 
 export default class extends Controller {
-  static targets = ["form", "status", "error", "preview", "image", "generateButton", "downloadButton", "oshi", "frames", "frameTemplate", "template", "panel", "settingsForm", "cropDialog", "memoryStatus", "memoryRetry", "memoryEmpty", "memoryFrames", "memoryFrameTemplate", "memoryAdd", "dataYear", "dataOshi", "dataStatus", "dataRetry"]
+  static targets = ["form", "status", "error", "preview", "image", "generateButton", "downloadButton", "oshi", "frames", "frameTemplate", "template", "panel", "settingsForm", "cropDialog", "memoryStatus", "memoryRetry", "memoryMore", "memoryEmpty", "memoryFrames", "memoryFrameTemplate", "memoryAdd", "dataYear", "dataOshi", "dataStatus", "dataRetry"]
   static values = { createUrl: String, downloadUrl: String, layouts: Object, memoriesUrl: String, statisticsUrl: String }
 
   connect() {
@@ -111,9 +111,11 @@ export default class extends Controller {
       const response = await fetch(this.memoriesUrlValue, { credentials: "same-origin", signal: operation.signal,
         headers: { Accept: "application/json" } })
       if (!response.ok) throw new Error(await errorMessage(response))
-      const { activities } = await response.json()
+      const { activities, next_cursor: nextCursor, has_more: hasMore } = await response.json()
       if (this.disposed || this.memoryLoad !== operation || !this.checkExpiry()) return
       this.memoryState.load(activities)
+      this.memoryCursor = nextCursor
+      this.memoryMoreTarget.hidden = !hasMore
       this.memoryStatusTarget.textContent = activities.length ? "最新の活動を選択しました。掲載順と写真を変更できます。" : ""
       this.memoryEmptyTarget.hidden = activities.length > 0
       this.renderMemoryFrames()
@@ -124,6 +126,40 @@ export default class extends Controller {
       }
     } finally {
       if (this.memoryLoad === operation) this.memoryLoad = null
+    }
+  }
+
+  async loadMoreMemories() {
+    if (!this.memoryAction() || this.memoryLoad || !this.memories || !this.memoryCursor) return
+    const cursor = this.memoryCursor
+    const sequence = this.sequence
+    const operation = new AbortController()
+    this.memoryLoad = operation
+    this.memoryMoreTarget.disabled = true
+    this.memoryStatusTarget.textContent = "古い活動記録を読み込んでいます。"
+    try {
+      const url = new URL(this.memoriesUrlValue, window.location.href)
+      url.searchParams.set("cursor", cursor)
+      const response = await fetch(url, { credentials: "same-origin", signal: operation.signal,
+        headers: { Accept: "application/json" } })
+      if (!response.ok) throw new Error(await errorMessage(response))
+      const { activities, next_cursor: nextCursor, has_more: hasMore } = await response.json()
+      if (!this.current(sequence) || this.template !== "memories" || this.memoryLoad !== operation || this.memoryCursor !== cursor || !this.checkExpiry()) return
+      const added = this.memoryState.append(activities)
+      this.memoryCursor = nextCursor
+      this.memoryMoreTarget.hidden = !hasMore
+      this.memoryStatusTarget.textContent = added ? `${added}件の古い活動を追加しました。選択中の内容は維持されています。` : "追加できる活動はありませんでした。"
+      this.renderMemoryFrames()
+    } catch (error) {
+      if (!this.disposed && this.memoryLoad === operation && error.name !== "AbortError") {
+        this.memoryStatusTarget.textContent = `古い活動記録を取得できません。${error.message}`
+        this.memoryMoreTarget.hidden = false
+      }
+    } finally {
+      if (this.memoryLoad === operation) {
+        this.memoryLoad = null
+        this.memoryMoreTarget.disabled = false
+      }
     }
   }
 
@@ -522,6 +558,9 @@ export default class extends Controller {
     this.memoryFramesTarget.replaceChildren()
     this.memoryAddTarget.disabled = true
     this.memoryRetryTarget.hidden = true
+    this.memoryMoreTarget.hidden = true
+    this.memoryMoreTarget.disabled = false
+    this.memoryCursor = null
     this.memoryStatusTarget.textContent = ""
     this.framesTarget.replaceChildren()
     this.updateGenerateButtons(true)
