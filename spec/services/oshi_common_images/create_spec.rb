@@ -66,4 +66,68 @@ RSpec.describe OshiCommonImages::Create do
     expect(OshiCommonImage.count).to eq(0)
     expect(ActiveStorage::Blob.count).to eq(0)
   end
+
+  it "removes the uploaded file and blob when persistence fails after the physical upload" do
+    existing = create(:oshi_common_image, oshi: oshi, registered_by_user: admin)
+    existing_bytes = existing.image.download
+    uploaded_blob = nil
+    allow(ActiveStorage::Blob).to receive(:build_after_unfurling).and_wrap_original do |original, **arguments|
+      uploaded_blob = original.call(**arguments)
+    end
+    allow_any_instance_of(OshiCommonImage).to receive(:save!).and_raise(ActiveRecord::StatementInvalid, "injected DB failure")
+
+    expect do
+      described_class.call(oshi: oshi, administrator: admin, attributes: attributes, file: upload)
+    end.to raise_error(ActiveRecord::StatementInvalid, /injected DB failure/)
+
+    expect(uploaded_blob).to be_present
+    expect(ActiveStorage::Blob.service.exist?(uploaded_blob.key)).to be(false)
+    expect(ActiveStorage::Blob.where(key: uploaded_blob.key)).not_to exist
+    expect(ActiveStorage::Attachment.where(blob_id: uploaded_blob.id)).not_to exist
+    expect(existing.reload.image.download).to eq(existing_bytes)
+    expect(existing).to have_attributes(attribution_text: "画像提供：権利者")
+  end
+
+  describe "concurrent limit enforcement" do
+    self.use_transactional_tests = false
+
+    around do |example|
+      models = [ ActiveStorage::Attachment, OshiCommonImage, Oshi, User, ActiveStorage::Blob ]
+      baseline_ids = models.to_h { |model| [ model, model.pluck(:id) ] }
+      example.run
+    ensure
+      models.each { |model| model.where.not(id: baseline_ids.fetch(model)).delete_all }
+    end
+
+    it "serializes two real connections and persists only the tenth record" do
+      9.times do |index|
+        create(:oshi_common_image, oshi: oshi, registered_by_user: admin,
+          source_url: "https://example.test/existing/#{index}")
+      end
+      ready = Queue.new
+      start = Queue.new
+      results = Queue.new
+      threads = 2.times.map do |index|
+        Thread.new do
+          ActiveRecord::Base.connection_pool.with_connection do
+            ready << true
+            start.pop
+            result = described_class.call(oshi: Oshi.find(oshi.id), administrator: User.find(admin.id),
+              attributes: attributes.merge(source_url: "https://example.test/concurrent/#{index}"), file: upload)
+            results << [ :created, result.id ]
+          rescue StandardError => error
+            results << [ :error, error ]
+          end
+        end
+      end
+      2.times { ready.pop }
+      2.times { start << true }
+      threads.each(&:join)
+      outcomes = 2.times.map { results.pop }
+
+      expect(outcomes.count { |status, _| status == :created }).to eq(1)
+      expect(outcomes.count { |status, error| status == :error && error.is_a?(ActiveRecord::RecordInvalid) }).to eq(1)
+      expect(oshi.oshi_common_images.reload.count).to eq(10)
+    end
+  end
 end
