@@ -85,10 +85,11 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
 
 
   it "adds an approved search result and updates personal periods through the edit form" do
-    oshi = create(:oshi, :approved, name: "検索から追加する推し")
+    oshi = create(:oshi, :approved, name: "検索から追加する推し", affiliation: "検索対象作品")
     sign_in_as(user)
     open_registration
-    search_oshi(oshi.name)
+    expect(page).to have_field("推しを検索", placeholder: "名前・別名・所属・作品で検索")
+    search_oshi("検索対象作品")
     add_candidate(oshi.name, started_period: "2023/05")
 
     within("main section.card", text: oshi.name) do

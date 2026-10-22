@@ -11,18 +11,18 @@
   <%= form_with url: new_merge_admin_oshis_path, scope: :oshi_merge, method: :get do |f| %>
     <div class="form-field">
       <%= f.label :source_query, "統合元を検索" %>
-      <%= f.search_field :source_query, value: @source_query, placeholder: "名前・別名で検索" %>
+      <%= f.search_field :source_query, value: @source_query, placeholder: "名前・別名・所属・作品で検索" %>
       <% if @source_has_more %>
-        <p role="status">統合元候補は最大50件まで表示しています。見つからない場合は名前・別名を追加して絞り込んでください。</p>
+        <p role="status">統合元候補は最大50件まで表示しています。見つからない場合は名前・別名・所属・作品を追加して絞り込んでください。</p>
       <% end %>
       <%= f.label :source_id, "統合元（削除する推し）" %>
       <%= f.select :source_id, options_for_select(@source_candidates.map(&candidate_label), @selected_source&.id), { include_blank: "統合元を選択してください" }, aria: { describedby: "merge-warning" } %>
     </div>
     <div class="form-field">
       <%= f.label :target_query, "統合先を検索" %>
-      <%= f.search_field :target_query, value: @target_query, placeholder: "名前・別名で検索" %>
+      <%= f.search_field :target_query, value: @target_query, placeholder: "名前・別名・所属・作品で検索" %>
       <% if @target_has_more %>
-        <p role="status">統合先候補は最大50件まで表示しています。見つからない場合は名前・別名を追加して絞り込んでください。</p>
+        <p role="status">統合先候補は最大50件まで表示しています。見つからない場合は名前・別名・所属・作品を追加して絞り込んでください。</p>
       <% end %>
       <%= f.label :target_id, "統合先（残す推し）" %>
       <%= f.select :target_id, options_for_select(@target_candidates.map(&candidate_label), @selected_target&.id), { include_blank: "統合先を選択してください" }, aria: { describedby: "merge-warning" } %>

@@ -6,14 +6,14 @@
     <%= hidden_field_tag :continue, ApplicationController::FIRST_ACTIVITY_CONTINUATION if first_activity_continuation? %>
     <div class="form-field">
       <%= f.label :q, "推しを検索" %>
-      <%= f.search_field :q, value: params[:q], placeholder: "名前・別名で検索" %>
+      <%= f.search_field :q, value: params[:q], placeholder: "名前・別名・所属・作品で検索" %>
     </div>
     <%= f.submit "検索", class: "button" %>
   <% end %>
   <%= render "shared/validation_errors", resource: @existing_user_oshi %>
   <% if @oshis.any? %>
     <% if @oshi_search_has_more %>
-      <p role="status">候補は最大50件まで表示しています。見つからない場合は名前・別名を追加して絞り込んでください。</p>
+      <p role="status">候補は最大50件まで表示しています。見つからない場合は名前・別名・所属・作品を追加して絞り込んでください。</p>
     <% end %>
     <%= form_with model: @existing_user_oshi, url: user_oshis_path, namespace: :existing do |f| %>
       <%= hidden_field_tag :q, params[:q], id: "existing_query" %>
@@ -51,7 +51,7 @@
   <% elsif params[:q].present? %>
     <p>該当する推しが見つかりませんでした。</p>
   <% else %>
-    <p>名前・別名を入力して検索してください。</p>
+    <p>名前・別名・所属・作品を入力して検索してください。</p>
   <% end %>
 </section>
 <section class="card oshi-form">

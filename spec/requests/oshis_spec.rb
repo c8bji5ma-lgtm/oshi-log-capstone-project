@@ -29,28 +29,30 @@ RSpec.describe "Oshi search and registration", type: :request do
     before { post user_session_path, params: { user: { email: user.email, password: "password123" } } }
 
     it "searches approved and own pending while hiding unavailable statuses" do
-      approved = create(:oshi, :approved, name: "検索承認")
-      own = create(:oshi, :pending, name: "検索本人", created_by_user: user)
-      create(:oshi, :pending, name: "検索他人", created_by_user: create(:user))
-      create(:oshi, :pending, name: "検索登録者なし")
-      create(:oshi, :rejected, name: "検索却下", created_by_user: user)
-      get new_oshi_path, params: { q: "検索" }
+      approved = create(:oshi, :approved, name: "承認済み", affiliation: "検索対象作品")
+      own = create(:oshi, :pending, name: "本人申請", affiliation: "検索対象作品", created_by_user: user)
+      create(:oshi, :pending, name: "他人申請", affiliation: "検索対象作品", created_by_user: create(:user))
+      create(:oshi, :pending, name: "登録者なし", affiliation: "検索対象作品")
+      create(:oshi, :rejected, name: "却下済み", affiliation: "検索対象作品", created_by_user: user)
+      get new_oshi_path, params: { q: "検索対象作品" }
       expect(response).to have_http_status(:ok)
       expect(document.css("input[type='radio'][name='oshi_id']").map { |input| input["value"] })
         .to contain_exactly(approved.id.to_s, own.id.to_s)
-      expect(document.at_css("main").text).not_to include("検索他人", "検索登録者なし", "検索却下")
+      expect(document.at_css("main").text).not_to include("他人申請", "登録者なし", "却下済み")
     end
 
-    it "matches case-insensitive aliases once and does not search affiliations" do
+    it "matches names, aliases and affiliations case-insensitively without duplicates" do
       oshi = create(:oshi, :approved, name: "対象")
       create(:oshi_alias, oshi: oshi, alias_name: "CANDY first")
       create(:oshi_alias, oshi: oshi, alias_name: "candy second")
-      create(:oshi, :approved, name: "所属だけ", affiliation: "candy")
+      affiliated = create(:oshi, :approved, name: "所属だけ", affiliation: "Candy作品")
       hidden = create(:oshi, :pending, name: "他人", created_by_user: create(:user))
-      create(:oshi_alias, oshi: hidden, alias_name: "candy")
+      hidden.update!(affiliation: "candy")
       get new_oshi_path, params: { q: "cAnDy" }
+      expect(document.css("input[type='radio'][name='oshi_id']").map { |input| input["value"] })
+        .to contain_exactly(oshi.id.to_s, affiliated.id.to_s)
       expect(document.css("input[type='radio'][name='oshi_id'][value='#{oshi.id}']").size).to eq(1)
-      expect(document.at_css("main").text).not_to include("所属だけ", "他人")
+      expect(document.at_css("main").text).not_to include("他人")
     end
 
     it "limits broad search results, keeps stable ordering and identifies same-name candidates" do
@@ -61,6 +63,7 @@ RSpec.describe "Oshi search and registration", type: :request do
       expect(options.map { |input| input["value"] }).to eq(matching.first(50).map { |oshi| oshi.id.to_s })
       expect(document.at_css("label[for='oshi_id_#{matching.first.id}']").text).to include("同名候補", "承認済み")
       expect(document.css("[role='status']").map(&:text).join).to include("最大50件", "絞り込んでください")
+      expect(document.at_css("input[name='q']")["placeholder"]).to include("所属・作品")
     end
 
     [ "%", "_", "\\" ].each do |query|
@@ -121,6 +124,15 @@ RSpec.describe "Oshi search and registration", type: :request do
         expect(document.css("input[name='oshi_id']")).to be_empty
         expect(document.at_css("main").text).not_to include("大量表示しない推し")
       end
+    end
+
+    it "safely returns no candidates for a long unmatched query" do
+      create(:oshi, :approved, affiliation: "短い所属")
+      get new_oshi_path, params: { q: "該当しない検索語" * 100 }
+
+      expect(response).to have_http_status(:ok)
+      expect(document.css("input[name='oshi_id']")).to be_empty
+      expect(document.at_css("main").text).to include("該当する推しが見つかりませんでした。")
     end
 
     it "creates both records with server-controlled ownership and pending status" do
