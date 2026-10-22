@@ -3,7 +3,10 @@ reviewed_at: "2026-10-22"
 purpose: "投入対象を確定する前の20件レビューサンプル（人気・網羅性を保証しない）"
 defaults:
   production_approved: false
-  existing_oshi_review: not_run
+  existing_oshi_review: checked_local_development_no_match
+  existing_oshi_reviewed_at: "2026-10-22"
+  existing_oshi_review_method: "MSIのmy_app_developmentで、候補名・候補別名と既存Oshi名・別名の完全一致およびNFKC・小文字化・全半角空白除去後一致を読み取り専用照合"
+  existing_oshi_review_limitations: "意味的同一性とproduction DBは未確認。名前一致だけで同一人物とは確定しない"
   common_image_action: placeholder
   image_rights_review: not_started
 candidates:
@@ -25,7 +28,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "公式一覧URLは人物固有IDとして扱わない。"
     image:
       action: placeholder
@@ -48,7 +51,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "公式一覧URLは人物固有IDとして扱わない。"
     image:
       action: placeholder
@@ -71,7 +74,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "公式一覧URLは人物固有IDとして扱わない。"
     image:
       action: placeholder
@@ -95,7 +98,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "愛称は一次資料で未確認。読みとローマ字だけを検索候補とする。"
     image:
       action: placeholder
@@ -118,18 +121,19 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "俳優・ミュージシャンの活動分野ごとに別Oshiを作らない。愛称は一次資料で未確認。"
     image:
       action: placeholder
       rights_status: not_reviewed
 
   - stable_id: jp-sanrio-cinnamoroll-cinnamon
-    decision: hold
+    decision: review_candidate
     name: "シナモロール"
     aliases:
       - "CINNAMOROLL"
       - "CINNAMON"
+      - "シナモン"
     oshi_type: "キャラクター"
     affiliation: "サンリオ"
     source:
@@ -140,11 +144,11 @@ candidates:
       checked_at: "2026-10-22"
       evidence: "公式ブランドページのCINNAMOROLL／CINNAMON表記"
     review:
-      identity: needs_scope_decision
-      aliases: needs_scope_decision
+      identity: confirmed_from_primary_source
+      aliases: approved_search_alias
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
-      notes: "ブランド名とキャラクター名の粒度、および『シナモン』を単純別名にするか管理者判断が必要。保留中は投入しない。"
+      existing_oshi: checked_local_development_no_match
+      notes: "表示名は『シナモロール』を維持し、公式英語表記とユーザー確認済みの『シナモン』を検索用別名候補にする。"
     image:
       action: placeholder
       rights_status: not_reviewed
@@ -166,7 +170,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_reading_only
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "氏名の『﨑』を維持する。『崎』表記は一次資料で別名と確認していないため追加しない。愛称は未確認。"
     image:
       action: placeholder
@@ -190,7 +194,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "愛称は一次資料で未確認。"
     image:
       action: placeholder
@@ -213,7 +217,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "『吉澤』表記と愛称は一次資料で未確認のため追加しない。"
     image:
       action: placeholder
@@ -237,7 +241,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "愛称は未確認。担当役名を本人の別名にしない。"
     image:
       action: placeholder
@@ -261,7 +265,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "声優・歌手の活動分野ごとに別Oshiを作らない。愛称は未確認。"
     image:
       action: placeholder
@@ -285,7 +289,7 @@ candidates:
       identity: needs_direct_source_confirmation
       aliases: needs_direct_source_confirmation
       affiliation: needs_direct_source_confirmation
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "検索結果本文だけのため格下げし、直接ページを再確認するまで投入しない。愛称は未確認。"
     image:
       action: placeholder
@@ -308,7 +312,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "共有プロフィールURLを人物固有IDとして扱わない。公式活動名を主表示とし、本名・愛称は未確認のため追加しない。"
     image:
       action: placeholder
@@ -331,7 +335,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "共有プロフィールURLを人物固有IDとして扱わない。公式活動名を主表示とし、本名・愛称は未確認のため追加しない。"
     image:
       action: placeholder
@@ -354,14 +358,14 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "共有プロフィールURLを人物固有IDとして扱わない。公式活動名を主表示とし、本名・愛称は未確認のため追加しない。"
     image:
       action: placeholder
       rights_status: not_reviewed
 
   - stable_id: jp-amuse-hoshino-gen-a8698
-    decision: hold
+    decision: review_candidate
     name: "星野 源"
     aliases:
       - "Hoshino Gen"
@@ -376,9 +380,9 @@ candidates:
     review:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
-      affiliation: needs_scope_decision
-      existing_oshi: not_run
-      notes: "アーティスト／俳優の分類と所属表現は管理者判断が必要。全活動の所属をアミューズと断定せず、1人1候補を維持する。愛称は未確認。"
+      affiliation: reviewed_no_single_affiliation
+      existing_oshi: checked_local_development_no_match
+      notes: "主分類はアーティストとする。全活動の所属をアミューズと断定せず所属欄は空のまま、1人1候補を維持する。愛称は未確認。"
     image:
       action: placeholder
       rights_status: not_reviewed
@@ -401,7 +405,7 @@ candidates:
       identity: needs_direct_source_confirmation
       aliases: needs_direct_source_confirmation
       affiliation: needs_direct_source_confirmation
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "漫画・アニメ・実写の粒度を管理者レビューし、演者とは分離する。『麦わらのルフィ』は確認済み別名にしない。"
     image:
       action: placeholder
@@ -424,7 +428,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: confirmed_from_primary_source
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "複数人ページのchara=53を人物固有IDとは断定しない。氏名の『竈』を維持し、氏名と作品で識別する。愛称は未確認。"
     image:
       action: placeholder
@@ -448,7 +452,7 @@ candidates:
       identity: needs_direct_source_confirmation
       aliases: needs_direct_source_confirmation
       affiliation: needs_direct_source_confirmation
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "検索結果本文だけのため格下げし、直接ページを再確認するまで投入しない。担当声優名を別名にしない。愛称は未確認。"
     image:
       action: placeholder
@@ -470,7 +474,7 @@ candidates:
       identity: confirmed_from_primary_source
       aliases: not_confirmed
       affiliation: confirmed_from_primary_source
-      existing_oshi: not_run
+      existing_oshi: checked_local_development_no_match
       notes: "読み・ローマ字・愛称は未確認。作品タイトルを本人の別名にしない。"
     image:
       action: placeholder
