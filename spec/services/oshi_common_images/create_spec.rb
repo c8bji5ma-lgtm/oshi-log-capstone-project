@@ -70,6 +70,10 @@ RSpec.describe OshiCommonImages::Create do
   it "removes the uploaded file and blob when persistence fails after the physical upload" do
     existing = create(:oshi_common_image, oshi: oshi, registered_by_user: admin)
     existing_bytes = existing.image.download
+    personal = create(:user_oshi)
+    personal.representative_image.attach(image_upload)
+    personal_blob_id = personal.representative_image.blob.id
+    personal_bytes = personal.representative_image.download
     uploaded_blob = nil
     allow(ActiveStorage::Blob).to receive(:build_after_unfurling).and_wrap_original do |original, **arguments|
       uploaded_blob = original.call(**arguments)
@@ -86,6 +90,8 @@ RSpec.describe OshiCommonImages::Create do
     expect(ActiveStorage::Attachment.where(blob_id: uploaded_blob.id)).not_to exist
     expect(existing.reload.image.download).to eq(existing_bytes)
     expect(existing).to have_attributes(attribution_text: "画像提供：権利者")
+    expect(personal.reload.representative_image.blob.id).to eq(personal_blob_id)
+    expect(personal.representative_image.download).to eq(personal_bytes)
   end
 
   describe "concurrent limit enforcement" do
