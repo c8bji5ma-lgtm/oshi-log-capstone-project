@@ -6,7 +6,7 @@ class ActivitiesController < ApplicationController
   def index
     @filters = {}
     @filter_errors = []
-    %w[month oshi_id activity_type q].each do |key|
+    %w[year month through oshi_id activity_type q].each do |key|
       value = params[key]
       if value.nil? || value.is_a?(String)
         @filters[key] = value.to_s
@@ -16,7 +16,17 @@ class ActivitiesController < ApplicationController
       end
     end
     scope = current_user.activities
+    year = @filters["year"]
+    if year.present?
+      if year.match?(/\A[0-9]{4}\z/) && year.to_i.positive?
+        first = Date.new(year.to_i, 1, 1)
+        scope = scope.where(occurred_on: first...first.next_year)
+      else
+        @filter_errors << "年はYYYY形式で指定してください。"
+      end
+    end
     month = @filters["month"]
+    @filter_errors << "年と年月は同時に指定できません。" if year.present? && month.present?
     if month.present?
       begin
         raise ArgumentError unless month.match?(/\A[0-9]{4}-(0[1-9]|1[0-2])\z/) && month[0, 4].to_i.positive?
@@ -32,6 +42,16 @@ class ActivitiesController < ApplicationController
         scope = scope.joins(:activity_oshis).where(activity_oshis: { oshi_id: id }).distinct
       else
         @filter_errors << "登録済みの推しを選択してください。"
+      end
+    end
+    through = @filters["through"]
+    if through.present?
+      begin
+        through_date = Date.iso8601(through)
+        raise ArgumentError unless through == through_date.iso8601
+        scope = scope.where(occurred_on: ..through_date)
+      rescue ArgumentError
+        @filter_errors << "集計期間の終了日が正しくありません。"
       end
     end
     category = @filters["activity_type"]

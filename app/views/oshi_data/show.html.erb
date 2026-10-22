@@ -54,7 +54,7 @@
           <li>
             <span class="monthly-label"><%= row[:month] %>月</span>
             <span class="data-bar-track" aria-hidden="true"><span class="data-bar" style="width: <%= maximum.zero? ? 0 : row[:count] * 100.0 / maximum %>%"></span></span>
-            <span class="data-bar-value"><%= row[:count] %>回</span>
+            <span class="data-bar-value"><%= link_to "#{row[:count]}回", activities_path(month: format("%04d-%02d", @selected_year, row[:month]), oshi_id: @selected_oshi&.id, through: @summary.period_end.iso8601), aria: { label: "#{@selected_year}年#{row[:month]}月の活動#{row[:count]}件を見る" } %></span>
           </li>
         <% end %>
       </ul>
@@ -68,7 +68,7 @@
         <ul class="data-categories">
           <% @summary.categories.each do |row| %>
             <li>
-              <div class="data-row"><span><%= row[:name] %></span><span><%= row[:percentage] %>%（<%= row[:count] %>回）</span></div>
+              <div class="data-row"><span><%= row[:name] %></span><span><%= row[:percentage] %>%（<%= link_to "#{row[:count]}回", activities_path(year: @selected_year, oshi_id: @selected_oshi&.id, activity_type: row[:name], through: @summary.period_end.iso8601), aria: { label: "#{@selected_year}年の#{row[:name]}の活動#{row[:count]}件を見る" } %>）</span></div>
               <span class="data-bar-track" aria-hidden="true"><span class="data-bar" style="width: <%= row[:percentage] %>%"></span></span>
             </li>
           <% end %>
@@ -84,7 +84,7 @@
       <% else %>
         <ul class="data-oshis">
           <% @summary.per_oshi.each do |row| %>
-            <li class="data-row"><span><%= row[:oshi].name %></span><span><%= row[:count] %>回</span></li>
+            <li class="data-row"><span><%= row[:oshi].name %></span><span><%= link_to "#{row[:count]}回", activities_path(year: @selected_year, oshi_id: row[:oshi].id, through: @summary.period_end.iso8601), aria: { label: "#{@selected_year}年の#{row[:oshi].name}の活動#{row[:count]}件を見る" } %></span></li>
           <% end %>
         </ul>
         <p class="data-note">複数推しの活動は各推しに1回ずつ数えるため、合計が活動回数を上回ることがあります。</p>
