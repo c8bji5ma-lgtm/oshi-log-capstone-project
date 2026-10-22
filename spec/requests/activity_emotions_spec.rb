@@ -33,7 +33,7 @@ RSpec.describe "Activity emotion tags", type: :request do
   end
 
   def selected_ids
-    document.css("select[name='activity[emotion_ids][]'] option[selected]").map { |option| option["value"] }
+    document.css("input[type='checkbox'][name='activity[emotion_ids][]'][checked]").map { |input| input["value"] }
   end
 
   it "offers the ordered optional multiple selection in new and edit, including an empty hidden value" do
@@ -41,10 +41,9 @@ RSpec.describe "Activity emotion tags", type: :request do
     [ new_activity_path, edit_activity_path(record) ].each do |path|
       get path
       expect(response).to have_http_status(:ok)
-      select = document.at_css("select[name='activity[emotion_ids][]']")
-      expect(select["multiple"]).to be_present
-      expect(select["required"]).to be_nil
-      expect(select.css("option").map(&:text)).to eq(%w[嬉しい 興奮 驚き 感動 幸せ 悔しい 寂しい])
+      checkboxes = document.css("input[type='checkbox'][name='activity[emotion_ids][]']")
+      expect(checkboxes).to all(satisfy { |checkbox| checkbox["required"].nil? })
+      expect(document.css("label.choice-chip[for^='activity_emotion_ids_']").map(&:text)).to eq(%w[嬉しい 興奮 驚き 感動 幸せ 悔しい 寂しい])
       expect(document.at_css("input[type='hidden'][name='activity[emotion_ids][]']")["value"]).to eq("")
       expect(selected_ids).to eq(path == new_activity_path ? [] : [ happy.id.to_s, moved.id.to_s ])
     end
@@ -92,7 +91,7 @@ RSpec.describe "Activity emotion tags", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       patch activity_path(record), params: { activity: versioned(record, input(emotion_ids: ids)) }, as: :json, headers: { "ACCEPT" => "text/html" }
       expect(response).to have_http_status(:unprocessable_content)
-      expect(document.at_css("select[name='activity[emotion_ids][]']")["aria-invalid"]).to eq("true")
+      expect(document.at_css("fieldset.choice-field[aria-describedby='emotion-selection-help']")["aria-invalid"]).to eq("true")
       expect(record.reload.attributes).to eq(original)
       expect(record.emotions).to eq([ happy ])
       expect([ Activity.count, ActivityOshi.count, ActivityEmotion.count ]).to eq(counts)

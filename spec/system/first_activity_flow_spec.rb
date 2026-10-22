@@ -35,7 +35,7 @@ RSpec.describe "First activity onboarding", type: :system do
     created = user.user_oshis.last!
     expect(created.oshi).to be_pending
     expect(page).to have_current_path(new_activity_path(initial_oshi_id: created.oshi_id))
-    expect(page).to have_select("推し（必須・1件以上）", selected: [ "初回導線の推し" ])
+    expect(page).to have_checked_field("初回導線の推し", visible: :all)
     expect(page).to have_field("活動日（必須）", with: Date.current.iso8601)
 
     select "ライブ・イベント", from: "カテゴリ（必須）"

@@ -26,11 +26,15 @@
     <%= f.hidden_field :lock_version, value: @submitted_lock_version || @activity.lock_version %>
   <% end %>
   <div class="activity-form-grid">
-    <div class="form-field">
-      <%= f.label :oshi_ids, "推し（必須・1件以上）" %>
-      <%= f.select :oshi_ids, options_from_collection_for_select(@selectable_oshis, :id, :name, @selected_oshi_ids), {}, multiple: true, required: true, size: 5, aria: { describedby: "oshi-selection-help", invalid: @activity.errors[:activity_oshis].any? || @activity.errors[:base].any? } %>
-      <p id="oshi-selection-help">複数選択できます。パソコンではCtrlキー（MacではCommandキー）を押しながら選択してください。</p>
-    </div>
+    <fieldset class="form-field choice-field" aria-describedby="oshi-selection-help" aria-invalid="<%= @activity.errors[:activity_oshis].any? || @activity.errors[:base].any? %>">
+      <legend>推し（必須・1件以上）</legend>
+      <p id="oshi-selection-help">選ぶ推しをすべてチェックしてください。もう一度押すと解除できます。</p>
+      <div class="choice-chips">
+        <%= f.collection_check_boxes :oshi_ids, @selectable_oshis, :id, :name, checked: @selected_oshi_ids do |choice| %>
+          <%= choice.label(class: "choice-chip") { choice.check_box + tag.span(choice.text) } %>
+        <% end %>
+      </div>
+    </fieldset>
     <div class="form-field">
       <%= f.label :occurred_on, "活動日（必須）" %>
       <%= f.date_field :occurred_on, required: true, aria: { invalid: @activity.errors[:occurred_on].any? } %>
@@ -52,11 +56,15 @@
       <%= f.number_field :amount, min: 0, step: 1, aria: { invalid: @activity.errors[:amount].any? } %>
     </div>
   </div>
-  <div class="form-field">
-    <%= f.label :emotion_ids, "感情タグ（任意・複数選択可）" %>
-    <%= f.select :emotion_ids, options_from_collection_for_select(@selectable_emotions, :id, :name, @selected_emotion_ids), {}, multiple: true, size: 7, aria: { describedby: "emotion-selection-help", invalid: @activity.errors[:emotion_ids].any? } %>
-    <p id="emotion-selection-help">未選択でも記録できます。パソコンではCtrlキー（MacではCommandキー）を押しながら選択・解除してください。</p>
-  </div>
+  <fieldset class="form-field choice-field" aria-describedby="emotion-selection-help" aria-invalid="<%= @activity.errors[:emotion_ids].any? %>">
+    <legend>感情タグ（任意・複数選択可）</legend>
+    <p id="emotion-selection-help">未選択でも記録できます。感じたことをすべてチェックしてください。</p>
+    <div class="choice-chips">
+      <%= f.collection_check_boxes :emotion_ids, @selectable_emotions, :id, :name, checked: @selected_emotion_ids do |choice| %>
+        <%= choice.label(class: "choice-chip") { choice.check_box + tag.span(choice.text) } %>
+      <% end %>
+    </div>
+  </fieldset>
   <div class="form-field">
     <%= f.label :memo, "メモ" %>
     <%= f.text_area :memo, rows: 5, aria: { invalid: @activity.errors[:memo].any? } %>
