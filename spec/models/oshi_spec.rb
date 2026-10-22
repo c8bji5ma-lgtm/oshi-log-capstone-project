@@ -14,23 +14,24 @@ RSpec.describe Oshi, type: :model do
       expect(described_class.visible_to(user)).to contain_exactly(approved, own_pending)
     end
 
-    it "searches names and aliases without duplicates or affiliation matches" do
+    it "searches names, aliases and affiliations without duplicates" do
       named = create(:oshi, :approved, name: "CANDY TUNE")
       aliased = create(:oshi, :approved)
+      affiliated = create(:oshi, :approved, affiliation: "CANDY作品")
       create(:oshi_alias, oshi: named, alias_name: "candy")
       create(:oshi_alias, oshi: aliased, alias_name: "Candy alias")
       create(:oshi_alias, oshi: aliased, alias_name: "CANDY second")
-      create(:oshi, :approved, affiliation: "CANDY")
-      expect(described_class.search("candy")).to contain_exactly(named, aliased)
+      expect(described_class.search("candy")).to contain_exactly(named, aliased, affiliated)
     end
 
     [ "%", "_", "\\" ].each do |query|
-      it "treats #{query.inspect} as a literal in names and aliases" do
+      it "treats #{query.inspect} as a literal in names, aliases and affiliations" do
         named = create(:oshi, name: "推し#{query}名前")
         aliased = create(:oshi)
+        affiliated = create(:oshi, affiliation: "所属#{query}作品")
         create(:oshi_alias, oshi: aliased, alias_name: "別名#{query}推し")
         create(:oshi, name: "推し普通名前")
-        expect(described_class.search(query)).to contain_exactly(named, aliased)
+        expect(described_class.search(query)).to contain_exactly(named, aliased, affiliated)
       end
     end
 

@@ -4,7 +4,7 @@
 <%= form_with url: admin_oshi_common_images_path, method: :get do |f| %>
   <div class="form-field">
     <%= f.label :q, "推しを検索" %>
-    <%= f.search_field :q, value: @query, required: true, placeholder: "名前・別名で検索" %>
+    <%= f.search_field :q, value: @query, required: true, placeholder: "名前・別名・所属・作品で検索" %>
   </div>
   <%= f.submit "検索", class: "button" %>
 <% end %>

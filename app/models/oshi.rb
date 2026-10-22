@@ -25,7 +25,11 @@ class Oshi < ApplicationRecord
 
     pattern = "%#{sanitize_sql_like(query)}%"
     left_outer_joins(:oshi_aliases)
-      .where("oshis.name ILIKE :pattern OR oshi_aliases.alias_name ILIKE :pattern", pattern: pattern)
+      .where(<<~SQL.squish, pattern: pattern)
+        oshis.name ILIKE :pattern
+        OR oshi_aliases.alias_name ILIKE :pattern
+        OR oshis.affiliation ILIKE :pattern
+      SQL
       .distinct
   end
 
