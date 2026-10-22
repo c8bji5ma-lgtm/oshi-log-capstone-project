@@ -76,6 +76,26 @@ RSpec.describe "Photo cards", type: :request do
     expect(response.body).not_to include(foreign.oshi.name)
   end
 
+  it "preselects only an owned oshi from a detail-page entry" do
+    profile
+    first = user_oshi
+    second = create(:user_oshi, user: user)
+    foreign = create(:user_oshi)
+    login
+
+    get new_card_path(user_oshi_id: second.id)
+    expect(response).to have_http_status(:ok)
+    document = Nokogiri::HTML(response.body)
+    expect(document.at_css("input[name='user_oshi_ids[]'][value='#{second.id}']").key?("checked")).to be(true)
+    expect(document.at_css("input[name='user_oshi_ids[]'][value='#{first.id}']").key?("checked")).to be(false)
+    expect(response.body).not_to include(foreign.oshi.name)
+
+    get new_card_path(user_oshi_id: foreign.id)
+    expect(response).to have_http_status(:not_found)
+    get new_card_path(user_oshi_id: [ second.id ])
+    expect(response).to have_http_status(:bad_request)
+  end
+
   it "shows all template choices with photo selected and all settings available without persisting settings" do
     profile
     user_oshi
@@ -88,6 +108,8 @@ RSpec.describe "Photo cards", type: :request do
     expect(radios.map { |input| input["value"] }).to eq(%w[photo memories data])
     expect(radios.select { |input| input.key?("checked") }.map { |input| input["value"] }).to eq([ "photo" ])
     expect(document.at_css("#card-settings-photo").key?("hidden")).to be(false)
+    expect(document.at_css(".card-creation-guide").text).to include("作成から保存まで", "1600×1000px", "15分以内")
+    expect(document.css(".card-template-sample[role='img']").size).to eq(3)
     data = document.at_css("#card-settings-data")
     expect(data.key?("hidden")).to be(true)
     expect(data.text).not_to include("PNG生成は未実装")

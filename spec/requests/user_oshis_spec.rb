@@ -143,6 +143,7 @@ RSpec.describe "Managing personal oshis", type: :request do
       expect(document.at_css("main").text).to include(record.oshi.name, "アイドル", "所属表示", "2023/05", "2024")
       expect(document.at_css("main img")["src"]).to include("image_placeholder")
       expect(document.at_css("main img")["alt"]).to include(record.oshi.name)
+      expect(document.at_css("a[href='#{new_card_path(user_oshi_id: record.id)}']").text).to eq("この推しでカードを作る")
       expect(document.at_css("main").text).not_to include("pending", "メモ", "説明")
     end
 

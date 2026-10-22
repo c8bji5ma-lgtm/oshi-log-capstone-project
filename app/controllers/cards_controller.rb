@@ -12,6 +12,7 @@ class CardsController < ApplicationController
     return redirect_to(edit_profile_path, alert: "カードを作る前にプロフィールを保存してください。") unless current_user.profile
 
     @user_oshis = current_user.user_oshis.includes(:oshi, representative_image_attachment: :blob, library_images_attachments: :blob).order(:id)
+    @initial_user_oshi_id = initial_user_oshi_id
   end
 
   def memories
@@ -145,6 +146,14 @@ class CardsController < ApplicationController
       response.headers["Vary"] = "Cookie"
       response.headers["X-Content-Type-Options"] = "nosniff"
       render_error("ログインしてください。", :unauthorized) if action_name != "new" && !user_signed_in?
+    end
+
+    def initial_user_oshi_id
+      value = params[:user_oshi_id]
+      return if value.blank?
+      raise ActionController::BadRequest unless value.is_a?(String) && value.match?(/\A[1-9][0-9]{0,18}\z/) && value.to_i <= 2**63 - 1
+
+      @user_oshis.find { |record| record.id == value.to_i }&.id || raise(ActiveRecord::RecordNotFound)
     end
 
     def card_settings(input = params.require(:card))

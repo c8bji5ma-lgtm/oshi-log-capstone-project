@@ -5,6 +5,16 @@
 
 <h1>推し活カード作成</h1>
 <p>テンプレートを選んでカードを作成します。選択・編集内容と作成した画像は、このページを離れるか30分間操作がないと破棄されます。</p>
+<section class="card card-creation-guide" aria-labelledby="card-creation-guide-heading">
+  <h2 id="card-creation-guide-heading">作成から保存まで</h2>
+  <ol>
+    <li><strong>テンプレートを選ぶ</strong><span>写真、活動の思い出、集計データから選びます。</span></li>
+    <li><strong>掲載内容を設定する</strong><span>登録済みの推し・個人画像・活動記録だけを使います。</span></li>
+    <li><strong>プレビューを作成する</strong><span>完成画像を確認します。生成が混み合う場合は案内後に再試行できます。</span></li>
+    <li><strong>PNGを保存する</strong><span>生成成功から15分以内に、1600×1000pxのPNGを保存します。</span></li>
+  </ol>
+  <p class="data-note">共通の推し画像はカードには使いません。プロフィールが未保存の場合は、先にプロフィール編集へ案内します。</p>
+</section>
 <div class="card-template-editor" data-controller="photo-card"
        data-photo-card-create-url-value="<%= card_path %>"
        data-photo-card-statistics-url-value="<%= statistics_card_path %>"
@@ -17,9 +27,9 @@
     <form data-photo-card-target="settingsForm">
       <fieldset class="card-template-choices" aria-describedby="card-template-help">
         <legend>テンプレートを選択</legend>
-        <% [ [ "photo", "ビジュアル重視", "推し1〜4人の写真を中心に配置します。PNG生成に対応しています。" ],
-             [ "memories", "思い出・活動履歴重視", "活動記録1〜3件を写真と一緒に並べます。PNG生成に対応しています。" ],
-             [ "data", "データ可視化重視", "活動回数・活動支出・月別グラフをまとめます。PNG生成に対応しています。" ] ].each do |value, name, description| %>
+        <% [ [ "photo", "ビジュアル重視", "推し1〜4人の個人画像を大きく配置。画像未登録でも作成できます。", "写真枠と推し名の完成イメージ" ],
+             [ "memories", "思い出・活動履歴重視", "今日以前の活動1〜3件と、その活動に登録した写真を配置します。", "活動写真と日付・タイトルの完成イメージ" ],
+             [ "data", "データ可視化重視", "活動回数・活動支出・月別グラフをまとめます。金額の明細や固定費は掲載しません。", "活動回数と月別グラフの完成イメージ" ] ].each do |value, name, description, preview_label| %>
           <div class="card-template-choice">
             <label>
               <input type="radio" name="template" value="<%= value %>" aria-controls="card-settings-<%= value %>"
@@ -27,6 +37,9 @@
                      data-photo-card-target="template" data-action="change->photo-card#switchTemplate" <%= "checked" if value == "photo" %>>
               <strong><%= name %></strong>
             </label>
+            <span class="card-template-sample card-template-sample-<%= value %>" role="img" aria-label="<%= preview_label %>">
+              <span aria-hidden="true"></span>
+            </span>
             <span class="card-template-description" id="card-template-description-<%= value %>"><%= description %></span>
           </div>
         <% end %>
@@ -50,7 +63,7 @@
               <input type="checkbox" name="user_oshi_ids[]" value="<%= user_oshi.id %>"
                      data-photo-card-target="oshi" data-name="<%= user_oshi.oshi.name %>"
                      data-images="<%= images.to_json %>" data-edit-url="<%= edit_user_oshi_path(user_oshi) %>"
-                     data-action="change->photo-card#selectOshi" <%= "checked" if index.zero? %>>
+                     data-action="change->photo-card#selectOshi" <%= "checked" if @initial_user_oshi_id ? user_oshi.id == @initial_user_oshi_id : index.zero? %>>
               <%= user_oshi.oshi.name %>
             </label>
           <% end %>
