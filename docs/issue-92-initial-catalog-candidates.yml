@@ -1,6 +1,6 @@
 version: 1
 reviewed_at: "2026-10-22"
-purpose: "投入対象を確定する前の小規模レビューサンプル"
+purpose: "投入対象を確定する前の20件レビューサンプル（人気・網羅性を保証しない）"
 defaults:
   production_approved: false
   existing_oshi_review: not_run
@@ -145,6 +145,333 @@ candidates:
       affiliation: confirmed_from_primary_source
       existing_oshi: not_run
       notes: "ブランド名とキャラクター名の粒度、および『シナモン』を単純別名にするか管理者判断が必要。保留中は投入しない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-stardust-yamazaki-kento
+    decision: review_candidate
+    name: "山﨑賢人"
+    aliases:
+      - "ヤマザキケント"
+    oshi_type: "俳優・タレント"
+    affiliation: "スターダストプロモーション"
+    source:
+      organization: "スターダストプロモーション公式サイト"
+      url: "https://www.stardust.co.jp/talent/section2/yamazakikento/"
+      external_id: "talent/section2/yamazakikento"
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・読み・所属事務所"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_reading_only
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "氏名の『﨑』を維持する。『崎』表記は一次資料で別名と確認していないため追加しない。愛称は未確認。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-stardust-kitagawa-keiko
+    decision: review_candidate
+    name: "北川景子"
+    aliases:
+      - "キタガワケイコ"
+      - "Keiko Kitagawa"
+    oshi_type: "俳優・タレント"
+    affiliation: "スターダストプロモーション"
+    source:
+      organization: "スターダストプロモーション公式サイト"
+      url: "https://www.stardust.co.jp/talent/section3/kitagawakeiko/"
+      external_id: "talent/section3/kitagawakeiko"
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・読み・所属事務所と公式X案内のローマ字表記"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "愛称は一次資料で未確認。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-amuse-yoshizawa-ryo-a8207
+    decision: review_candidate
+    name: "吉沢 亮"
+    aliases:
+      - "Yoshizawa Ryo"
+    oshi_type: "俳優・タレント"
+    affiliation: "アミューズ"
+    source:
+      organization: "アミューズ公式サイト"
+      url: "https://www.amuse.co.jp/artist/A8207/index.html"
+      external_id: "A8207"
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・ローマ字・所属事務所"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "『吉澤』表記と愛称は一次資料で未確認のため追加しない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-aoni-kamiya-hiroshi
+    decision: review_candidate
+    name: "神谷 浩史"
+    aliases:
+      - "かみや ひろし"
+      - "Hiroshi Kamiya"
+    oshi_type: "声優"
+    affiliation: "青二プロダクション"
+    source:
+      organization: "青二プロダクション公式サイト"
+      url: "https://www.aoni.co.jp/search/kamiya-hiroshi.html"
+      external_id: "search/kamiya-hiroshi"
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・読み・ローマ字・所属事務所"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "愛称は未確認。担当役名を本人の別名にしない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-imenterprise-hayami-saori-74
+    decision: review_candidate
+    name: "早見 沙織"
+    aliases:
+      - "はやみ さおり"
+      - "HAYAMI SAORI"
+    oshi_type: "声優"
+    affiliation: "アイムエンタープライズ"
+    source:
+      organization: "アイムエンタープライズ公式サイト"
+      url: "https://imenterprise.jp/profile.php?id=74"
+      external_id: "profile/74"
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・読み・ローマ字・所属事務所"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "声優・歌手の活動分野ごとに別Oshiを作らない。愛称は未確認。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-osawa-hanazawa-kana
+    decision: hold
+    name: "花澤 香菜"
+    aliases:
+      - "はなざわ かな"
+      - "Kana Hanazawa"
+    oshi_type: "声優"
+    affiliation: "大沢事務所"
+    source:
+      organization: "大沢事務所公式サイト"
+      url: "https://osawa-inc.co.jp/women/hanazawakana/"
+      external_id: "women/hanazawakana"
+      checked_at: "2026-10-22"
+      evidence: "公式検索結果本文で氏名・読み・ローマ字・所属を確認。直接ページは502で未確認"
+    review:
+      identity: needs_direct_source_confirmation
+      aliases: needs_direct_source_confirmation
+      affiliation: needs_direct_source_confirmation
+      existing_oshi: not_run
+      notes: "検索結果本文だけのため格下げし、直接ページを再確認するまで投入しない。愛称は未確認。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-perfume-a-chan
+    decision: review_candidate
+    name: "あ〜ちゃん"
+    aliases:
+      - "a-chan"
+    oshi_type: "アーティスト"
+    affiliation: "Perfume"
+    source:
+      organization: "Perfume公式サイト"
+      url: "https://www.perfume-web.jp/profile/"
+      external_id:
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールのメンバー個別欄にある活動名・ローマ字・所属グループ"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "共有プロフィールURLを人物固有IDとして扱わない。公式活動名を主表示とし、本名・愛称は未確認のため追加しない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-perfume-kashiyuka
+    decision: review_candidate
+    name: "かしゆか"
+    aliases:
+      - "KASHIYUKA"
+    oshi_type: "アーティスト"
+    affiliation: "Perfume"
+    source:
+      organization: "Perfume公式サイト"
+      url: "https://www.perfume-web.jp/profile/"
+      external_id:
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールのメンバー個別欄にある活動名・ローマ字・所属グループ"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "共有プロフィールURLを人物固有IDとして扱わない。公式活動名を主表示とし、本名・愛称は未確認のため追加しない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-perfume-nocchi
+    decision: review_candidate
+    name: "のっち"
+    aliases:
+      - "NOCCHi"
+    oshi_type: "アーティスト"
+    affiliation: "Perfume"
+    source:
+      organization: "Perfume公式サイト"
+      url: "https://www.perfume-web.jp/profile/"
+      external_id:
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールのメンバー個別欄にある活動名・ローマ字・所属グループ"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "共有プロフィールURLを人物固有IDとして扱わない。公式活動名を主表示とし、本名・愛称は未確認のため追加しない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-amuse-hoshino-gen-a8698
+    decision: hold
+    name: "星野 源"
+    aliases:
+      - "Hoshino Gen"
+    oshi_type: "アーティスト"
+    affiliation: ""
+    source:
+      organization: "アミューズ公式サイト"
+      url: "https://www.amuse.co.jp/artist/A8698/index.html"
+      external_id: "A8698"
+      checked_at: "2026-10-22"
+      evidence: "公式掲載の氏名・ローマ字・音楽家表記と大人計画へのリンク"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: needs_scope_decision
+      existing_oshi: not_run
+      notes: "アーティスト／俳優の分類と所属表現は管理者判断が必要。全活動の所属をアミューズと断定せず、1人1候補を維持する。愛称は未確認。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-onepiece-monkey-d-luffy
+    decision: hold
+    name: "モンキー・D・ルフィ"
+    aliases:
+      - "ルフィ"
+    oshi_type: "キャラクター"
+    affiliation: "ONE PIECE・麦わらの一味"
+    source:
+      organization: "ONE PIECE.com公式サイト"
+      url: "https://one-piece.com/character/luffy/index.html"
+      supplemental_url: "https://one-piece.com/character/"
+      external_id: "character/luffy"
+      checked_at: "2026-10-22"
+      evidence: "公式検索結果本文の氏名・短縮名・作品内所属。直接ページは403で未確認"
+    review:
+      identity: needs_direct_source_confirmation
+      aliases: needs_direct_source_confirmation
+      affiliation: needs_direct_source_confirmation
+      existing_oshi: not_run
+      notes: "漫画・アニメ・実写の粒度を管理者レビューし、演者とは分離する。『麦わらのルフィ』は確認済み別名にしない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-kimetsu-kamado-tanjiro-53
+    decision: review_candidate
+    name: "竈門炭治郎"
+    aliases:
+      - "炭治郎"
+    oshi_type: "キャラクター"
+    affiliation: "鬼滅の刃・鬼殺隊"
+    source:
+      organization: "アニメ『鬼滅の刃』公式サイト"
+      url: "https://kimetsu.com/anime/character/risshihen/?chara=53"
+      external_id:
+      checked_at: "2026-10-22"
+      evidence: "公式キャラクターページの氏名・短縮名・作品・組織"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "複数人ページのchara=53を人物固有IDとは断定しない。氏名の『竈』を維持し、氏名と作品で識別する。愛称は未確認。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-spyfamily-anya-forger
+    decision: hold
+    name: "アーニャ・フォージャー"
+    aliases:
+      - "ANYA FORGER"
+      - "アーニャ"
+    oshi_type: "キャラクター"
+    affiliation: "SPY×FAMILY・フォージャー家"
+    source:
+      organization: "TVアニメ『SPY×FAMILY』公式サイト"
+      url: "https://spy-family.net/tvseries/index.php"
+      external_id:
+      checked_at: "2026-10-22"
+      evidence: "公式検索結果本文のCHARACTER個別欄にある氏名・ローマ字・短縮名・家族。直接ページは403で未確認"
+    review:
+      identity: needs_direct_source_confirmation
+      aliases: needs_direct_source_confirmation
+      affiliation: needs_direct_source_confirmation
+      existing_oshi: not_run
+      notes: "検索結果本文だけのため格下げし、直接ページを再確認するまで投入しない。担当声優名を別名にしない。愛称は未確認。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-frieren-character-frieren
+    decision: review_candidate
+    name: "フリーレン"
+    aliases: []
+    oshi_type: "キャラクター"
+    affiliation: "葬送のフリーレン"
+    source:
+      organization: "アニメ『葬送のフリーレン』公式サイト"
+      url: "https://frieren-anime.jp/character/chara_group1/1-1/"
+      external_id: "character/chara_group1/1-1"
+      checked_at: "2026-10-22"
+      evidence: "公式キャラクターページの氏名・作品"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: not_confirmed
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "読み・ローマ字・愛称は未確認。作品タイトルを本人の別名にしない。"
     image:
       action: placeholder
       rights_status: not_reviewed
