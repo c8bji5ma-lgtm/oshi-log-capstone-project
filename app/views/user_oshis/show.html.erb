@@ -13,6 +13,9 @@
     <dt>推し終了時期</dt><dd><%= @user_oshi.ended_period.presence || "未設定" %></dd>
   </dl>
   <%= attachment_image_tag @representative_image, alt: "#{@user_oshi.oshi.name}の代表画像", class: "representative-image" %>
+  <div class="actions">
+    <%= link_to "この推しでカードを作る", new_card_path(user_oshi_id: @user_oshi.id), class: "button" %>
+  </div>
 </section>
 <section class="card oshi-image-library" aria-labelledby="library-heading">
   <h2 id="library-heading">登録画像</h2>

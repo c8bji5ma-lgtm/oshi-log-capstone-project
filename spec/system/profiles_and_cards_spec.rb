@@ -79,6 +79,27 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     }
   end
 
+  it "opens from an owned oshi detail with that oshi selected and explains the save flow" do
+    another = create(:user_oshi, user: user, oshi: create(:oshi, :approved, name: "カードの推しB"))
+    create(:profile, user: user)
+    sign_in
+    visit user_oshi_path(another)
+    click_link "この推しでカードを作る"
+
+    expect(page).to have_css("main h1", text: "推し活カード作成", exact_text: true)
+    expect(page).to have_checked_field("カードの推しB", exact: true)
+    expect(page).not_to have_checked_field("カードの推しA", exact: true)
+    expect(page).to have_css(".card-creation-guide", text: "作成から保存まで")
+    expect(page).to have_css(".card-template-sample[role='img']", count: 3)
+    expect(page).to have_button("プレビューを作成", disabled: false)
+
+    [ 375, 1280 ].each do |width|
+      page.current_window.resize_to(width, 900)
+      expect(page.evaluate_script("document.documentElement.scrollWidth <= document.documentElement.clientWidth")).to be(true)
+      expect(page).to have_css(".card-template-choice", count: 3)
+    end
+  end
+
   def generate_preview
     click_button "プレビューを作成"
     expect(page).to have_css("[role='status']", text: "完成プレビューを確認してから保存してください。", wait: 10)

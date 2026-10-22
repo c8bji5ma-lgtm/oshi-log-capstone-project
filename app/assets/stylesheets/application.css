@@ -50,6 +50,92 @@ a {
   padding-block: 0.75rem;
 }
 
+.card-creation-guide ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 0.75rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: card-step;
+}
+
+.card-creation-guide li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.25rem 0.65rem;
+  align-items: start;
+  counter-increment: card-step;
+}
+
+.card-creation-guide li::before {
+  display: grid;
+  grid-row: 1 / span 2;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: #812c4b;
+  color: #fff;
+  font-weight: 700;
+  content: counter(card-step);
+}
+
+.card-creation-guide li span {
+  color: #4c5f73;
+}
+
+.card-template-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 1rem;
+}
+
+.card-template-choice {
+  display: grid;
+  align-content: start;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid #d5dee8;
+  border-radius: 0.5rem;
+}
+
+.card-template-sample {
+  position: relative;
+  display: block;
+  aspect-ratio: 8 / 5;
+  overflow: hidden;
+  border: 1px solid #d5b6c0;
+  border-radius: 0.35rem;
+  background: #f8edf1;
+}
+
+.card-template-sample::before,
+.card-template-sample::after,
+.card-template-sample > span::before,
+.card-template-sample > span::after {
+  position: absolute;
+  border-radius: 0.2rem;
+  background: #d5b6c0;
+  content: "";
+}
+
+.card-template-sample::before { inset: 12% 52% 28% 8%; }
+.card-template-sample::after { inset: 12% 8% 28% 52%; }
+.card-template-sample > span::before { inset: 78% 18% 12% 8%; }
+.card-template-sample > span::after { inset: 78% 8% 12% 84%; }
+.card-template-sample-memories::before { inset: 10% 58% 10% 8%; }
+.card-template-sample-memories::after { inset: 10% 8% 58% 47%; }
+.card-template-sample-memories > span::before { inset: 50% 8% 40% 47%; }
+.card-template-sample-memories > span::after { inset: 70% 8% 20% 47%; }
+.card-template-sample-data::before { inset: 12% 68% 62% 8%; }
+.card-template-sample-data::after { inset: 12% 38% 62% 38%; }
+.card-template-sample-data > span::before { inset: 12% 8% 62% 68%; }
+.card-template-sample-data > span::after {
+  inset: 52% 8% 12%;
+  background: linear-gradient(90deg, #d5b6c0 15%, transparent 15% 22%, #c48ca0 22% 44%, transparent 44% 51%, #a85d79 51% 76%, transparent 76% 83%, #812c4b 83%);
+}
+
 .site-brand {
   font-size: 1.4rem;
   font-weight: 700;
