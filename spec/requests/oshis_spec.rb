@@ -34,7 +34,7 @@ RSpec.describe "Oshi search and registration", type: :request do
       create(:oshi, :rejected, name: "検索却下", created_by_user: user)
       get new_oshi_path, params: { q: "検索" }
       expect(response).to have_http_status(:ok)
-      expect(document.css("select[name='oshi_id'] option[value]").map { |option| option["value"] }.reject(&:empty?))
+      expect(document.css("input[type='radio'][name='oshi_id']").map { |input| input["value"] })
         .to contain_exactly(approved.id.to_s, own.id.to_s)
       expect(document.at_css("main").text).not_to include("検索他人", "検索登録者なし", "検索却下")
     end
@@ -47,7 +47,7 @@ RSpec.describe "Oshi search and registration", type: :request do
       hidden = create(:oshi, :pending, name: "他人", created_by_user: create(:user))
       create(:oshi_alias, oshi: hidden, alias_name: "candy")
       get new_oshi_path, params: { q: "cAnDy" }
-      expect(document.css("select[name='oshi_id'] option[value='#{oshi.id}']").size).to eq(1)
+      expect(document.css("input[type='radio'][name='oshi_id'][value='#{oshi.id}']").size).to eq(1)
       expect(document.at_css("main").text).not_to include("所属だけ", "他人")
     end
 
@@ -55,9 +55,9 @@ RSpec.describe "Oshi search and registration", type: :request do
       matching = create_list(:oshi, 52, :approved, name: "同名候補").sort_by(&:id)
       get new_oshi_path, params: { q: "同名候補" }
 
-      options = document.css("select[name='oshi_id'] option[value]").reject { |option| option["value"].empty? }
-      expect(options.map { |option| option["value"] }).to eq(matching.first(50).map { |oshi| oshi.id.to_s })
-      expect(options.first.text).to include("ID：#{matching.first.id}", "名前：同名候補", "状態：承認済み")
+      options = document.css("input[type='radio'][name='oshi_id']")
+      expect(options.map { |input| input["value"] }).to eq(matching.first(50).map { |oshi| oshi.id.to_s })
+      expect(document.at_css("label[for='oshi_id_#{matching.first.id}']").text).to include("同名候補", "承認済み")
       expect(document.css("[role='status']").map(&:text).join).to include("最大50件", "絞り込んでください")
     end
 
@@ -66,16 +66,57 @@ RSpec.describe "Oshi search and registration", type: :request do
         match = create(:oshi, :approved, name: "literal#{query}target")
         create(:oshi, :approved, name: "literalXtarget")
         get new_oshi_path, params: { q: query }
-        expect(document.css("select[name='oshi_id'] option[value]").map { |option| option["value"] }.reject(&:empty?))
+        expect(document.css("input[type='radio'][name='oshi_id']").map { |input| input["value"] })
           .to eq([ match.id.to_s ])
       end
     end
+    it "shows one active common image with matching attribution and ignores inactive images" do
+      oshi = create(:oshi, :approved, name: "画像候補")
+      active = create(:oshi_common_image, oshi: oshi, attribution_text: "表示する帰属")
+      create(:oshi_common_image, oshi: oshi, active: false, attribution_text: "表示しない帰属")
+
+      get new_oshi_path, params: { q: oshi.name }
+
+      image = document.at_css("label[for='oshi_id_#{oshi.id}'] img")
+      expect(image["src"]).to eq(common_oshi_image_path(active.image.attachment))
+      expect(document.at_css("main").text).to include("表示する帰属", active.license_name)
+      expect(document.at_css("main").text).not_to include("表示しない帰属")
+    end
+
+    it "preloads bounded metadata for fifty candidates with ten records each" do
+      oshis = create_list(:oshi, 50, :approved, name: "大量共通画像候補")
+      now = Time.current
+      rows = oshis.flat_map do |oshi|
+        10.times.map do |index|
+          { oshi_id: oshi.id, source_url: "https://example.test/#{oshi.id}/#{index}",
+            creator_name: "作者", license_name: "許諾", attribution_text: "帰属",
+            rights_confirmed_at: now, active: true, lock_version: 0,
+            created_at: now, updated_at: now }
+        end
+      end
+      OshiCommonImage.insert_all!(rows)
+      queries = []
+      subscriber = lambda do |*, payload|
+        sql = payload[:sql]
+        queries << sql if sql.include?("oshi_common_images") || sql.include?("active_storage_attachments") ||
+          sql.include?("active_storage_blobs")
+      end
+
+      ActiveSupport::Notifications.subscribed(subscriber, "sql.active_record") do
+        get new_oshi_path, params: { q: "大量共通画像候補" }
+      end
+
+      expect(response).to have_http_status(:ok)
+      expect(document.css("input[name='oshi_id']").size).to eq(50)
+      expect(queries.grep(/SELECT/).size).to be <= 3
+    end
+
 
     it "shows no candidates before a search or for whitespace" do
       create(:oshi, :approved, name: "大量表示しない推し")
       [ nil, " " ].each do |query|
         get new_oshi_path, params: { q: query }
-        expect(document.css("select[name='oshi_id']")).to be_empty
+        expect(document.css("input[name='oshi_id']")).to be_empty
         expect(document.at_css("main").text).not_to include("大量表示しない推し")
       end
     end

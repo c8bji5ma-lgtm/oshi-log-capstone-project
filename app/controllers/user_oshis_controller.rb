@@ -24,8 +24,13 @@ class UserOshisController < ApplicationController
       @oshi = Oshi.new
       @user_oshi = current_user.user_oshis.new
       @oshis = Oshi.visible_to(current_user).search(params[:q]).order(:name, :id)
+        .includes(oshi_common_images: { image_attachment: :blob }).limit(OshisController::SEARCH_LIMIT).to_a
       # Keep the selected, still-visible candidate available after a failed POST.
-      @oshis = Oshi.visible_to(current_user).where(id: oshi.id) if @oshis.empty?
+      @oshis = Oshi.visible_to(current_user).where(id: oshi.id)
+        .includes(oshi_common_images: { image_attachment: :blob }).to_a if @oshis.empty?
+      @common_images = @oshis.to_h do |candidate|
+        [ candidate.id, candidate.oshi_common_images.select(&:active?).select { |item| item.image.attached? }.sample ]
+      end
       render "oshis/new", status: :unprocessable_content
     end
   rescue ActiveRecord::RecordNotUnique

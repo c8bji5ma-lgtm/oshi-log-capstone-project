@@ -1,0 +1,23 @@
+<%= render "shared/validation_errors", resource: common_image %>
+<%= form_with model: [ :admin, common_image ], html: { multipart: true } do |f| %>
+  <%= f.hidden_field :lock_version if common_image.persisted? %>
+  <%= f.hidden_field :oshi_id, value: oshi.id if common_image.new_record? %>
+  <% if common_image.new_record? %>
+    <div class="form-field">
+      <%= f.label :image, "画像ファイル（必須）" %>
+      <%= f.file_field :image, required: true, accept: ImageAttachmentInspector::CONTENT_TYPES.join(",") %>
+    </div>
+  <% else %>
+    <%= image_tag common_oshi_image_path(common_image.image.attachment), alt: "#{oshi.name}の共通画像", class: "common-oshi-image" if common_image.active? %>
+  <% end %>
+  <div class="form-field"><%= f.label :source_url, "出典URL（必須）" %><%= f.url_field :source_url, required: true, maxlength: 2048 %></div>
+  <div class="form-field"><%= f.label :creator_name, "作者・権利者（必須）" %><%= f.text_field :creator_name, required: true, maxlength: 255 %></div>
+  <div class="form-field"><%= f.label :license_name, "ライセンス・利用許諾（必須）" %><%= f.text_field :license_name, required: true, maxlength: 255 %></div>
+  <div class="form-field"><%= f.label :attribution_text, "帰属表示（必須）" %><%= f.text_area :attribution_text, required: true %></div>
+  <div class="form-field"><%= f.label :usage_notes, "利用条件メモ" %><%= f.text_area :usage_notes %></div>
+  <div class="form-field"><%= f.label :rights_confirmed_at, "権利確認日時（必須）" %><%= f.datetime_local_field :rights_confirmed_at, required: true %></div>
+  <% unless common_image.new_record? %>
+    <div class="form-field"><%= f.label :active do %><%= f.check_box :active %> 有効にする<% end %></div>
+  <% end %>
+  <%= f.submit common_image.new_record? ? "共通画像を登録" : "共通画像情報を更新", class: "button" %>
+<% end %>

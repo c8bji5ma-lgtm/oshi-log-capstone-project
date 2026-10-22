@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_20_080000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_22_040000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -94,6 +94,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_080000) do
     t.index ["oshi_id"], name: "index_oshi_aliases_on_oshi_id"
   end
 
+  create_table "oshi_common_images", force: :cascade do |t|
+    t.bigint "oshi_id", null: false
+    t.bigint "registered_by_user_id"
+    t.string "source_url", limit: 2048, null: false
+    t.string "creator_name", limit: 255, null: false
+    t.string "license_name", limit: 255, null: false
+    t.text "attribution_text", null: false
+    t.text "usage_notes"
+    t.datetime "rights_confirmed_at", null: false
+    t.boolean "active", default: true, null: false
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["oshi_id", "active"], name: "index_oshi_common_images_on_oshi_id_and_active"
+    t.index ["oshi_id"], name: "index_oshi_common_images_on_oshi_id"
+    t.index ["registered_by_user_id"], name: "index_oshi_common_images_on_registered_by_user_id"
+    t.index ["source_url"], name: "index_oshi_common_images_on_source_url"
+  end
+
   create_table "oshis", force: :cascade do |t|
     t.string "name", limit: 255, null: false
     t.string "oshi_type", limit: 50, null: false
@@ -167,6 +186,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_20_080000) do
   add_foreign_key "activity_oshis", "activities"
   add_foreign_key "activity_oshis", "oshis"
   add_foreign_key "oshi_aliases", "oshis"
+  add_foreign_key "oshi_common_images", "oshis"
+  add_foreign_key "oshi_common_images", "users", column: "registered_by_user_id", on_delete: :nullify
   add_foreign_key "oshis", "users", column: "created_by_user_id"
   add_foreign_key "profiles", "users"
   add_foreign_key "subscription_oshis", "oshis"

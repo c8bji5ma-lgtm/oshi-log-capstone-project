@@ -28,9 +28,13 @@ class OshisController < ApplicationController
   private
 
     def load_search_candidates
-      candidates = Oshi.visible_to(current_user).search(params[:q]).order(:name, :id).limit(SEARCH_LIMIT + 1).to_a
+      candidates = Oshi.visible_to(current_user).search(params[:q]).order(:name, :id)
+        .includes(oshi_common_images: { image_attachment: :blob }).limit(SEARCH_LIMIT + 1).to_a
       @oshi_search_has_more = candidates.size > SEARCH_LIMIT
       @oshis = candidates.first(SEARCH_LIMIT)
+      @common_images = @oshis.to_h do |oshi|
+        [ oshi.id, oshi.oshi_common_images.select(&:active?).select { |item| item.image.attached? }.sample ]
+      end
     end
 
     def oshi_params

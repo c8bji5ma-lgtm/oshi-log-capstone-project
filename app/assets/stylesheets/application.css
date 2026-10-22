@@ -275,6 +275,55 @@ fieldset {
   background: #e3eaf1;
   cursor: not-allowed;
 }
+.oshi-candidate-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.oshi-candidate {
+  position: relative;
+}
+
+.oshi-candidate > input[type="radio"] {
+  position: absolute;
+  inset: 1rem auto auto 1rem;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.oshi-candidate-label {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 1rem;
+  min-height: 112px;
+  padding: 0.75rem 0.75rem 0.75rem 3rem;
+  border: 1px solid #738395;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.oshi-candidate > input:checked + .oshi-candidate-label {
+  border: 3px solid #245b8a;
+  background: #edf4fa;
+}
+
+.common-oshi-image {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  background: #f7f9fb;
+}
+
+.common-image-attribution {
+  margin: 0.25rem 0 0 3rem;
+  font-size: 0.875rem;
+}
+
+.common-image-admin-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
 
 .oshi-image-gallery {
   display: grid;

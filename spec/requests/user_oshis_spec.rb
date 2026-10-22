@@ -80,7 +80,7 @@ RSpec.describe "Managing personal oshis", type: :request do
     it "rechecks visibility after a candidate was shown" do
       oshi = create(:oshi, :approved)
       get new_oshi_path, params: { q: oshi.name }
-      expect(document.at_css("option[value='#{oshi.id}']")).to be_present
+      expect(document.at_css("input[type='radio'][value='#{oshi.id}']")).to be_present
       oshi.update!(status: :rejected)
       expect { add_oshi(oshi) }.not_to change(UserOshi, :count)
       expect(response).to have_http_status(:not_found)
@@ -96,7 +96,7 @@ RSpec.describe "Managing personal oshis", type: :request do
       expect { add_oshi(oshi, started_period: "2023/13") }.not_to change(UserOshi, :count)
       expect(response).to have_http_status(:unprocessable_content)
       expect(document.at_css("main h1").text).to eq("推し登録")
-      expect(document.at_css("option[selected]")["value"]).to eq(oshi.id.to_s)
+      expect(document.at_css("input[type='radio'][checked]")["value"]).to eq(oshi.id.to_s)
       expect(document.at_css("input[name='user_oshi[started_period]']")["value"]).to eq("2023/13")
       expect(document.css(".validation-errors[role='alert']")).not_to be_empty
     end

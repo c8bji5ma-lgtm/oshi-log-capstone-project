@@ -36,6 +36,7 @@ module Oshis
         merge_user_oshis
         merge_links(@activity_oshis, :activity_id)
         merge_links(@subscription_oshis, :subscription_id)
+        merge_common_images
         merge_aliases
         ensure_source_unreferenced
         @source.destroy!
@@ -74,6 +75,10 @@ module Oshis
         @activity_oshis = pair_scope(ActivityOshi).order(:id).lock.to_a
         @subscription_oshis = pair_scope(SubscriptionOshi).order(:id).lock.to_a
         @aliases = pair_scope(OshiAlias).order(:id).lock.to_a
+        @common_images = pair_scope(OshiCommonImage).order(:id).lock.to_a
+        if @common_images.size > OshiCommonImage::LIMIT_PER_OSHI
+          raise Error, "統合後の共通画像が#{OshiCommonImage::LIMIT_PER_OSHI}枚を超えるため、先に整理してください。"
+        end
         unchanged = pair_scope(UserOshi).order(:id).pluck(:id) == @user_oshis.map(&:id) &&
           @activity_oshis.map(&:activity_id).uniq.sort == locked_activity_ids &&
           @subscription_oshis.map(&:subscription_id).uniq.sort == locked_subscription_ids
@@ -163,6 +168,12 @@ module Oshis
         end
       end
 
+      def merge_common_images
+        @common_images.select { |record| record.oshi_id == @source_id }.each do |record|
+          record.update!(oshi_id: @target_id)
+        end
+      end
+
       def merge_aliases
         names = @aliases.select { |record| record.oshi_id == @target_id }.map(&:alias_name)
         @aliases.select { |record| record.oshi_id == @source_id }.each do |record|
@@ -177,7 +188,7 @@ module Oshis
       end
 
       def ensure_source_unreferenced
-        if [ UserOshi, ActivityOshi, SubscriptionOshi, OshiAlias ].any? { |model| model.exists?(oshi_id: @source_id) }
+        if [ UserOshi, ActivityOshi, SubscriptionOshi, OshiAlias, OshiCommonImage ].any? { |model| model.exists?(oshi_id: @source_id) }
           raise ConcurrentChange, "統合元への参照が変更されました。再度統合を実行してください。"
         end
       end

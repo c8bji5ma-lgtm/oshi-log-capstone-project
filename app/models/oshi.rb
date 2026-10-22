@@ -6,6 +6,7 @@ class Oshi < ApplicationRecord
 
   belongs_to :created_by_user, class_name: "User", optional: true
   has_many :oshi_aliases
+  has_many :oshi_common_images
   has_many :user_oshis
   has_many :users, through: :user_oshis
   has_many :activity_oshis
