@@ -95,44 +95,32 @@ BUNDLE_FROZEN=true bin/importmap audit
 
 文字が確認しやすいよう、ER図を3枚に分けて掲載しています。
 
-![ER図 1](docs/images/er_diagram1.png)
+![ER図 上部](docs/images/er_diagram_20261022_upper.png)
 
-![ER図 2](docs/images/er_diagram2.png)
+![ER図 中部](docs/images/er_diagram_20261022_middle.png)
 
-![ER図 3](docs/images/er_diagram3.png)
+![ER図 下部](docs/images/er_diagram_20261022_lower.png)
+
+更新後のER図を上・中・下の3枚に分けて掲載しています。図全体と補足は以下のWhimsical原本を参照してください。
 
 [WhimsicalでER図を確認する](https://whimsical.com/yuki-atarashi/oshilog-er-mvp-PDbRKWDyLu1fJfbJxNVMP6)
 
 ## 画面遷移図・ワイヤーフレーム
 
-最新の画面設計を、内容ごとに分けて掲載しています。
+最新の画面設計を、左・中央・右の3枚に分けて掲載しています。
 
-### 全体
+### 左（推し管理・活動記録）
 
-![画面遷移図・全体](docs/images/01_画面遷移図_全体.png)
+![画面遷移図 左](docs/images/screen_flow_20261022_left.jpg)
 
-### タイトル・凡例・グローバルナビゲーション
+### 中央（活動記録・認証・共通画面）
 
-![タイトル・凡例・グローバルナビゲーション](docs/images/02_タイトル_凡例_グローバルナビ.png)
+![画面遷移図 中央](docs/images/screen_flow_20261022_center.jpg)
 
-### 推し管理
+### 右（データ・プロフィール・PNG保存・将来機能）
 
-![推し管理](docs/images/03_推し管理.png)
+![画面遷移図 右](docs/images/screen_flow_20261022_right.jpg)
 
-### 活動記録
-
-![活動記録](docs/images/04_活動記録.png)
-
-### 認証・共通画面
-
-![認証・共通画面](docs/images/05_認証_共通画面.png)
-
-### データ・プロフィール
-
-![データ・プロフィール](docs/images/06_データ_プロフィール.png)
-
-### 画面遷移に関する補足
-
-![画面遷移に関する補足](docs/images/07_画面遷移に関する補足.png)
+グローバルナビゲーション、注記、画像の境界をまたぐ接続を含む全体は、以下のWhimsical原本を参照してください。
 
 [Whimsicalで画面遷移図を確認する](https://whimsical.com/yuki-atarashi/oshilog-BXfu4fkBrWUUJmT5NJb2Qi)

@@ -2,21 +2,22 @@
 
 ## 基準
 
-- 確認日：2026年10月21日
+- アプリQA確認日：2026年10月21日
+- 外部設計資料照合日：2026年10月22日
 - Issue：[#31 MVP最終QA・要件照合・README更新](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/issues/31)
 - 今回の確認対象commit：`edba87140d2f5d13634942ac9006e63b0555d667`（PR #83 merge後の`main`）
 - 過去の基準：PR #74のmerge commitと、そのPRに対するGitHub Actions。以下では過去の検証証拠としてのみ区別して記載する
 - 正式仕様の優先順：GitHub Issues、READMEから参照する要件資料、ER図・テーブル定義、実装
 
-この文書は確定仕様を変更するものではない。外部の要件資料やER図を更新せず、現行実装との対応、既存の検証結果、残る確認事項を記録する。
+この文書は確定仕様を変更するものではない。現行実装と要件資料の対応、既存の検証結果、外部設計資料の照合結果、残る確認事項を記録する。
 
 ## 要件と検証の対応
 
 | Issue #31の確認項目 | 現在の根拠 | 状態・残る確認 |
 |---|---|---|
 | カタログ設計の高優先度機能 | 活動CRUD、履歴・絞り込み、集計・固定費のrequest/system spec | 代表導線をChrome/Seleniumで再確認済み |
-| テーブル定義書とDB構造 | `db/schema.rb`、model spec、DB制約spec、test DBメタデータ | 基本9テーブルと承認済み追加差分を照合済み |
-| ER図とモデル関連 | model、association/constraint spec | 基本関連と承認済み追加差分を照合済み。外部ER図自体は変更していない |
+| テーブル定義書とDB構造 | `db/schema.rb`、model spec、DB制約spec、test DBメタデータ、更新後の外部テーブル定義書 | 業務11テーブルと承認済み差分を照合済み。外部資料担当のAPI読戻しでは一致し、Sheetsネイティブ画面の目視は未実施 |
+| ER図とモデル関連 | model、association/constraint spec、更新後の外部ER図 | 業務11テーブル・12コネクタ、複合UNIQUE、NN、画像上限等を外部資料担当が読戻し・画像確認済み |
 | 主要画面遷移 | authentication、推し管理、活動・データ、固定費、プロフィール・カード、管理者のsystem spec | 今回のcommitでChrome/Seleniumの代表12 examplesを再確認済み |
 | 主要画面・グローバルナビ | request/system spec、Issue #30の1280px/375px目視 | 主要幅で確認済み。全端末・支援技術の保証ではない |
 | ログイン・ログアウト・管理者 | authentication、admin authorization/merging spec | 自動検証済み |
@@ -28,17 +29,20 @@
 | 将来機能の表記 | README、`docs/future-features/` | 公開URL・QR・交流・装飾案を将来機能として区別 |
 | デバッグコード・サンプルデータ | 静的検索、development seedの環境ガード | 不要と断定できるものだけを削除対象とする。seedはdevelopment限定 |
 
-## 承認済みIssueによる仕様書との差分
+## 承認済みIssueの資料反映履歴
 
-外部テーブル定義書の「OshiLog独自業務テーブル9個」はMVP基本設計を示す。現在のschemaには、後から承認・実装された次の差分がある。
+初期資料の後に承認・実装された次の変更は、2026年10月22日に外部のテーブル定義書・ER図へ反映された。外部資料担当が更新内容を読戻し、ER図は画像でも確認した。
 
-| 差分 | 根拠 | 現行schema |
+| 反映項目 | 根拠 | 現行資料・schema |
 |---|---|---|
-| 感情タグ | 追加要件1、PR #69 | `emotions`、`activity_emotions`を追加 |
-| 推し画像ライブラリ | Issue #70、PR #71 | Active Storageを使い、`UserOshi`の画像関連を拡張。独自業務テーブルの追加なし |
-| 楽観ロック | Issue #61、PR #72 | `activities.lock_version`、`subscriptions.lock_version`を追加 |
+| 感情タグ | Issue #67、PR #69 | `emotions`、`activity_emotions`を含む業務11テーブルとして反映 |
+| 推し画像ライブラリ | Issue #70、PR #71 | Active Storageによる代表画像・ライブラリ画像、合計30枚上限を注記。独自業務テーブルの追加なし |
+| 楽観ロック | Issue #61、PR #72 | `activities.lock_version`、`subscriptions.lock_version`を反映 |
+| 制約・将来機能 | 現行schema、Issue #26 | 複合UNIQUEの列組、NN、公開・URL・QR共有が将来機能であることを反映 |
 
-これらは既存仕様との無断変更ではなく、後続Issueで承認された追加・修正である。外部テーブル定義書・ER図そのものの更新は、それぞれの管理元で別途確認する。
+Whimsicalのワイヤーフレーム・画面遷移図・ER図は原本を更新し、更新前コピーをバックアップとして保持した。READMEの外部リンク先は変更していない。ER図の更新時刻は2026年10月22日00:33:22 UTCである。SheetsはAPIで読戻して一致を確認したが、ネイティブ画面の目視は未実施である。
+
+READMEには2026年10月22日時点のER図を上・中・下の3枚、画面遷移図を左・中央・右の3枚として反映した。手動配置されたZIPはSHA-256とサイズ、格納パス、symlink・暗号化・CRCを検証してから専用一時領域へ展開した。ER図は透過背景を白背景へ合成しただけで、寸法・図の内容・文字・相対配置は変更していない。6枚は明暗背景での可読性とREADME内の参照先を確認し、旧画像は削除せず保持している。READMEの分割画像には補助注記や全接続を含まないため、全体確認は既存のWhimsical原本を基準とする。
 
 ## 再利用する検証結果
 
@@ -47,6 +51,7 @@
 - PR #73：lint / scan_js / scan_ruby / test がすべて成功
 - PR #83 merge前：全RSpec 1423 examples（うちSystem spec 63 examples）、失敗0、pending 0
 - PR #83：最新headに対するCI全項目が成功
+- PR #84：QA記録のみの変更に対するCI全項目が成功し、merge commit `0ee4a792fae2f014aad2c58c033d313514280aa1`でマージ済み
 - 1280px / 375px：横スクロール、重なり、文字切れなし
 - プロフィールカードdownload待ちの既知の一過性失敗は再試行成功し、Issue #30では再発なし。原因修正済みとは扱わない
 
@@ -102,7 +107,7 @@ Issue #60のiPhone Safari確認では、保存後の画像表示が遅いとの�
 
 ## 残る確認と優先順位
 
-1. 外部の要件資料原本・ER図・テーブル定義を、その管理元の最新版と再照合する
+1. Sheetsをネイティブ画面で目視し、API読戻しでは判別できない表示上の欠落がないことを確認する
 2. Chrome以外の実ブラウザ、物理スマートフォン、支援技術を確認する
 3. 実メール・外部API・本番環境、およびIssue #60の本番資源予算・複数worker・native hard timeoutを確認する
 4. iPhone Safariで保留した保存後表示遅延と透過表示を、原ファイル・保存blob・表示CSSを区別して再確認する
