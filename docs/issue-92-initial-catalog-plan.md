@@ -2,10 +2,11 @@
 
 ## この資料の位置付け
 
-このIssueでは、公開初期カタログを本番へ投入しない。候補を約100件に確定せず、まず6件の小規模サンプルで、出典・表記・重複・権利・投入手順をレビューできる形にする。
+このIssueでは、公開初期カタログを本番へ投入しない。候補を約100件に確定せず、まず20件のレビューサンプルで、出典・表記・重複・権利・投入手順をレビューできる形にする。
 
 - 候補台帳: [`issue-92-initial-catalog-candidates.yml`](issue-92-initial-catalog-candidates.yml)
-- 台帳の6件は人気順ではなく、人物・愛称・ローマ字・複数活動分野・キャラクター粒度を検証するサンプルである。
+- 台帳の20件は人気順ではなく、人物・愛称・ローマ字・複数活動分野・キャラクター粒度を検証するサンプルである。
+- 2026-10-22時点で17件をdry-run対象、一次資料の直接確認が残る3件（花澤香菜、モンキー・D・ルフィ、アーニャ・フォージャー）を`hold`とする。
 - 全画像はplaceholderとする。実在画像、個人のProfile・UserOshi・Activity画像は取得・転用しない。
 - `db/seeds/development.rb` は予約済みデモアカウントと架空Oshiを整える開発用データであり、この台帳や将来の本番投入には使わない。
 
@@ -47,6 +48,8 @@
 
 正規化した名前や別名は候補検出にだけ使う。同名を自動統合せず、既存の管理者統合機能を使う場合も対象IDと影響を別途確認する。
 
+2026-10-22にMSIの`my_app_development`を読み取り専用トランザクションで照合した時点では、20件すべてで名前・別名の完全一致およびNFKC・小文字化・全半角空白除去後一致は0件だった。この結果はproduction DBや意味的同一性を保証せず、将来のdry-run時にも毎回再照合する。
+
 ## 将来の投入ツールに必要な動作
 
 ### 1. 事前確認
@@ -63,6 +66,14 @@
 
 dry-runはSQL更新やActive Storage書込みを行わず、次を機械可読な実行結果台帳として出力する。
 
+ローカルでの確認コマンドは次のとおり。通常seedから独立し、production環境では実行自体を拒否する。
+
+```bash
+BUNDLE_FROZEN=true RAILS_ENV=test bin/rails initial_catalog:dry_run
+```
+
+実装は`InitialCatalog::DryRun`に限定し、apply経路を持たない。既存名・別名との完全一致または正規化一致を見つけた候補は、自動対応・自動更新せず`conflict`として報告する。
+
 - 台帳hash、接続先識別情報、開始時刻
 - `create_oshi`、`link_existing_oshi`、`create_alias`、`keep_alias`、`conflict`、`hold` の件数とstable ID
 - 既存候補のOshi ID、status、完全一致／表記揺れ候補、関連レコード件数
@@ -73,7 +84,15 @@ dry-run後にDBの件数・`updated_at`・候補対応が変わった場合、ap
 
 ### 3. apply
 
-今回のIssueでは実装・実行しない。将来実装する場合は、承認済み台帳hashとdry-run結果を引数にし、PostgreSQL advisory lock等で同じ投入処理の同時実行を防ぐ。
+MSIのローカルdevelopment DBへの限定投入用に、`InitialCatalog::Apply`を実装した。本番環境では実行を拒否し、承認済み台帳のSHA256、dry-runの予定件数（17件・別名23件・保留3件・競合0件）、最新の重複検索が一致しなければ停止する。PostgreSQL advisory lockと対象テーブルlockにより、同じ投入処理の同時実行を防ぐ。
+
+実行には台帳の正確なSHA256を明示する。実行結果台帳はGit管理外の`tmp/issue92_initial_catalog/development-ledger.json`へ権限`0600`で保存する。
+
+```bash
+CATALOG_SHA256=<承認済みSHA256> BUNDLE_FROZEN=true RAILS_ENV=development bin/rails initial_catalog:apply
+```
+
+このコマンドは今回レビュー済みの新規候補だけを`status: approved`、`created_by_user_id: nil`で追加し、既存Oshi・別名を更新または削除しない。画像・blob・attachment・共通画像も作成しない。同じ台帳と実行結果台帳で再実行した場合は、登録済みレコードが初回結果から変更されていないことを検証してno-opにする。
 
 1. stable IDが既存Oshi IDへ対応済みなら、そのIDをロックして名前・状態を再確認する。名前検索で代用しない。
 2. 新規作成承認済みなら、最新の重複検索を再実行し、差分があれば停止する。新規マスタのstatus・作成者方針も承認済み値と一致させる。
@@ -81,7 +100,7 @@ dry-run後にDBの件数・`updated_at`・候補対応が変わった場合、ap
 4. 成功時にstable IDと確定Oshi ID、作成したalias ID、台帳hashを実行結果台帳へ保存する。
 5. 一部失敗時はトランザクションをrollbackし、成功件数として記録しない。
 
-対応表のない2回目のapplyは拒否する。対応表がある再実行は、対象IDと現状が初回結果どおりならno-op、後から変更されていればconflictとして停止する。
+実行結果台帳のない状態で既存名・別名との一致が発生したapplyは拒否する。実行結果台帳がある再実行は、対象IDと現状が初回結果どおりならno-op、後から変更されていればconflictとして停止する。
 
 ## 競合・中断・復旧
 
