@@ -399,6 +399,69 @@ fieldset {
   min-height: 8rem;
 }
 
+.activity-form-grid .choice-field {
+  grid-column: 1 / -1;
+}
+
+.choice-field {
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.choice-field legend {
+  padding-inline: 0.25rem;
+  font-weight: 700;
+}
+
+.choice-field[aria-invalid="true"] {
+  border: 2px solid #812c2c;
+}
+
+.choice-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.choice-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.choice-chip input {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  opacity: 0;
+}
+
+.choice-chip span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 0.8rem;
+  overflow-wrap: anywhere;
+  border: 1px solid #738395;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.choice-chip input:checked + span {
+  border-color: #812c4b;
+  background: #f8e8ee;
+  color: #641f38;
+  font-weight: 700;
+}
+
+.choice-chip input:focus-visible + span {
+  outline: 3px solid #245b8a;
+  outline-offset: 3px;
+}
+
 .activity-month {
   margin-block: 2rem;
 }

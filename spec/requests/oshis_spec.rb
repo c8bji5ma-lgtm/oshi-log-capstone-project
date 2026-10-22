@@ -156,7 +156,7 @@ RSpec.describe "Oshi search and registration", type: :request do
       expect(created.oshi).to be_pending
       expect(response).to redirect_to(new_activity_path(initial_oshi_id: created.oshi_id))
       follow_redirect!
-      expect(document.at_css("select[name='activity[oshi_ids][]'] option[selected]")["value"]).to eq(created.oshi_id.to_s)
+      expect(document.at_css("input[type='checkbox'][name='activity[oshi_ids][]'][checked]")["value"]).to eq(created.oshi_id.to_s)
       expect(document.at_css("input[name='activity[occurred_on]']")["value"]).to eq(Date.current.iso8601)
     end
 

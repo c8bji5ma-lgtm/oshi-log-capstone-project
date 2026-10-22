@@ -56,7 +56,7 @@ RSpec.describe "Activity records and visualization in the browser", type: :syste
     click_link "記録する", exact: true
     expect(page).to have_css("main h1", text: "活動記録を登録", exact_text: true)
     within("main form") do
-      select oshi.name, from: "推し（必須・1件以上）"
+      check oshi.name, allow_label_click: true
       fill_in "活動日（必須）", with: Date.new(2025, 5, 10)
       select "ライブ・イベント", from: "カテゴリ（必須）"
       fill_in "タイトル（必須）", with: "福岡ライブの思い出"
@@ -90,8 +90,8 @@ RSpec.describe "Activity records and visualization in the browser", type: :syste
     expect(page).to have_css("main h1", text: "活動記録を編集", exact_text: true)
     within("main form") do
       expect(page).to have_field("タイトル（必須）", with: "福岡ライブの思い出")
-      unselect oshi.name, from: "推し（必須・1件以上）"
-      select second_oshi.name, from: "推し（必須・1件以上）"
+      uncheck oshi.name, allow_label_click: true
+      check second_oshi.name, allow_label_click: true
       fill_in "活動日（必須）", with: Date.new(2025, 6, 12)
       select "配信視聴", from: "カテゴリ（必須）"
       fill_in "タイトル（必須）", with: "見直した配信の記録"

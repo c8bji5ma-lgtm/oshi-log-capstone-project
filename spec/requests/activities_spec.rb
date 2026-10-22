@@ -196,10 +196,10 @@ RSpec.describe "Activities", type: :request do
       unregistered = create(:oshi, :approved)
       get new_activity_path
       expect(response).to have_http_status(:ok)
-      options = document.css("select[name='activity[oshi_ids][]'] option").map { |option| option["value"] }
+      options = document.css("input[type='checkbox'][name='activity[oshi_ids][]']").map { |input| input["value"] }.reject(&:blank?)
       expect(options).to match_array([ oshi.id.to_s, second_oshi.id.to_s ])
       expect(options).not_to include(unregistered.id.to_s)
-      expect(document.at_css("select[name='activity[oshi_ids][]']")["multiple"]).to be_present
+      expect(document.css("label.choice-chip[for^='activity_oshi_ids_']").map(&:text)).to contain_exactly(oshi.name, second_oshi.name)
       expect(document.at_css("input[type='file']")["multiple"]).to be_present
       expect(document.css("select[name='activity[activity_type]'] option").map(&:text)).to include(*Activity::ACTIVITY_TYPES)
       expect(document.at_css("input[name='activity[occurred_on]']")["value"]).to eq(Date.current.iso8601)
@@ -208,7 +208,7 @@ RSpec.describe "Activities", type: :request do
     it "preselects only an owned registered oshi from the first-record continuation" do
       get new_activity_path, params: { initial_oshi_id: second_oshi.id }
       expect(response).to have_http_status(:ok)
-      selected = document.css("select[name='activity[oshi_ids][]'] option[selected]").map { |option| option["value"] }
+      selected = document.css("input[name='activity[oshi_ids][]'][checked]").map { |input| input["value"] }.reject(&:blank?)
       expect(selected).to eq([ second_oshi.id.to_s ])
     end
 
@@ -218,7 +218,7 @@ RSpec.describe "Activities", type: :request do
       [ "bad", foreign.id.to_s, unregistered.id.to_s, [ oshi.id.to_s ], { id: oshi.id.to_s } ].each do |value|
         get new_activity_path, params: { initial_oshi_id: value }
         expect(response).to have_http_status(:bad_request)
-        expect(document.css("select[name='activity[oshi_ids][]'] option[selected]")).to be_empty
+        expect(document.css("input[name='activity[oshi_ids][]'][checked]").map { |input| input["value"] }.reject(&:blank?)).to be_empty
         expect(document.at_css(".validation-errors").text).to include("選び直してください")
       end
     end
@@ -352,12 +352,12 @@ RSpec.describe "Activities", type: :request do
       activity.images.attach(upload)
       get edit_activity_path(activity)
       expect(response).to have_http_status(:ok)
-      expect(document.css("select[name='activity[oshi_ids][]'] option[selected]").map { |option| option["value"] }).to eq([ second_oshi.id.to_s ])
+      expect(document.css("input[name='activity[oshi_ids][]'][checked]").map { |input| input["value"] }.reject(&:blank?)).to eq([ second_oshi.id.to_s ])
       expect(document.at_css("input[name='activity[title]']")["value"]).to eq("既存")
       expect(document.at_css("input[name='activity[lock_version]']")["value"]).to eq(activity.lock_version.to_s)
       expect(document.css(".image-gallery img").size).to eq(1)
       expect(response.body).to include("新しく選択した画像は既存画像に追加されます")
-      expect(document.css("input[type='checkbox']")).to be_empty
+      expect(document.css("input[type='checkbox'][name='activity[oshi_ids][]']").size).to eq(2)
     end
 
     [ :activity_path, :edit_activity_path ].each do |route|
