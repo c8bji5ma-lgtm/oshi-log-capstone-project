@@ -1,0 +1,150 @@
+version: 1
+reviewed_at: "2026-10-22"
+purpose: "投入対象を確定する前の小規模レビューサンプル"
+defaults:
+  production_approved: false
+  existing_oshi_review: not_run
+  common_image_action: placeholder
+  image_rights_review: not_started
+candidates:
+  - stable_id: jp-momoclo-momota-kanako
+    decision: review_candidate
+    name: "百田夏菜子"
+    aliases:
+      - "かなこぉ↑↑"
+      - "でこちゃん"
+    oshi_type: "アイドル"
+    affiliation: "ももいろクローバーZ"
+    source:
+      organization: "ももいろクローバーZ公式サイト"
+      url: "https://www.momoclo.net/profile"
+      external_id:
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・ニックネーム・所属グループ"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "公式一覧URLは人物固有IDとして扱わない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-momoclo-tamai-shiori
+    decision: review_candidate
+    name: "玉井詩織"
+    aliases:
+      - "しおりん"
+    oshi_type: "アイドル"
+    affiliation: "ももいろクローバーZ"
+    source:
+      organization: "ももいろクローバーZ公式サイト"
+      url: "https://www.momoclo.net/profile"
+      external_id:
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・ニックネーム・所属グループ"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "公式一覧URLは人物固有IDとして扱わない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-momoclo-sasaki-ayaka
+    decision: review_candidate
+    name: "佐々木彩夏"
+    aliases:
+      - "あーりん"
+    oshi_type: "アイドル"
+    affiliation: "ももいろクローバーZ"
+    source:
+      organization: "ももいろクローバーZ公式サイト"
+      url: "https://www.momoclo.net/profile"
+      external_id:
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・ニックネーム・所属グループ"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "公式一覧URLは人物固有IDとして扱わない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-nogizaka46-inoue-nagi-55389
+    decision: review_candidate
+    name: "井上 和"
+    aliases:
+      - "いのうえ なぎ"
+      - "NAGI INOUE"
+    oshi_type: "アイドル"
+    affiliation: "乃木坂46"
+    source:
+      organization: "乃木坂46公式サイト"
+      url: "https://www.nogizaka46.com/s/n46/artist/55389"
+      external_id: "artist/55389"
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・読み・ローマ字・所属グループ"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "愛称は一次資料で未確認。読みとローマ字だけを検索候補とする。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-amuse-fukuyama-masaharu-a0002
+    decision: review_candidate
+    name: "福山 雅治"
+    aliases:
+      - "FUKUYAMA MASAHARU"
+    oshi_type: "俳優・タレント"
+    affiliation: "アミューズ"
+    source:
+      organization: "アミューズ公式サイト"
+      url: "https://www.amuse.co.jp/artist/A0002/"
+      external_id: "A0002"
+      checked_at: "2026-10-22"
+      evidence: "公式プロフィールの氏名・ローマ字・所属事務所"
+    review:
+      identity: confirmed_from_primary_source
+      aliases: confirmed_from_primary_source
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "俳優・ミュージシャンの活動分野ごとに別Oshiを作らない。愛称は一次資料で未確認。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
+
+  - stable_id: jp-sanrio-cinnamoroll-cinnamon
+    decision: hold
+    name: "シナモロール"
+    aliases:
+      - "CINNAMOROLL"
+      - "CINNAMON"
+    oshi_type: "キャラクター"
+    affiliation: "サンリオ"
+    source:
+      organization: "サンリオ公式サイト・企業サイト"
+      url: "https://www.sanrio.co.jp/characters/cinnamon/"
+      supplemental_url: "https://corporate.sanrio.co.jp/en/business-info/brands/cinnamoroll/"
+      external_id: "cinnamon"
+      checked_at: "2026-10-22"
+      evidence: "公式ブランドページのCINNAMOROLL／CINNAMON表記"
+    review:
+      identity: needs_scope_decision
+      aliases: needs_scope_decision
+      affiliation: confirmed_from_primary_source
+      existing_oshi: not_run
+      notes: "ブランド名とキャラクター名の粒度、および『シナモン』を単純別名にするか管理者判断が必要。保留中は投入しない。"
+    image:
+      action: placeholder
+      rights_status: not_reviewed
