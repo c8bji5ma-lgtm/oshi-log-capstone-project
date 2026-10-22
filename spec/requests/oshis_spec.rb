@@ -7,11 +7,13 @@ RSpec.describe "Oshi search and registration", type: :request do
     Nokogiri::HTML(response.body)
   end
 
-  def register(attributes = {}, periods = {})
+  def register(attributes = {}, periods = nil, continuation: nil, extra: {}, **period_keywords)
+    periods = (periods || {}).merge(period_keywords)
     post oshis_path, params: {
       oshi: { name: "新しい推し", oshi_type: "アイドル", affiliation: "所属" }.merge(attributes),
-      user_oshi: { started_period: "2023/05" }.merge(periods)
-    }
+      user_oshi: { started_period: "2023/05" }.merge(periods),
+      continue: continuation
+    }.merge(extra)
   end
 
   context "when signed out" do
@@ -134,6 +136,33 @@ RSpec.describe "Oshi search and registration", type: :request do
       follow_redirect!
       expect(document.at_css("[role='status']").text).to include("推しを登録しました")
       expect(document.at_css("main").text).to include("新しい推し", "2023/05")
+    end
+
+    it "preserves the allowlisted first-activity context through search and validation errors" do
+      get new_oshi_path, params: { q: "候補", continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION }
+      expect(document.css("input[name='continue']").map { |input| input["value"] }.uniq)
+        .to eq([ ApplicationController::FIRST_ACTIVITY_CONTINUATION ])
+
+      register({ name: "" }, { started_period: "2023/13" },
+        continuation: ApplicationController::FIRST_ACTIVITY_CONTINUATION)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(document.at_css("input#new_continue")["value"]).to eq(ApplicationController::FIRST_ACTIVITY_CONTINUATION)
+      expect(document.at_css("input[name='user_oshi[started_period]']")["value"]).to eq("2023/13")
+    end
+
+    it "continues a newly registered pending oshi to a preselected first activity" do
+      register({}, {}, continuation: ApplicationController::FIRST_ACTIVITY_CONTINUATION)
+      created = user.user_oshis.last!
+      expect(created.oshi).to be_pending
+      expect(response).to redirect_to(new_activity_path(initial_oshi_id: created.oshi_id))
+      follow_redirect!
+      expect(document.at_css("select[name='activity[oshi_ids][]'] option[selected]")["value"]).to eq(created.oshi_id.to_s)
+      expect(document.at_css("input[name='activity[occurred_on]']")["value"]).to eq(Date.current.iso8601)
+    end
+
+    it "ignores arbitrary continuation and redirect parameters" do
+      register({}, {}, continuation: "https://example.test/steal", extra: { return_to: "https://example.test/steal" })
+      expect(response).to redirect_to(oshis_path)
     end
 
     it "allows an unspecified starting period" do

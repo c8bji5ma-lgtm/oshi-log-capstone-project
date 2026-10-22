@@ -9,8 +9,10 @@ RSpec.describe "Managing personal oshis", type: :request do
     Nokogiri::HTML(response.body)
   end
 
-  def add_oshi(oshi, attributes = {})
-    post user_oshis_path, params: { oshi_id: oshi.id, user_oshi: { started_period: "2023/05" }.merge(attributes) }
+  def add_oshi(oshi, attributes = {}, continuation: nil, **keyword_attributes)
+    attributes = attributes.merge(keyword_attributes)
+    post user_oshis_path, params: { oshi_id: oshi.id,
+      user_oshi: { started_period: "2023/05" }.merge(attributes), continue: continuation }
   end
 
   def update_oshi(record, attributes)
@@ -62,6 +64,20 @@ RSpec.describe "Managing personal oshis", type: :request do
     it "adds approved oshis without a creator" do
       oshi = create(:oshi, :approved, created_by_user: nil)
       expect { add_oshi(oshi, started_period: "2023") }.to change(user.user_oshis, :count).by(1)
+    end
+
+    it "continues an existing visible oshi to a preselected first activity" do
+      oshi = create(:oshi, :approved)
+      add_oshi(oshi, {}, continuation: ApplicationController::FIRST_ACTIVITY_CONTINUATION)
+      expect(response).to redirect_to(new_activity_path(initial_oshi_id: oshi.id))
+    end
+
+    it "keeps an invalid existing-oshi form in the allowlisted continuation" do
+      oshi = create(:oshi, :approved)
+      add_oshi(oshi, { started_period: "2023/13" }, continuation: ApplicationController::FIRST_ACTIVITY_CONTINUATION)
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(document.at_css("input#existing_continue")["value"]).to eq(ApplicationController::FIRST_ACTIVITY_CONTINUATION)
+      expect(document.at_css("input[name='user_oshi[started_period]']")["value"]).to eq("2023/13")
     end
 
     it "rejects direct POSTs of unavailable oshis" do

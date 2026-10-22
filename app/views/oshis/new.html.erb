@@ -3,6 +3,7 @@
 <section class="card oshi-form">
   <h2>既存の推しから選ぶ</h2>
   <%= form_with url: new_oshi_path, method: :get do |f| %>
+    <%= hidden_field_tag :continue, ApplicationController::FIRST_ACTIVITY_CONTINUATION if first_activity_continuation? %>
     <div class="form-field">
       <%= f.label :q, "推しを検索" %>
       <%= f.search_field :q, value: params[:q], placeholder: "名前・別名で検索" %>
@@ -16,6 +17,7 @@
     <% end %>
     <%= form_with model: @existing_user_oshi, url: user_oshis_path, namespace: :existing do |f| %>
       <%= hidden_field_tag :q, params[:q], id: "existing_query" %>
+      <%= hidden_field_tag :continue, ApplicationController::FIRST_ACTIVITY_CONTINUATION, id: "existing_continue" if first_activity_continuation? %>
       <fieldset class="oshi-candidate-list">
         <legend>既存候補</legend>
         <% @oshis.each do |oshi| %>
@@ -57,6 +59,7 @@
   <%= render "shared/validation_errors", resource: @oshi %>
   <%= render "shared/validation_errors", resource: @user_oshi %>
   <%= form_with model: @oshi, html: { multipart: true } do |f| %>
+    <%= hidden_field_tag :continue, ApplicationController::FIRST_ACTIVITY_CONTINUATION, id: "new_continue" if first_activity_continuation? %>
     <fieldset>
       <legend>共通推し情報</legend>
       <div class="form-field">

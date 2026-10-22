@@ -52,6 +52,10 @@ RSpec.describe "Top and home pages", type: :request do
       expect(document.at_css(".home-summary-card").text).to include("活動回数", "0回", "活動支出", "記録なし")
       expect(document.at_css(".home-recent-card").text).to include("記録はまだありません")
       expect(document.at_css(".home-insight-card").text).to include("比較できる記録が増えると")
+      continuation = new_oshi_path(continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION)
+      expect(document.at_css(".home-primary-action")["href"]).to eq(continuation)
+      expect(document.at_css(".home-primary-action").text).to eq("最初の推しを登録")
+      expect(document.at_css(".home-recent-card a")["href"]).to eq(continuation)
       expect(document.at_css("main").text).not_to include("準備中")
       expect(document.at_css("main").text).not_to include("18,400", "CANDY TUNE", "活動 5回")
       expect(document.css("nav a").map(&:text)).to eq(%w[トップ 推し一覧 活動記録一覧 マイページ])
@@ -82,6 +86,8 @@ RSpec.describe "Top and home pages", type: :request do
       expect(document.css(".home-oshi-list li").map(&:text)).to eq([ "星の推し", "青い推し" ])
       expect(document.css(".home-recent-list a").map(&:text)).to include(recent.title, previous.title)
       expect(document.at_css(".home-insight-card").text).to include("ライブ・イベント")
+      expect(document.at_css(".home-primary-action")["href"]).to eq(new_activity_path)
+      expect(document.at_css(".home-primary-action").text).to eq("推し活を記録する")
       expect(document.at_css("main").text).not_to include(future.title, other.title, "50,000", "80,000")
     end
 

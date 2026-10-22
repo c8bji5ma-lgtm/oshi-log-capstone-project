@@ -16,7 +16,7 @@ class UserOshisController < ApplicationController
     @existing_user_oshi = current_user.user_oshis.new(started_period_params.merge(oshi: oshi))
 
     UserOshis::Save.call(user_oshi: @existing_user_oshi, new_images: image_upload_params)
-    redirect_to oshis_path, notice: "推しを登録しました。", status: :see_other
+    redirect_to post_oshi_registration_path(@existing_user_oshi), notice: "推しを登録しました。", status: :see_other
   rescue ActiveRecord::RecordInvalid
     if @existing_user_oshi.errors.of_kind?(:oshi_id, :taken)
       redirect_duplicate

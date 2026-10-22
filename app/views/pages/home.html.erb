@@ -1,4 +1,5 @@
 <% content_for :title, "ホーム | OshiLog" %>
+<% first_record_path = @home_user_oshis.empty? ? new_oshi_path(continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION) : new_activity_path %>
 
 <header class="home-hero">
   <div>
@@ -6,7 +7,7 @@
     <h1>ホーム</h1>
     <p class="home-lead">今日の「好き」を残して、これまでの推し活を振り返りましょう。</p>
   </div>
-  <%= link_to "推し活を記録する", new_activity_path, class: "button home-primary-action" %>
+  <%= link_to(@home_user_oshis.empty? ? "最初の推しを登録" : "推し活を記録する", first_record_path, class: "button home-primary-action") %>
 </header>
 
 <div class="home-grid">
@@ -35,7 +36,7 @@
     <div class="home-card-heading"><h2 id="home-recent-heading">最近の記録</h2><span aria-hidden="true">03</span></div>
     <% if @recent_activities.empty? %>
       <p class="home-empty">記録はまだありません。最初の思い出を残してみましょう。</p>
-      <%= link_to "最初の記録をつくる", new_activity_path, class: "button button-secondary" %>
+      <%= link_to "最初の記録をつくる", first_record_path, class: "button button-secondary" %>
     <% else %>
       <ol class="home-recent-list">
         <% @recent_activities.each do |activity| %>
