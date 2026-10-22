@@ -1,6 +1,7 @@
 <% content_for :title, "推し承認管理 | OshiLog" %>
 <h1>推し承認管理</h1>
 <p>承認待ちの推しを確認し、承認または却下してください。</p>
+<p><%= link_to "推し共通画像を管理", admin_oshi_common_images_path, class: "button" %></p>
 <p><%= link_to "重複した推しを統合", new_merge_admin_oshis_path, class: "button button-secondary" %></p>
 <% if @oshis.empty? %>
   <p>承認待ちの推しはありません。</p>

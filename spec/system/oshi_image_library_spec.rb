@@ -28,7 +28,7 @@ RSpec.describe "Managing an oshi image library in the browser", type: :system do
     login
     visit new_oshi_path(q: oshi.name)
     within("form[action='#{user_oshis_path}']") do
-      select oshi.name, from: "既存候補"
+      choose oshi.name, exact: false
       attach_file "登録画像", [ fixture_path("image.jpg"), fixture_path("image.webp") ]
       click_button "選んだ推しを追加"
     end

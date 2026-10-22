@@ -1,0 +1,4 @@
+<% content_for :title, "共通画像登録 | OshiLog" %>
+<h1><%= @oshi.name %>の共通画像登録</h1>
+<%= render "form", common_image: @common_image, oshi: @oshi %>
+<p><%= link_to "共通画像管理へ戻る", admin_oshi_common_images_path(q: @oshi.name) %></p>

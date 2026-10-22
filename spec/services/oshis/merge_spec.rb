@@ -20,7 +20,7 @@ RSpec.describe Oshis::Merge do
   end
 
   def snapshot
-    [ Oshi, UserOshi, Activity, ActivityOshi, Subscription, SubscriptionOshi, OshiAlias,
+    [ Oshi, UserOshi, Activity, ActivityOshi, Subscription, SubscriptionOshi, OshiAlias, OshiCommonImage,
       ActiveStorage::Attachment, ActiveStorage::Blob, ActiveStorage::VariantRecord ].to_h do |model|
       [ model.name, model.order(:id).map(&:attributes) ]
     end
@@ -340,8 +340,8 @@ RSpec.describe Oshis::Merge do
       raise "Merge specs require the test environment" unless Rails.env.test?
 
       models = [ ActiveStorage::VariantRecord, ActiveStorage::Attachment,
-        ActivityOshi, SubscriptionOshi, OshiAlias, UserOshi, Activity, Subscription,
-        Oshi, User, ActiveStorage::Blob ]
+        ActivityOshi, SubscriptionOshi, OshiAlias, OshiCommonImage, UserOshi, Activity,
+        Subscription, Oshi, User, ActiveStorage::Blob ]
       baseline_ids = models.to_h { |model| [ model, model.pluck(:id) ] }
       original_services = ActiveStorage::Blob.services
       original_service = ActiveStorage::Blob.service
@@ -410,6 +410,33 @@ RSpec.describe Oshis::Merge do
       expect(original.representative_image.download).to eq(bytes)
       expect(ActiveJob::Base.queue_adapter.enqueued_jobs).to be_empty
     end
+    it "moves common images with their rights metadata and original file" do
+      common_image = create(:oshi_common_image, oshi: source)
+      attachment_id = common_image.image.attachment.id
+      bytes = common_image.image.download
+
+      merge
+
+      expect(common_image.reload).to have_attributes(oshi_id: target.id, attribution_text: "画像提供：権利者")
+      expect(common_image.image.attachment.id).to eq(attachment_id)
+      expect(common_image.image.download).to eq(bytes)
+    end
+
+    it "rolls back without deleting images when the merged total exceeds ten" do
+      10.times do |index|
+        create(:oshi_common_image, oshi: target, source_url: "https://example.test/target/#{index}")
+      end
+      extra = create(:oshi_common_image, oshi: source, source_url: "https://example.test/source")
+      before = snapshot
+      bytes = extra.image.download
+
+      expect { merge }.to raise_error(described_class::Error, /10枚を超える/)
+
+      expect(snapshot).to eq(before)
+      expect(extra.reload.oshi_id).to eq(source.id)
+      expect(extra.image.download).to eq(bytes)
+    end
+
 
     it "waits for an existing activity save without reversing its parent-first locking order" do
       source_id, target_id = source.id, target.id

@@ -14,6 +14,7 @@ Rails.application.routes.draw do
     resources :images, only: [ :create, :update, :destroy ], controller: "user_oshi_images"
   end
   namespace :admin do
+    resources :oshi_common_images, path: "common-images", except: :show
     resources :oshis, only: :index do
       collection do
         get :new_merge
@@ -27,6 +28,7 @@ Rails.application.routes.draw do
   end
   resources :activities
   get "images/:id", to: "images#show", as: :protected_image
+  get "common-oshi-images/:id", to: "common_oshi_images#show", as: :common_oshi_image
   resources :subscriptions, only: [ :index, :new, :create, :edit, :update, :destroy ]
   get "data", to: "oshi_data#show", as: :oshi_data
   resource :profile, only: [ :edit, :update ]

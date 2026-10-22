@@ -38,8 +38,7 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
 
   def add_candidate(name, started_period:)
     within("form[action='#{user_oshis_path}']") do
-      option = find("select[name='oshi_id'] option", text: name, match: :first).text
-      select option, from: "既存候補"
+      choose name, exact: false
       fill_in "推し始め", with: started_period
       click_button "選んだ推しを追加"
     end
@@ -53,6 +52,37 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
     click_link "推し承認管理"
     expect(page).to have_css("main h1", text: "推し承認管理", exact_text: true)
   end
+  it "shows accessible common-image candidates on mobile and retains selection after an error" do
+    first = create(:oshi, :approved, name: "画像候補A")
+    second = create(:oshi, :approved, name: "画像候補B")
+    common_image = create(:oshi_common_image, oshi: first, attribution_text: "検証用の帰属")
+    sign_in_as(user)
+    open_registration
+    page.current_window.resize_to(375, 800)
+    search_oshi("画像候補")
+
+    expect(page).to have_css("img[src='#{common_oshi_image_path(common_image.image.attachment)}']")
+    expect(page).to have_text("検証用の帰属")
+    first_radio = find("input[type='radio'][value='#{first.id}']")
+    second_radio = find("input[type='radio'][value='#{second.id}']")
+    first_radio.click
+    first_radio.send_keys(:arrow_down)
+    expect(second_radio).to be_checked
+    first_radio.click
+
+    within("form[action='#{user_oshis_path}']") do
+      fill_in "推し始め", with: "2026/13"
+      click_button "選んだ推しを追加"
+    end
+    expect(page).to have_current_path(new_oshi_path, ignore_query: true)
+    expect(page).to have_css(".validation-errors[role='alert']")
+    expect(page).to have_checked_field("画像候補A", exact: false)
+    expect(page).to have_text("検証用の帰属")
+    expect(page.evaluate_script("document.documentElement.scrollWidth <= document.documentElement.clientWidth")).to be(true)
+  ensure
+    page.current_window.resize_to(1280, 900) if page.current_window
+  end
+
 
   it "adds an approved search result and updates personal periods through the edit form" do
     oshi = create(:oshi, :approved, name: "検索から追加する推し")
@@ -137,7 +167,7 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
     sign_in_as(user)
     open_registration
     search_oshi("検索除外")
-    expect(page).to have_select("既存候補", with_options: [ approved.name ])
-    expect(page).not_to have_select("既存候補", with_options: [ rejected.name ])
+    expect(page).to have_field(approved.name, type: "radio", exact: false)
+    expect(page).not_to have_field(rejected.name, type: "radio", exact: false)
   end
 end
