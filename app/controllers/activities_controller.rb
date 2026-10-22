@@ -59,10 +59,14 @@ class ActivitiesController < ApplicationController
   end
 
   def new
-    @activity = current_user.activities.new
-    @selected_oshi_ids = []
+    @activity = current_user.activities.new(occurred_on: Date.current)
+    @selected_oshi_ids = initial_oshi_selection
     @selected_emotion_ids = []
     @existing_images = []
+    if params.key?(:initial_oshi_id) && @selected_oshi_ids.empty?
+      @activity.errors.add(:base, "最初に記録する推しを確認できませんでした。登録済みの推しを選び直してください。")
+      render :new, status: :bad_request
+    end
   end
 
   def create
@@ -123,6 +127,11 @@ class ActivitiesController < ApplicationController
 
     def positive_id(value)
       value.to_i if value.is_a?(String) && value.match?(/\A[1-9][0-9]*\z/)
+    end
+
+    def initial_oshi_selection
+      id = positive_id(params[:initial_oshi_id])
+      id && @selectable_oshis.any? { |oshi| oshi.id == id } ? [ id ] : []
     end
 
     def save_activity

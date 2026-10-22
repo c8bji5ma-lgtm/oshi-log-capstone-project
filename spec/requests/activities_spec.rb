@@ -202,6 +202,25 @@ RSpec.describe "Activities", type: :request do
       expect(document.at_css("select[name='activity[oshi_ids][]']")["multiple"]).to be_present
       expect(document.at_css("input[type='file']")["multiple"]).to be_present
       expect(document.css("select[name='activity[activity_type]'] option").map(&:text)).to include(*Activity::ACTIVITY_TYPES)
+      expect(document.at_css("input[name='activity[occurred_on]']")["value"]).to eq(Date.current.iso8601)
+    end
+
+    it "preselects only an owned registered oshi from the first-record continuation" do
+      get new_activity_path, params: { initial_oshi_id: second_oshi.id }
+      expect(response).to have_http_status(:ok)
+      selected = document.css("select[name='activity[oshi_ids][]'] option[selected]").map { |option| option["value"] }
+      expect(selected).to eq([ second_oshi.id.to_s ])
+    end
+
+    it "rejects malformed, foreign and unregistered initial selections without leaking a selection" do
+      foreign = create(:user_oshi, user: other_user).oshi
+      unregistered = create(:oshi, :approved)
+      [ "bad", foreign.id.to_s, unregistered.id.to_s, [ oshi.id.to_s ], { id: oshi.id.to_s } ].each do |value|
+        get new_activity_path, params: { initial_oshi_id: value }
+        expect(response).to have_http_status(:bad_request)
+        expect(document.css("select[name='activity[oshi_ids][]'] option[selected]")).to be_empty
+        expect(document.at_css(".validation-errors").text).to include("選び直してください")
+      end
     end
 
     it "guides a user with no registered oshis" do
@@ -273,6 +292,12 @@ RSpec.describe "Activities", type: :request do
         expect(response).to have_http_status(:unprocessable_content)
         expect(document.at_css(".validation-errors")).to be_present
       end
+    end
+
+    it "does not replace an explicitly blank submitted date with today's default" do
+      post activities_path, params: { activity: input(occurred_on: "") }
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(document.at_css("input[name='activity[occurred_on]']")["value"].to_s).to eq("")
     end
 
     { "" => nil, "0" => 0 }.each do |value, expected|
