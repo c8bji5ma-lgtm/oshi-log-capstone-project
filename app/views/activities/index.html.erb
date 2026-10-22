@@ -1,6 +1,19 @@
 <% content_for :title, "活動記録一覧 | OshiLog" %>
 <h1>活動記録一覧</h1>
 <p><%= link_to "記録する", new_activity_path, class: "button" %></p>
+<% if @filters["year"].present? || @filters["month"].present? || @filters["oshi_id"].present? || @filters["activity_type"].present? || @filters["q"].present? %>
+  <section class="card" aria-labelledby="activity-filter-summary">
+    <h2 id="activity-filter-summary">適用中の条件</h2>
+    <ul>
+      <li>期間: <%= @filters["month"].presence || (@filters["year"].present? ? "#{@filters['year']}年" : "すべて") %></li>
+      <% if @filters["oshi_id"].present? %><li>推し: <%= @selectable_oshis.find { |oshi| oshi.id.to_s == @filters["oshi_id"] }&.name || "確認できない推し" %></li><% end %>
+      <% if @filters["activity_type"].present? %><li>カテゴリ: <%= @filters["activity_type"] %></li><% end %>
+      <% if @filters["q"].present? %><li>キーワード: <%= @filters["q"] %></li><% end %>
+    </ul>
+    <p><%= link_to "条件を解除する", activities_path %> / <%= link_to "推し活データへ戻る", oshi_data_path(year: @filters["year"].presence || @filters["month"].to_s.first(4), oshi_id: @filters["oshi_id"].presence) %></p>
+  </section>
+<% end %>
+
 <% if @filter_errors.any? %>
   <div class="validation-errors" role="alert"><%= @filter_errors.uniq.join(" ") %></div>
 <% end %>
@@ -8,6 +21,8 @@
   <div class="form-field">
     <%= f.label :month, "年月" %>
     <%= f.month_field :month, value: @filters["month"] %>
+    <%= f.hidden_field :year, value: @filters["year"] if @filters["year"].present? %>
+    <%= f.hidden_field :through, value: @filters["through"] if @filters["through"].present? %>
   </div>
   <div class="form-field">
     <%= f.label :oshi_id, "推し" %>
