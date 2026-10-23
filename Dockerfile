@@ -52,7 +52,7 @@ COPY . .
 RUN bundle exec bootsnap precompile -j 1 app/ lib/
 
 # Precompiling assets for production without requiring secret RAILS_MASTER_KEY
-RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
+RUN SECRET_KEY_BASE_DUMMY=1 PUBLIC_APP_HOST=127.0.0.1 ./bin/rails assets:precompile
 
 # Do not carry build-time caches or generated secrets into the runtime image.
 RUN rm -rf tmp/* && \
