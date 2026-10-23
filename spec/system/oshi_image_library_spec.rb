@@ -7,8 +7,8 @@ RSpec.describe "Managing an oshi image library in the browser", type: :system do
 
   def login
     visit new_user_session_path
-    fill_in "Email", with: user.email
-    fill_in "Password", with: "password123"
+    fill_in "メールアドレス", with: user.email
+    fill_in "パスワード", with: "password123"
     click_button "ログイン"
     expect(page).to have_current_path(root_path)
   end
