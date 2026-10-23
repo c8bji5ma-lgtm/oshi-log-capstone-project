@@ -13,8 +13,19 @@ RSpec.describe "User authentication", type: :request do
   it "allows access to the sign-in and sign-up pages without authentication" do
     get new_user_session_path
     expect(response).to have_http_status(:ok)
+    sign_in_page = Nokogiri::HTML(response.body)
+    expect(sign_in_page.at_css("main h1").text).to eq("ログイン")
+    expect(sign_in_page.css("main label").map(&:text)).to include("メールアドレス", "パスワード")
+    expect(sign_in_page.at_css("main input[type='submit']")["value"]).to eq("ログイン")
+
     get new_user_registration_path
     expect(response).to have_http_status(:ok)
+    sign_up_page = Nokogiri::HTML(response.body)
+    expect(sign_up_page.at_css("main h1").text).to eq("新規登録")
+    expect(sign_up_page.css("main label").map(&:text))
+      .to include("メールアドレス", "パスワード", "パスワード（確認用）")
+    expect(sign_up_page.at_css("main input[type='submit']")["value"]).to eq("登録する")
+    expect(response.body).not_to include("Sign up", "characters minimum")
   end
 
   it "registers a user and redirects to root showing the home page" do
@@ -33,6 +44,9 @@ RSpec.describe "User authentication", type: :request do
   it "rejects invalid registration attributes" do
     expect { register_user(password_confirmation: "different") }.not_to change(User, :count)
     expect(response).to have_http_status(:unprocessable_content)
+    document = Nokogiri::HTML(response.body)
+    expect(document.at_css("[role='alert']").text).to include("パスワード（確認用）と入力内容が一致しません")
+    expect(document.at_css("input[name='user[email]']")["value"]).to eq("new@example.com")
   end
 
   it "signs in with valid credentials and redirects to root showing the home page" do
