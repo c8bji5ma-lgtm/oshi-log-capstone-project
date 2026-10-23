@@ -1,0 +1,73 @@
+name: Publish GHCR image
+
+on:
+  push:
+    branches:
+      - main
+      - infra/ghcr-image-publish
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-ghcr-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'c8bji5ma-lgtm/oshi-log-capstone-project' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Build amd64 image
+        env:
+          IMAGE: ghcr.io/c8bji5ma-lgtm/oshi-log-capstone-project
+        run: |
+          set -euo pipefail
+          image_ref="${IMAGE}:${GITHUB_SHA}"
+          docker build \
+            --platform linux/amd64 \
+            --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "${image_ref}" \
+            .
+
+      - name: Log in to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          printf '%s' "${GHCR_TOKEN}" | docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+
+      - name: Push immutable commit image
+        env:
+          IMAGE: ghcr.io/c8bji5ma-lgtm/oshi-log-capstone-project
+        run: |
+          set -euo pipefail
+          image_ref="${IMAGE}:${GITHUB_SHA}"
+          docker push "${image_ref}"
+          docker pull "${image_ref}"
+          digest_ref="$(docker image inspect --format '{{ index .RepoDigests 0 }}' "${image_ref}")"
+          case "${digest_ref}" in
+            "${IMAGE}@sha256:"*) ;;
+            *)
+              echo "Unexpected digest reference: ${digest_ref}" >&2
+              exit 1
+              ;;
+          esac
+          {
+            echo '### Published image'
+            echo
+            echo "- Commit tag: \`${image_ref}\`"
+            echo "- Digest: \`${digest_ref}\`"
+            echo '- Platform: `linux/amd64`'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Log out from GHCR
+        if: always()
+        run: docker logout ghcr.io || true
