@@ -10,7 +10,7 @@ RSpec.describe "Activity summary drilldown in the browser", type: :system do
     visit new_user_session_path
     fill_in "user_email", with: user.email
     fill_in "user_password", with: "password123"
-    click_button "Log in"
+    click_button "ログイン"
 
     [ [ 375, 812, "mobile" ], [ 1280, 900, "desktop" ] ].each do |width, height, label|
       page.current_window.resize_to(width, height)

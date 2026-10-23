@@ -7,7 +7,7 @@ RSpec.describe "First activity onboarding", type: :system do
     visit new_user_session_path
     fill_in "user_email", with: user.email
     fill_in "user_password", with: "password123"
-    click_button "Log in"
+    click_button "ログイン"
 
     click_link "最初の推しを登録", exact: true
     expect(page).to have_current_path(new_oshi_path(continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION))

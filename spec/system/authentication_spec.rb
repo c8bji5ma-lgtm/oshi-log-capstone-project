@@ -9,7 +9,7 @@ RSpec.describe "User authentication in the browser", type: :system do
     within("main form") do
       fill_in "user_email", with: user.email
       fill_in "user_password", with: "password123"
-      click_button "Log in"
+      click_button "ログイン"
     end
 
     expect(page).to have_current_path(root_path)
@@ -30,10 +30,10 @@ RSpec.describe "User authentication in the browser", type: :system do
     within("main form") do
       fill_in "user_email", with: user.email
       fill_in "user_password", with: "incorrect"
-      click_button "Log in"
+      click_button "ログイン"
     end
 
-    expect(page).to have_css("[role='alert']", text: "Invalid email or password.")
+    expect(page).to have_css("[role='alert']", text: "メールアドレスまたはパスワードが正しくありません。")
     expect(page).to have_field("user_password")
     expect(page).not_to have_button("ログアウト")
 

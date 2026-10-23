@@ -1,0 +1,29 @@
+<section class="card" aria-labelledby="password-change-title">
+  <h1 id="password-change-title">新しいパスワードを設定する</h1>
+
+  <%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :put }) do |form| %>
+    <%= render "devise/shared/error_messages", resource: resource %>
+    <%= form.hidden_field :reset_password_token %>
+
+    <div class="form-field">
+      <%= form.label :password, "新しいパスワード" %>
+      <% if @minimum_password_length %>
+        <p id="password-length-help"><%= @minimum_password_length %>文字以上で入力してください。</p>
+      <% end %>
+      <%= form.password_field :password, autofocus: true, autocomplete: "new-password", required: true,
+                               aria: { invalid: resource.errors.include?(:password), describedby: ("password-length-help" if @minimum_password_length) } %>
+    </div>
+
+    <div class="form-field">
+      <%= form.label :password_confirmation, "新しいパスワード（確認用）" %>
+      <%= form.password_field :password_confirmation, autocomplete: "new-password", required: true,
+                               aria: { invalid: resource.errors.include?(:password_confirmation) } %>
+    </div>
+
+    <div class="actions">
+      <%= form.submit "パスワードを変更する", class: "button" %>
+    </div>
+  <% end %>
+
+  <%= render "devise/shared/links" %>
+</section>

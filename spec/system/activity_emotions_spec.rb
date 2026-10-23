@@ -9,7 +9,7 @@ RSpec.describe "Activity emotion selection", type: :system do
     visit new_user_session_path
     fill_in "user_email", with: user.email
     fill_in "user_password", with: "password123"
-    click_button "Log in"
+    click_button "ログイン"
     expect(page).to have_css("main h1", text: "ホーム", exact_text: true)
 
     visit new_activity_path

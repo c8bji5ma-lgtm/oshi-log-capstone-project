@@ -1,0 +1,74 @@
+ja:
+  activerecord:
+    errors:
+      messages:
+        record_invalid: "入力内容に誤りがあります: %{errors}"
+        restrict_dependent_destroy:
+          has_one: "%{record}が存在しているため削除できません"
+          has_many: "%{record}が存在しているため削除できません"
+    models:
+      user: "ユーザー"
+    attributes:
+      user:
+        email: "メールアドレス"
+        password: "パスワード"
+        password_confirmation: "パスワード（確認用）"
+  devise:
+    failure:
+      already_authenticated: "すでにログインしています。"
+      inactive: "アカウントが有効になっていません。"
+      invalid: "%{authentication_keys}またはパスワードが正しくありません。"
+      locked: "アカウントがロックされています。"
+      last_attempt: "あと1回失敗するとアカウントがロックされます。"
+      not_found_in_database: "%{authentication_keys}またはパスワードが正しくありません。"
+      timeout: "セッションの有効期限が切れました。もう一度ログインしてください。"
+      unauthenticated: "続けるにはログインしてください。"
+      unconfirmed: "続ける前にメールアドレスを確認してください。"
+    passwords:
+      no_token: "パスワード再設定メールのリンクからアクセスしてください。"
+      send_instructions: "パスワード再設定方法をメールで送信します。"
+      send_paranoid_instructions: "登録済みのメールアドレスの場合、パスワード再設定方法を送信します。"
+      updated: "パスワードを変更し、ログインしました。"
+      updated_not_active: "パスワードを変更しました。"
+    registrations:
+      destroyed: "アカウントを削除しました。"
+      signed_up: "新規登録が完了しました。"
+      signed_up_but_inactive: "新規登録は完了しましたが、アカウントが有効になっていないためログインできません。"
+      signed_up_but_locked: "新規登録は完了しましたが、アカウントがロックされているためログインできません。"
+      signed_up_but_unconfirmed: "確認用リンクをメールで送信しました。リンクからアカウントを有効にしてください。"
+      update_needs_confirmation: "アカウント情報を更新しました。新しいメールアドレスに届いたリンクから確認してください。"
+      updated: "アカウント情報を更新しました。"
+      updated_but_not_signed_in: "アカウント情報を更新しました。パスワードを変更したため、もう一度ログインしてください。"
+    sessions:
+      signed_in: "ログインしました。"
+      signed_out: "ログアウトしました。"
+      already_signed_out: "すでにログアウトしています。"
+  errors:
+    format: "%{attribute}%{message}"
+    messages:
+      accepted: "を受諾してください"
+      blank: "を入力してください"
+      confirmation: "と入力内容が一致しません"
+      empty: "を入力してください"
+      equal_to: "は%{count}にしてください"
+      even: "は偶数にしてください"
+      exclusion: "は使用できません"
+      greater_than: "は%{count}より大きい値にしてください"
+      greater_than_or_equal_to: "は%{count}以上の値にしてください"
+      inclusion: "は一覧にありません"
+      invalid: "は正しい形式で入力してください"
+      less_than: "は%{count}より小さい値にしてください"
+      less_than_or_equal_to: "は%{count}以下の値にしてください"
+      not_a_number: "は数値で入力してください"
+      not_an_integer: "は整数で入力してください"
+      odd: "は奇数にしてください"
+      other_than: "は%{count}以外の値にしてください"
+      present: "は入力しないでください"
+      required: "を入力してください"
+      taken: "はすでに使用されています"
+      too_long: "は%{count}文字以内で入力してください"
+      too_short: "は%{count}文字以上で入力してください"
+      wrong_length: "は%{count}文字で入力してください"
+      not_saved:
+        one: "%{resource}を保存できませんでした。入力内容を確認してください。"
+        other: "%{resource}を保存できませんでした。入力内容を確認してください。"
