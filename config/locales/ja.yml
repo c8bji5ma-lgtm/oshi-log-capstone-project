@@ -1,5 +1,11 @@
 ja:
   activerecord:
+    errors:
+      messages:
+        record_invalid: "入力内容に誤りがあります: %{errors}"
+        restrict_dependent_destroy:
+          has_one: "%{record}が存在しているため削除できません"
+          has_many: "%{record}が存在しているため削除できません"
     models:
       user: "ユーザー"
     attributes:

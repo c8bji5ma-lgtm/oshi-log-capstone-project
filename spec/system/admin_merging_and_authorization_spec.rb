@@ -14,7 +14,7 @@ RSpec.describe "Admin merging and authorization in the browser", type: :system d
     within("main form") do
       fill_in "user_email", with: account.email
       fill_in "user_password", with: "password123"
-      click_button "Log in"
+      click_button "ログイン"
     end
     expect(page).to have_current_path(root_path)
     expect(page).to have_css("main h1", text: "ホーム", exact_text: true)
@@ -23,7 +23,7 @@ RSpec.describe "Admin merging and authorization in the browser", type: :system d
   def sign_out
     click_button "ログアウト"
     expect(page).to have_current_path(new_user_session_path)
-    expect(page).to have_button("Log in")
+    expect(page).to have_button("ログイン")
   end
 
   def open_my_page
@@ -211,7 +211,7 @@ RSpec.describe "Admin merging and authorization in the browser", type: :system d
     visit new_merge_admin_oshis_path
     expect(page).to have_current_path(new_user_session_path)
     expect(page).to have_css("[role='alert']", text: "続けるにはログインしてください。")
-    expect(page).to have_button("Log in")
+    expect(page).to have_button("ログイン")
   end
 
   it "shows identical not-found pages for foreign and missing records after an actual user switch" do

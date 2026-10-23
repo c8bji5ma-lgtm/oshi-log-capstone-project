@@ -9,7 +9,7 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
     within("main form") do
       fill_in "user_email", with: account.email
       fill_in "user_password", with: "password123"
-      click_button "Log in"
+      click_button "ログイン"
     end
     expect(page).to have_current_path(root_path)
     expect(page).to have_css("main h1", text: "ホーム", exact_text: true)
@@ -18,7 +18,7 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
   def sign_out
     click_button "ログアウト"
     expect(page).to have_current_path(new_user_session_path)
-    expect(page).to have_button("Log in")
+    expect(page).to have_button("ログイン")
   end
 
   def open_registration

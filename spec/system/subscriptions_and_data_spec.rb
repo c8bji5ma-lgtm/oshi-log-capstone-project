@@ -15,7 +15,7 @@ RSpec.describe "Fixed costs and visualization in the browser", type: :system do
     within("main form") do
       fill_in "user_email", with: user.email
       fill_in "user_password", with: "password123"
-      click_button "Log in"
+      click_button "ログイン"
     end
     expect(page).to have_css("main h1", text: "ホーム", exact_text: true)
   end
