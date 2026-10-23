@@ -19,13 +19,9 @@ RSpec.describe PublicAppHost do
       end
     end
 
-    it "uses loopback only for the secret-free image build" do
-      expect(described_class.resolve("SECRET_KEY_BASE_DUMMY" => "1")).to eq("127.0.0.1")
-    end
-
-    it "does not let the image-build fallback replace an explicit invalid host" do
-      expect { described_class.resolve("SECRET_KEY_BASE_DUMMY" => "1", "PUBLIC_APP_HOST" => "invalid") }
-        .to raise_error(PublicAppHost::ConfigurationError)
+    it "does not let the image-build flag bypass the required host" do
+      expect { described_class.resolve("SECRET_KEY_BASE_DUMMY" => "1") }
+        .to raise_error(PublicAppHost::ConfigurationError, "PUBLIC_APP_HOST is required in production")
     end
   end
 end

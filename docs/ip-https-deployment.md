@@ -7,7 +7,8 @@ Rails / Thruster のポートは `127.0.0.1` に限定し、DB ポートとス�
 
 - 実行時に `PUBLIC_APP_HOST` へ公開 IPv4 アドレスを指定する。
 - 未指定または IPv4 アドレス以外の場合、本番アプリは起動しない。
-- `SECRET_KEY_BASE_DUMMY=1` を使う秘密なしのイメージビルド時だけ、ループバック値を使用できる。
+- 秘密なしのイメージビルドでは、Dockerfile のビルド手順に限って
+  `PUBLIC_APP_HOST=127.0.0.1` を明示する。本番実行時の未指定を許可する例外は設けない。
 - TLS 終端後のリクエストとして扱い、HTTPS リダイレクト、HSTS、Secure Cookie を有効にする。
 - 許可する Host ヘッダーとメール内 URL は `PUBLIC_APP_HOST` に限定する。
 
