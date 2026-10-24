@@ -5,7 +5,8 @@
 - アプリQA確認日：2026年10月21日
 - 外部設計資料照合日：2026年10月22日
 - Issue：[#31 MVP最終QA・要件照合・README更新](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/issues/31)
-- 今回の確認対象commit：`edba87140d2f5d13634942ac9006e63b0555d667`（PR #83 merge後の`main`）
+- 当初の確認対象commit：`edba87140d2f5d13634942ac9006e63b0555d667`（PR #83 merge後の`main`）
+- 現行実装との再照合対象commit：`64c54b286c3f840242ccc878449fd9f9b6469319`（PR #106 merge後の`main`、2026年10月24日）
 - 過去の基準：PR #74のmerge commitと、そのPRに対するGitHub Actions。以下では過去の検証証拠としてのみ区別して記載する
 - 正式仕様の優先順：GitHub Issues、READMEから参照する要件資料、ER図・テーブル定義、実装
 
@@ -16,8 +17,8 @@
 | Issue #31の確認項目 | 現在の根拠 | 状態・残る確認 |
 |---|---|---|
 | カタログ設計の高優先度機能 | 活動CRUD、履歴・絞り込み、集計・固定費のrequest/system spec | 代表導線をChrome/Seleniumで再確認済み |
-| テーブル定義書とDB構造 | `db/schema.rb`、model spec、DB制約spec、test DBメタデータ、更新後の外部テーブル定義書 | 業務11テーブルと承認済み差分を照合済み。外部資料担当のAPI読戻しでは一致し、Sheetsネイティブ画面の目視は未実施 |
-| ER図とモデル関連 | model、association/constraint spec、更新後の外部ER図 | 業務11テーブル・12コネクタ、複合UNIQUE、NN、画像上限等を外部資料担当が読戻し・画像確認済み |
+| テーブル定義書とDB構造 | `db/schema.rb`、model spec、DB制約spec、test DBメタデータ、更新後の外部テーブル定義書 | 2026年10月22日の照合時点は業務11テーブル。現行schemaは全15テーブルからActive Storage 3テーブルを除く業務12テーブルで、後から追加された`oshi_common_images`を外部資料へ再同期する必要がある。Sheetsネイティブ画面の目視も未実施 |
+| ER図とモデル関連 | model、association/constraint spec、更新後の外部ER図 | 2026年10月22日の外部ER図は業務11テーブル・12コネクタとして確認済み。現行schemaの`oshi_common_images`とActive Storage関連を含む構造への再同期は未実施 |
 | 主要画面遷移 | authentication、推し管理、活動・データ、固定費、プロフィール・カード、管理者のsystem spec | 今回のcommitでChrome/Seleniumの代表12 examplesを再確認済み |
 | 主要画面・グローバルナビ | request/system spec、Issue #30の1280px/375px目視 | 主要幅で確認済み。全端末・支援技術の保証ではない |
 | ログイン・ログアウト・管理者 | authentication、admin authorization/merging spec | 自動検証済み |
@@ -37,6 +38,7 @@
 |---|---|---|
 | 感情タグ | Issue #67、PR #69 | `emotions`、`activity_emotions`を含む業務11テーブルとして反映 |
 | 推し画像ライブラリ | Issue #70、PR #71 | Active Storageによる代表画像・ライブラリ画像、合計30枚上限を注記。独自業務テーブルの追加なし |
+| 推し共通画像 | Issue #86、PR #87 | 現行schemaへ`oshi_common_images`を追加。全15テーブル、Active Storage 3テーブルを除く業務12テーブルとなった。2026年10月22日に確認した外部テーブル定義書・ER図は追加前のため再同期が必要 |
 | 楽観ロック | Issue #61、PR #72 | `activities.lock_version`、`subscriptions.lock_version`を反映 |
 | 制約・将来機能 | 現行schema、Issue #26 | 複合UNIQUEの列組、NN、公開・URL・QR共有が将来機能であることを反映 |
 
@@ -52,6 +54,7 @@ READMEには2026年10月22日時点のER図を上・中・下の3枚、画面遷
 - PR #83 merge前：全RSpec 1423 examples（うちSystem spec 63 examples）、失敗0、pending 0
 - PR #83：最新headに対するCI全項目が成功
 - PR #84：QA記録のみの変更に対するCI全項目が成功し、merge commit `0ee4a792fae2f014aad2c58c033d313514280aa1`でマージ済み
+- PR #106 merge後の現行main `64c54b286c3f840242ccc878449fd9f9b6469319`：全RSpec 1486 examples、失敗0。main CIのlint / scan_js / scan_ruby / testとGHCR publishが成功。これは上記の2026年10月21日の1423 examplesとは別の検証証拠である
 - 1280px / 375px：横スクロール、重なり、文字切れなし
 - プロフィールカードdownload待ちの既知の一過性失敗は再試行成功し、Issue #30では再発なし。原因修正済みとは扱わない
 
@@ -112,6 +115,8 @@ CDPによるreflow確認はheaded Chromeで`Ctrl`+`+`を操作した結果では
 
 この報告は、VoiceOver、個別手順の全項目、保存後の画像表示遅延・透過、または本番環境を確認済みとするものではない。
 
+2026年10月24日、本人からiPhoneでの確認は完了しており作業を進めてよいとの追加報告があった。これは本人申告による完了記録であり、エージェントが独立して端末画面・操作結果を検証したものではない。確認した個別操作は列挙されていないため、PNGの実寸一致、VoiceOver、Safariの全機能、画像表示遅延・透過表示まで確認済みとは扱わない。
+
 ## 公開前の追加Chrome一巡
 
 2026年10月22日、最新mainのcommit `34d130c9e5d83b8e9ed9388fb5f4a571a54b27c6` に対し、`BUNDLE_FROZEN=true RAILS_ENV=test`、専用`my_app_test`、`tmp/storage`、合成データだけを使って追加確認した。
@@ -140,8 +145,8 @@ Git管理外の`tmp/issue31_release_readiness/screenshots/`へ8枚を保存し�
 
 ## 残る確認と優先順位
 
-1. Sheetsをネイティブ画面で目視し、API読戻しでは判別できない表示上の欠落がないことを確認する
-2. Chrome以外の実ブラウザ、物理スマートフォン、支援技術を確認する
+1. `oshi_common_images`追加後の業務12テーブルを外部テーブル定義書・ER図へ同期し、Sheetsをネイティブ画面で目視してAPI読戻しでは判別できない表示上の欠落がないことを確認する
+2. 本人申告で完了したiPhone確認の範囲を必要に応じて特定し、Chrome以外の実ブラウザとVoiceOver等の実支援技術を確認する
 3. 実メール・外部API・本番環境、およびIssue #60の本番資源予算・複数worker・native hard timeoutを確認する
 4. iPhone Safariで保留した保存後表示遅延と透過表示を、原ファイル・保存blob・表示CSSを区別して再確認する
 
