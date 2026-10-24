@@ -96,7 +96,7 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
     end
     open_card
     expect(page).to have_select("主写真：推しA", selected: "推しAの代表画像")
-    expect(find("[data-frame-source]").all("option").size).to eq(31)
+    expect(find("#card-image-source-#{record.id}").all("option").size).to eq(31)
     records.drop(1).each { |target| check target.oshi.name, exact: true }
     expect(page).to have_css("[data-frame-source]", count: 4)
     choices = page.evaluate_script(<<~JS)
@@ -184,7 +184,7 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
     choose_image(second, image)
     uncheck record.oshi.name, exact: true
     expect(page).to have_select("主写真：推しB", selected: "推しBの代表画像")
-    expect(find("[data-frame-source]").all("option").map(&:value)).not_to include(image.id.to_s)
+    expect(all("[data-frame-source]").flat_map { |select| select.all("option").map(&:value) }).not_to include(image.id.to_s)
     open_crop(second)
     expect(find("#image-crop-zoom").value).to eq("1")
     click_button "キャンセル"
@@ -228,6 +228,7 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
     expect(page).not_to have_css("[data-photo-card-target='preview']")
     expect(@downloads.children).to be_empty
     choose_image(record, record.reload.image_library.first)
+    find("#card-image-source-#{record.id}-supplement-1").find("option[value='']").select_option
     generate
   end
 
@@ -236,7 +237,7 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
     open_card
     expect(page).to have_css("label[for='card-image-source-#{record.id}']", text: "主写真：推しA", exact_text: true)
     expect(find("#card-image-source-#{record.id}").value).to eq("")
-    expect(find("#card-image-source-#{record.id}")).to have_select(nil, selected: "画像を表示しない")
+    expect(find("#card-image-source-#{record.id}").find("option:checked").text).to eq("画像を表示しない")
     expect(page).to have_button("画像を調整", disabled: true)
     generate
     choose_image(record, image)
@@ -277,8 +278,10 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
     expect(find("#card-image-source-#{record.id}").value).to eq(record.representative_image.attachment.id.to_s)
     expect(find("#card-image-source-#{record.id}-supplement-1").value).to eq(first.id.to_s)
     expect(find("#card-image-source-#{record.id}-supplement-2").value).to eq(second.id.to_s)
-    expect(find("#card-image-source-#{record.id}-supplement-1")).to have_select(nil, with_options: [ "補助写真を表示しない" ])
-    expect(find("#card-image-source-#{record.id}-supplement-2")).to have_select(nil, with_options: [ "補助写真を表示しない" ])
+    expect(find("#card-image-source-#{record.id}-supplement-1").all("option").map(&:text))
+      .to include("補助写真を表示しない")
+    expect(find("#card-image-source-#{record.id}-supplement-2").all("option").map(&:text))
+      .to include("補助写真を表示しない")
     generate
     three_photo_png = preview_png
 
