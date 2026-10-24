@@ -118,6 +118,35 @@ RSpec.describe "Activity records and visualization in the browser", type: :syste
     end
   end
 
+  it "keeps a recorded activity after the same user signs out and signs in again" do
+    sign_in
+    open_activity_list
+    click_link "記録する", exact: true
+    within("main form") do
+      check oshi.name, allow_label_click: true
+      fill_in "活動日（必須）", with: Date.new(2025, 8, 24)
+      select "ライブ・イベント", from: "カテゴリ（必須）"
+      fill_in "タイトル（必須）", with: "再ログイン後も残る記録"
+      fill_in "金額（円）", with: "3200"
+      click_button "記録する"
+    end
+    expect(page).to have_css("[role='status']", text: "活動記録を登録しました。")
+
+    click_button "ログアウト"
+    expect(page).to have_current_path(new_user_session_path)
+    sign_in
+    open_activity_list
+    click_link "再ログイン後も残る記録", exact: true
+
+    expect(page).to have_css("main h1", text: "活動記録の詳細", exact_text: true)
+    expect(page).to have_css("main h2", text: "再ログイン後も残る記録", exact_text: true)
+    within("main") do
+      expect(page).to have_css("dd", text: "2025/08/24", exact_text: true)
+      expect(page).to have_css("dd", text: "3,200円", exact_text: true)
+      expect(page).to have_css("dd", text: oshi.name, exact_text: true)
+    end
+  end
+
   it "shows a conflict without overwriting a newer activity edit" do
     activity = recorded_activity(oshi: oshi, title: "編集前", occurred_on: Date.new(2025, 5, 10), amount: 500)
     sign_in

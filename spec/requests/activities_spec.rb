@@ -171,7 +171,8 @@ RSpec.describe "Activities", type: :request do
         activity_for(other_user, title: "秘密")
         get activities_path, params: filters
         expect(response).to have_http_status(:bad_request)
-        expect(document.at_css("[role='alert']")).to be_present
+        expect(document.at_css("#activity-filter-errors[role='alert']")).to be_present
+        expect(document.css("form.activity-filter [aria-describedby='activity-filter-errors']").size).to eq(4)
         expect(titles).to be_empty
         expect(response.body).not_to include("秘密")
       end

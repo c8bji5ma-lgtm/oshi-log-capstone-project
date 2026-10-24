@@ -13,7 +13,7 @@
   <%= render "shared/validation_errors", resource: @existing_user_oshi %>
   <% if @oshis.any? %>
     <% if @oshi_search_has_more %>
-      <p role="status">候補は最大50件まで表示しています。見つからない場合は名前・別名・所属・作品を追加して絞り込んでください。</p>
+      <p role="status">候補は最大50件まで表示しています。見つからない場合は名前・別名・所属・作品を入力して絞り込んでください。</p>
     <% end %>
     <%= form_with model: @existing_user_oshi, url: user_oshis_path, namespace: :existing do |f| %>
       <%= hidden_field_tag :q, params[:q], id: "existing_query" %>
