@@ -773,4 +773,55 @@ RSpec.describe "Photo cards", type: :request do
       expect(response.media_type).to eq("application/json")
     end
   end
+
+  it "generates and downloads an identical one-oshi collage from three owned originals" do
+    profile
+    attachments = 3.times.map do |index|
+      user_oshi.library_images.attach(io: StringIO.new(coordinate_image(width: 600 + index * 20, height: 900)),
+        filename: "collage-#{index}.png", content_type: "image/png")
+      user_oshi.reload.image_library.last
+    end
+    crops = [
+      { x: 0.5, y: 0.5, zoom: 1 },
+      { x: 0.4, y: 0.5, zoom: 2 },
+      { x: 0.6, y: 0.5, zoom: 2 }
+    ]
+    login
+    generate_card(image_user_oshi_ids: [ user_oshi.id.to_s ],
+      collage_image_attachment_ids: attachments.map { |image| image.id.to_s }, collage_crops: crops)
+    expect(response).to have_http_status(:ok)
+    png = response.body.dup
+    receipt = response.headers.fetch("X-Card-Receipt")
+    payload = Rails.application.message_verifier(CardsController::PURPOSE).verified(receipt,
+      purpose: CardsController::PURPOSE)
+    expect(payload.dig("settings", "collage_image_attachment_ids")).to eq(attachments.map { |image| image.id.to_s })
+    expect(payload.dig("settings", "collage_crops")).to eq(crops.map(&:stringify_keys))
+    save_card(png, receipt)
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to eq(png)
+  end
+
+  it "rejects malformed, multi-oshi and foreign collage settings without returning a receipt" do
+    profile
+    image = attach_coordinates(user_oshi) && user_oshi.representative_image.attachment
+    foreign = create(:user_oshi)
+    attach_coordinates(foreign)
+    default = Cards::Crop::DEFAULT
+    login
+
+    generate_card(collage_image_attachment_ids: [ image.id.to_s, "" ], collage_crops: [ default, default ])
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.headers["X-Card-Receipt"]).to be_nil
+
+    second = create(:user_oshi, user: user)
+    generate_card([ user_oshi.id, second.id ], image_user_oshi_ids: [ user_oshi.id.to_s, second.id.to_s ],
+      collage_image_attachment_ids: [ image.id.to_s, "", "" ], collage_crops: [ default ] * 3)
+    expect(response).to have_http_status(:unprocessable_content)
+    expect(response.headers["X-Card-Receipt"]).to be_nil
+
+    generate_card(collage_image_attachment_ids: [ image.id.to_s, foreign.representative_image.attachment.id.to_s, "" ],
+      collage_crops: [ default ] * 3)
+    expect(response).to have_http_status(:not_found)
+    expect(response.headers["X-Card-Receipt"]).to be_nil
+  end
 end

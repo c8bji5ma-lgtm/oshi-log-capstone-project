@@ -95,7 +95,7 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
       target.representative_image.attach(blobs.first)
     end
     open_card
-    expect(page).to have_select("1. 推しAの画像", selected: "推しAの代表画像")
+    expect(page).to have_select("主写真：推しA", selected: "推しAの代表画像")
     expect(find("[data-frame-source]").all("option").size).to eq(31)
     records.drop(1).each { |target| check target.oshi.name, exact: true }
     expect(page).to have_css("[data-frame-source]", count: 4)
@@ -183,7 +183,7 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
     click_button "キャンセル"
     choose_image(second, image)
     uncheck record.oshi.name, exact: true
-    expect(page).to have_select("1. 推しBの画像", selected: "推しBの代表画像")
+    expect(page).to have_select("主写真：推しB", selected: "推しBの代表画像")
     expect(find("[data-frame-source]").all("option").map(&:value)).not_to include(image.id.to_s)
     open_crop(second)
     expect(find("#image-crop-zoom").value).to eq("1")
@@ -234,7 +234,9 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
   it "starts unused when the representative is cleared while retaining selectable library images" do
     image = additional_image
     open_card
-    expect(page).to have_select("1. 推しAの画像", selected: "画像を表示しない")
+    expect(page).to have_css("label[for='card-image-source-#{record.id}']", text: "主写真：推しA", exact_text: true)
+    expect(find("#card-image-source-#{record.id}").value).to eq("")
+    expect(find("#card-image-source-#{record.id}")).to have_select(nil, selected: "画像を表示しない")
     expect(page).to have_button("画像を調整", disabled: true)
     generate
     choose_image(record, image)
@@ -261,5 +263,57 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
     open_crop
     expect(find("#image-crop-zoom").value).to eq("3")
     click_button "キャンセル"
+  end
+
+  it "preselects up to three photos for one oshi and keeps each crop and visibility independent" do
+    original = attach_coordinates(record)
+    first = additional_image
+    second = additional_image
+    open_card
+
+    expect(page).to have_css("label[for='card-image-source-#{record.id}']", text: "主写真：推しA", exact_text: true)
+    expect(page).to have_css("label[for='card-image-source-#{record.id}-supplement-1']", text: "補助写真1：推しA", exact_text: true)
+    expect(page).to have_css("label[for='card-image-source-#{record.id}-supplement-2']", text: "補助写真2：推しA", exact_text: true)
+    expect(find("#card-image-source-#{record.id}").value).to eq(record.representative_image.attachment.id.to_s)
+    expect(find("#card-image-source-#{record.id}-supplement-1").value).to eq(first.id.to_s)
+    expect(find("#card-image-source-#{record.id}-supplement-2").value).to eq(second.id.to_s)
+    expect(find("#card-image-source-#{record.id}-supplement-1")).to have_select(nil, with_options: [ "補助写真を表示しない" ])
+    expect(find("#card-image-source-#{record.id}-supplement-2")).to have_select(nil, with_options: [ "補助写真を表示しない" ])
+    generate
+    three_photo_png = preview_png
+
+    find("#card-image-source-#{record.id}-supplement-2").find("option[value='']").select_option
+    expect(page).not_to have_css("[data-photo-card-target='preview']")
+    generate
+    two_photo_png = preview_png
+    expect(two_photo_png).not_to eq(three_photo_png)
+
+    supplement = "#{record.id}-supplement-1"
+    find("[data-crop-for='#{supplement}']").click
+    expect(page).to have_css("dialog[open]")
+    find("#image-crop-zoom").send_keys(:end)
+    click_button "この範囲で確定"
+    find("[data-crop-for='#{record.id}']").click
+    expect(find("#image-crop-zoom").value).to eq("1")
+    click_button "キャンセル"
+    generate
+    cropped_png = preview_png
+    expect(cropped_png).not_to eq(two_photo_png)
+
+    main = record.reload.image_library.find { |image| image.blob_id == record.representative_image.blob.id }
+    find("#card-image-source-#{supplement}").find("option[value='#{main.id}']").select_option
+    expect(page).to have_select("主写真：推しA", selected: "推しAの代表画像")
+    expect(page).to have_select("補助写真1：推しA", selected: "推しAの代表画像")
+    generate
+    duplicate_png = preview_png
+    click_button "PNGをダウンロード"
+    path = @downloads.join("oshilog-card.png")
+    page.document.synchronize(10, errors: [ Capybara::ExpectationNotMet ]) do
+      raise Capybara::ExpectationNotMet unless path.file? && @downloads.glob("*.crdownload").empty?
+    end
+    expect(File.binread(path)).to eq(duplicate_png)
+    expect(record.representative_image.download).to eq(original)
+    expect(first.download).to eq(coordinate_image(width: 600, height: 900))
+    expect(second.download).to eq(coordinate_image(width: 600, height: 900))
   end
 end

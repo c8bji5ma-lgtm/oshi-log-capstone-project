@@ -22,6 +22,7 @@
        data-photo-card-memory-materials-url-value="<%= memory_materials_card_path %>"
        data-photo-card-download-url-value="<%= download_card_path %>"
        data-photo-card-layouts-value="<%= Cards::Photo::LAYOUTS.transform_values { |layout| layout.slice(:width, :height) }.to_json %>"
+       data-photo-card-collage-layouts-value="<%= Cards::Photo::SINGLE_COLLAGE_LAYOUTS.transform_values { |layout| layout.slice(:width, :height) }.to_json %>"
        data-action="turbo:before-cache@document->photo-card#dispose pagehide@window->photo-card#dispose image-crop:confirm->photo-card#confirmCrop image-crop:activity->photo-card#cropActivity">
   <section class="card" aria-label="テンプレート選択">
     <form data-photo-card-target="settingsForm">
@@ -84,7 +85,7 @@
         </div>
       </template>
       <p><label><input type="checkbox" name="show_introduction" checked> 保存済みの自己紹介を表示する</label></p>
-      <p>各枠には、選択中の推しの登録画像を使えます。候補は推しごとにまとまっています。画像未登録でも作成できます。「画像を調整」で表示範囲を変更できます。初期位置は中央です。</p>
+      <p>各枠には、選択中の推しの登録画像を使えます。1人だけ選んだ場合は主写真と補助写真2枚を選べ、補助写真は非表示にもできます。画像が1枚だけなら従来の1枚構成で作成します。「画像を調整」で写真ごとに表示範囲を変更できます。</p>
       <button type="submit" class="button" data-photo-card-target="generateButton" disabled>プレビューを作成</button>
     </form>
   </section>

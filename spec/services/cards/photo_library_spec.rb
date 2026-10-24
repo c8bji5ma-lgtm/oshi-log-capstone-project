@@ -87,4 +87,53 @@ RSpec.describe "Photo renderer library selection" do
     image.blob.update!(content_type: "image/svg+xml")
     expect { renderer(image_attachment_ids: [ image.id.to_s ]).fingerprint }.to raise_error(Cards::Photo::InvalidImage)
   end
+
+  it "keeps the existing one-photo output and adds two- and three-photo single-oshi collages" do
+    main = library_image
+    default = Cards::Crop::DEFAULT
+    legacy = renderer(image_attachment_ids: [ main.id.to_s ], crops: [ default ]).render
+    one = renderer(collage_image_attachment_ids: [ main.id.to_s, "", "" ],
+      collage_crops: [ default, default, default ]).render
+    expect(one).to eq(legacy)
+
+    attach_colour = lambda do |colour, filename|
+      bytes = Vips::Image.black(20, 30, bands: 3).new_from_image(colour).copy(interpretation: :srgb)
+        .write_to_buffer(".png")
+      record.library_images.attach(io: StringIO.new(bytes), filename:, content_type: "image/png")
+      record.reload.image_library.last
+    end
+    red = attach_colour.call([ 220, 20, 20 ], "red.png")
+    green = attach_colour.call([ 20, 220, 20 ], "green.png")
+    blue = attach_colour.call([ 20, 20, 220 ], "blue.png")
+    originals = [ red, green, blue ].to_h { |image| [ image.id, image.download ] }
+
+    two = Vips::Image.new_from_buffer(renderer(collage_image_attachment_ids: [ red.id.to_s, green.id.to_s, "" ],
+      collage_crops: [ default, default, default ]).render, "")
+    expect(two.getpoint(100, 200).take(3)).to eq([ 220, 20, 20 ])
+    expect(two.getpoint(600, 400).take(3)).to eq([ 20, 220, 20 ])
+    expect(two.getpoint(1500, 700).take(3)).to eq([ 20, 220, 20 ])
+
+    three = Vips::Image.new_from_buffer(renderer(collage_image_attachment_ids: [ red.id.to_s, green.id.to_s, blue.id.to_s ],
+      collage_crops: [ default, default, default ]).render, "")
+    expect(three.getpoint(600, 400).take(3)).to eq([ 20, 220, 20 ])
+    expect(three.getpoint(1100, 400).take(3)).to eq([ 20, 20, 220 ])
+    expect([ red, green, blue ].to_h { |image| [ image.id, image.download ] }).to eq(originals)
+  end
+
+  it "allows the same owned image in every collage slot and rejects foreign or malformed collage sources" do
+    image = library_image
+    default = Cards::Crop::DEFAULT
+    expect do
+      renderer(collage_image_attachment_ids: [ image.id.to_s ] * 3,
+        collage_crops: [ default, default, default ]).render
+    end.not_to raise_error
+
+    foreign = create(:user_oshi).tap { |item| attach_coordinates(item) }.representative_image.attachment
+    expect do
+      renderer(collage_image_attachment_ids: [ image.id.to_s, foreign.id.to_s, "" ],
+        collage_crops: [ default, default, default ])
+    end.to raise_error(ActiveRecord::RecordNotFound)
+    expect { renderer(collage_image_attachment_ids: [ image.id.to_s ], collage_crops: [ default ]) }
+      .to raise_error(ArgumentError)
+  end
 end

@@ -5,7 +5,7 @@ import { createCard, downloadCard, errorMessage } from "lib/card_png_transport"
 
 export default class extends Controller {
   static targets = ["form", "status", "error", "preview", "image", "generateButton", "downloadButton", "oshi", "frames", "frameTemplate", "template", "panel", "settingsForm", "cropDialog", "memoryStatus", "memoryRetry", "memoryMore", "memoryEmpty", "memoryFrames", "memoryFrameTemplate", "memoryAdd", "dataYear", "dataOshi", "dataStatus", "dataRetry"]
-  static values = { createUrl: String, downloadUrl: String, layouts: Object, memoriesUrl: String, memoryMaterialsUrl: String, statisticsUrl: String }
+  static values = { createUrl: String, downloadUrl: String, layouts: Object, collageLayouts: Object, memoriesUrl: String, memoryMaterialsUrl: String, statisticsUrl: String }
 
   connect() {
     this.sequence = (this.sequence || 0) + 1
@@ -397,7 +397,7 @@ export default class extends Controller {
     const sourceId = `${attachmentId}:${++this.photoCropVersion}`
     this.cropDialogTarget.dispatchEvent(new CustomEvent("crop:open", { detail: {
       frameId, sourceId, src: source.url, opener: event.currentTarget,
-      crop: this.crops.get(frameId) || defaultCrop(), ...this.layoutsValue[this.selectedIds.length]
+      crop: this.crops.get(frameId) || defaultCrop(), ...this.photoState.layout(frameId, this.layoutsValue, this.collageLayoutsValue)
     } }))
   }
 
@@ -408,7 +408,7 @@ export default class extends Controller {
     }
     if (this.disposed || !this.checkExpiry() || this.template !== "photo") return
     const { frameId, sourceId, crop } = event.detail
-    if (!this.cropDialogTarget.open || !this.selectedIds.includes(frameId) || `${this.imageSources.get(frameId)}:${this.photoCropVersion}` !== sourceId) return
+    if (!this.cropDialogTarget.open || !this.photoState.frameKeys().includes(frameId) || `${this.imageSources.get(frameId)}:${this.photoCropVersion}` !== sourceId) return
     const old = this.crops.get(frameId) || defaultCrop()
     if (["x", "y", "zoom"].every(key => Math.abs(old[key] - crop[key]) <= 1e-9)) return
     this.crops.set(frameId, crop)
@@ -428,19 +428,9 @@ export default class extends Controller {
         this.errorTarget.textContent = "推しは4人まで選択できます。"
         return
       }
-      this.selectedIds.push(input.value)
-      this.imageSources.set(input.value, this.defaultImage(input.value))
+      this.photoState.select(input.value)
     } else {
-      this.selectedIds = this.selectedIds.filter(id => id !== input.value)
-      this.imageSources.delete(input.value)
-      this.crops.delete(input.value)
-      for (const id of this.selectedIds) {
-        const source = this.imageSources.get(id)
-        if (source && !this.photoImage(source)) {
-          this.imageSources.set(id, this.defaultImage(id))
-          this.crops.delete(id)
-        }
-      }
+      this.photoState.deselect(input.value)
     }
     this.renderFrames()
   }
@@ -452,16 +442,16 @@ export default class extends Controller {
   photoImage(attachmentId) { return this.photoState.image(attachmentId) }
 
   renderFrames() {
-    const rows = this.selectedIds.map((id, index) => {
-      const library = this.photoLibraries.get(id)
+    const rows = this.photoState.frames().map((frame, index) => {
+      const library = this.photoLibraries.get(frame.ownerId)
       const row = this.frameTemplateTarget.content.firstElementChild.cloneNode(true)
       const label = row.querySelector("[data-frame-label]")
       const source = row.querySelector("[data-frame-source]")
-      source.id = `card-image-source-${id}`
-      source.dataset.imageFor = id
+      source.id = `card-image-source-${frame.key}`
+      source.dataset.imageFor = frame.key
       label.htmlFor = source.id
-      label.textContent = `${index + 1}. ${library.name}の画像`
-      source.add(new Option("画像を表示しない", ""))
+      label.textContent = frame.label
+      source.add(new Option(frame.supplementary ? "補助写真を表示しない" : "画像を表示しない", ""))
       for (const candidate of this.selectedIds) {
         const owner = this.photoLibraries.get(candidate)
         if (!owner.images.length) continue
@@ -470,7 +460,7 @@ export default class extends Controller {
         owner.images.forEach(image => group.append(new Option(image.label, image.id)))
         source.append(group)
       }
-      source.value = this.imageSources.get(id) || ""
+      source.value = this.imageSources.get(frame.key) || ""
       const image = this.photoImage(source.value)
       const preview = row.querySelector("[data-frame-preview]")
       const status = row.querySelector("[data-frame-image-status]")
@@ -484,13 +474,13 @@ export default class extends Controller {
           status.textContent = "選択画像を取得できません。画像を選び直すか、ページを開き直して再生成してください。"
         })
       } else {
-        status.textContent = library.images.length ? "画像を表示しません。" : "この推しの画像は未登録です。別の選択中の推しの画像も使えます。"
+        status.textContent = library.images.length ? (frame.supplementary ? "この補助写真は表示しません。" : "画像を表示しません。") : "この推しの画像は未登録です。"
       }
       const adjust = row.querySelector("[data-crop-for]")
-      adjust.dataset.cropFor = id
-      adjust.setAttribute("aria-label", `${index + 1}. ${library.name}の画像を調整`)
+      adjust.dataset.cropFor = frame.key
+      adjust.setAttribute("aria-label", `${frame.label}を調整`)
       adjust.disabled = !image
-      row.querySelector("[data-frame-library]").href = this.photoLibraries.get(image?.ownerId || id).editUrl
+      row.querySelector("[data-frame-library]").href = this.photoLibraries.get(image?.ownerId || frame.ownerId).editUrl
       return row
     })
     this.framesTarget.replaceChildren(...rows)
@@ -503,8 +493,11 @@ export default class extends Controller {
     const id = event.target.dataset.imageFor
     if (id) {
       this.closeCrop()
+      const supplementKeys = this.photoState.collageKeys().slice(1)
+      const visibilityChanged = Boolean(this.imageSources.get(id)) !== Boolean(event.target.value)
       this.imageSources.set(id, event.target.value)
       this.crops.delete(id)
+      if (visibilityChanged && supplementKeys.includes(id)) supplementKeys.forEach(key => this.crops.delete(key))
       this.renderFrames()
       this.framesTarget.querySelector(`[data-image-for="${id}"]`).focus()
     }
