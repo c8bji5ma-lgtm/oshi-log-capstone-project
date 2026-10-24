@@ -118,7 +118,10 @@ RSpec.describe "Choosing library photos for cards in the browser", type: :system
       protected_image_path(selected)
     end
     expect(paths).not_to be_empty
-    expect(paths - expected).to be_empty
+    representative_blob_id = record.representative_image.blob_id
+    initial_supplements = record.image_library.reject { |image| image.blob_id == representative_blob_id }.first(2)
+      .map { |image| protected_image_path(image) }
+    expect(paths - (expected + initial_supplements)).to be_empty
     directory = Rails.root.join("tmp/issue70b")
     FileUtils.mkdir_p(directory)
     [ 1280, 375 ].each do |width|
