@@ -15,26 +15,26 @@
 <% end %>
 
 <% if @filter_errors.any? %>
-  <div class="validation-errors" role="alert"><%= @filter_errors.uniq.join(" ") %></div>
+  <div id="activity-filter-errors" class="validation-errors" role="alert"><%= @filter_errors.uniq.join(" ") %></div>
 <% end %>
 <%= form_with url: activities_path, method: :get, class: "activity-filter" do |f| %>
   <div class="form-field">
     <%= f.label :month, "年月" %>
-    <%= f.month_field :month, value: @filters["month"] %>
+    <%= f.month_field :month, value: @filters["month"], aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
     <%= f.hidden_field :year, value: @filters["year"] if @filters["year"].present? %>
     <%= f.hidden_field :through, value: @filters["through"] if @filters["through"].present? %>
   </div>
   <div class="form-field">
     <%= f.label :oshi_id, "推し" %>
-    <%= f.select :oshi_id, options_from_collection_for_select(@selectable_oshis, :id, :name, @filters["oshi_id"]), include_blank: "すべて" %>
+    <%= f.select :oshi_id, options_from_collection_for_select(@selectable_oshis, :id, :name, @filters["oshi_id"]), { include_blank: "すべて" }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
   </div>
   <div class="form-field">
     <%= f.label :activity_type, "カテゴリ" %>
-    <%= f.select :activity_type, options_for_select(Activity::ACTIVITY_TYPES, @filters["activity_type"]), include_blank: "すべて" %>
+    <%= f.select :activity_type, options_for_select(Activity::ACTIVITY_TYPES, @filters["activity_type"]), { include_blank: "すべて" }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
   </div>
   <div class="form-field">
     <%= f.label :q, "キーワード" %>
-    <%= f.search_field :q, value: @filters["q"] %>
+    <%= f.search_field :q, value: @filters["q"], aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
   </div>
   <%= f.submit "絞り込む", class: "button" %>
   <%= link_to "条件をクリア", activities_path %>

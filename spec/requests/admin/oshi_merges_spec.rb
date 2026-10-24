@@ -140,7 +140,8 @@ RSpec.describe "Admin oshi merging", type: :request do
       expect(source_options.map { |option| option["value"] }).to include(selected_source.id.to_s)
       expect(document.at_css("select[name='oshi_merge[source_id]'] option[selected]")["value"]).to eq(selected_source.id.to_s)
       expect(document.at_css("select[name='oshi_merge[target_id]'] option[selected]")["value"]).to eq(target.id.to_s)
-      expect(document.css("[role='status']").map(&:text).join).to include("統合元候補は最大50件", "絞り込んでください")
+      expect(document.css("[role='status']").map(&:text).join)
+        .to include("統合元候補は最大50件", "名前・別名・所属・作品を入力して絞り込んでください")
     end
 
     [ 0, 1 ].each do |count|

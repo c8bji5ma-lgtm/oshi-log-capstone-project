@@ -62,7 +62,8 @@ RSpec.describe "Oshi search and registration", type: :request do
       options = document.css("input[type='radio'][name='oshi_id']")
       expect(options.map { |input| input["value"] }).to eq(matching.first(50).map { |oshi| oshi.id.to_s })
       expect(document.at_css("label[for='oshi_id_#{matching.first.id}']").text).to include("同名候補", "承認済み")
-      expect(document.css("[role='status']").map(&:text).join).to include("最大50件", "絞り込んでください")
+      expect(document.css("[role='status']").map(&:text).join)
+        .to include("最大50件", "名前・別名・所属・作品を入力して絞り込んでください")
       expect(document.at_css("input[name='q']")["placeholder"]).to include("所属・作品")
     end
 
