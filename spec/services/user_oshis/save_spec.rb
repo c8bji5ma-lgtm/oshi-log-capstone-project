@@ -75,6 +75,41 @@ RSpec.describe UserOshis::Save do
     expect(record.reload.library_images.first.byte_size).to eq(10.megabytes)
   end
 
+  it "accepts a new batch totaling exactly 10 MiB" do
+    save_images([ library_upload(size: 5.megabytes), library_upload("image.webp", size: 5.megabytes) ])
+    expect(record.reload.image_count).to eq(2)
+  end
+
+  it "rejects a batch over 10 MiB before changing fields, images or stored files" do
+    record.representative_image.attach(image_upload("image.jpg"))
+    original = record.reload.attributes
+    original_ids = record.image_library.map(&:id)
+    counts = stored_counts
+    files = [ library_upload(size: 5.megabytes), library_upload("image.webp", size: 5.megabytes + 1) ]
+
+    expect { save_images(files, record, attributes: { started_period: "2020" }) }
+      .to raise_error(ActiveRecord::RecordInvalid, /送信合計を10 MiB以下/)
+    expect(stored_counts).to eq(counts)
+    expect(record.reload.attributes).to eq(original)
+    expect(record.image_library.map(&:id)).to eq(original_ids)
+  end
+
+  it "does not count saved images and permits separate batches up to 10 MiB" do
+    record.library_images.attach(image_upload)
+    2.times { save_images([ library_upload(size: 10.megabytes) ]) }
+    expect(record.reload.image_count).to eq(3)
+  end
+
+  it "does not delete a saved image when a combined removal and oversized batch fails" do
+    save_images([ library_upload, library_upload("image.webp") ])
+    ids = record.reload.image_library.map(&:id)
+    files = [ library_upload(size: 5.megabytes), library_upload("image.jpg", size: 5.megabytes + 1) ]
+
+    expect { save_images(files, record, remove_image_id: ids.last.to_s) }
+      .to raise_error(ActiveRecord::RecordInvalid, /送信合計を10 MiB以下/)
+    expect(record.reload.image_library.map(&:id)).to eq(ids)
+  end
+
   it "rejects an oversized-dimension image before uploading any original" do
     record
     counts = stored_counts

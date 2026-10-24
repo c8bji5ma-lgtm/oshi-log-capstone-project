@@ -178,4 +178,25 @@ RSpec.describe "Client image resizing", type: :system do
   ensure
     page.execute_script("if (window.originalCreateImageBitmap) window.createImageBitmap = window.originalCreateImageBitmap") if page.current_url
   end
+
+  it "clears a prepared batch over 10 MiB and explains that images can be split across requests" do
+    personal = create(:user_oshi, user: user, oshi: create(:oshi, :approved))
+    first = @image_directory.join("first.png")
+    second = @image_directory.join("second.png")
+    fixture = Rails.root.join("spec/fixtures/files/image.png").binread
+    first.binwrite(fixture.ljust(5.megabytes, "\0"))
+    second.binwrite(fixture.ljust(5.megabytes + 1, "\0"))
+    sign_in
+    visit edit_user_oshi_path(personal)
+
+    expect(page).to have_text("1回に新しく送信する画像の合計は10 MiB以下")
+    attach_file "追加画像", [ first, second ]
+
+    expect(page).to have_css("#library-image-help-status[role='alert']",
+      text: "1回に送信する画像の合計を10 MiB以下にしてください。分けて追加できます。", wait: 20)
+    input = find_field("追加画像")
+    expect(page.evaluate_script("arguments[0].files.length", input)).to eq(0)
+    expect(page).to have_button("画像を追加", disabled: false)
+    expect(personal.reload.library_images).not_to be_attached
+  end
 end

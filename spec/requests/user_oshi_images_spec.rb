@@ -16,6 +16,16 @@ RSpec.describe "Personal oshi image libraries", type: :request do
     Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files", filename), type)
   end
 
+  def sized_upload(filename, size)
+    type = { "image.png" => "image/png", "image.jpg" => "image/jpeg", "image.webp" => "image/webp" }.fetch(filename)
+    tempfile = Tempfile.new([ "request-image-", File.extname(filename) ])
+    tempfile.binmode
+    tempfile.write(File.binread(Rails.root.join("spec/fixtures/files", filename)).ljust(size, "\0"))
+    tempfile.rewind
+    (@sized_uploads ||= []) << tempfile
+    Rack::Test::UploadedFile.new(tempfile.path, type, true, original_filename: filename)
+  end
+
   def add_images(files, target = record)
     post user_oshi_images_path(target), params: { user_oshi: { library_images: files } }
   end
@@ -87,6 +97,21 @@ RSpec.describe "Personal oshi image libraries", type: :request do
       expect(record.reload.image_count).to eq(4)
       get edit_user_oshi_path(record)
       expect(document.css(".image-count").text).to include("4/30枚", "残り26枚")
+    end
+
+    it "shows a recoverable Japanese error for a batch over 10 MiB and keeps saved images" do
+      record.representative_image.attach(image_upload("image.jpg"))
+      original_id = record.representative_image.blob_id
+      counts = [ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]
+      files = [ sized_upload("image.png", 5.megabytes), sized_upload("image.webp", 5.megabytes + 1) ]
+
+      add_images(files)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(document.css(".validation-errors").text).to include("1回の送信合計を10 MiB以下", "分けて追加")
+      expect(document.css(".oshi-image-gallery img").size).to eq(1)
+      expect(record.reload.representative_image.blob_id).to eq(original_id)
+      expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq(counts)
     end
 
     it "rejects image 31 sent directly and keeps the saved image gallery in the error response" do

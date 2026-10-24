@@ -30,6 +30,16 @@ RSpec.describe "Activities", type: :request do
     fixture_file_upload(Rails.root.join("spec/fixtures/files", filename), filename == "invalid.txt" ? "text/plain" : "image/png")
   end
 
+  def sized_upload(filename, size)
+    type = { "image.png" => "image/png", "image.jpg" => "image/jpeg", "image.webp" => "image/webp" }.fetch(filename)
+    tempfile = Tempfile.new([ "request-image-", File.extname(filename) ])
+    tempfile.binmode
+    tempfile.write(File.binread(Rails.root.join("spec/fixtures/files", filename)).ljust(size, "\0"))
+    tempfile.rewind
+    (@sized_uploads ||= []) << tempfile
+    Rack::Test::UploadedFile.new(tempfile.path, type, true, original_filename: filename)
+  end
+
   def document
     Nokogiri::HTML(response.body)
   end
@@ -314,6 +324,18 @@ RSpec.describe "Activities", type: :request do
       post activities_path, params: { activity: input(images: [ upload, upload ]) }
       expect(response).to redirect_to(activities_path)
       expect(user.activities.last.images.count).to eq(2)
+    end
+
+    it "shows a recoverable Japanese error when new images total over 10 MiB" do
+      files = [ sized_upload("image.png", 5.megabytes), sized_upload("image.webp", 5.megabytes + 1) ]
+
+      expect do
+        post activities_path, params: { activity: input(images: files) }
+      end.not_to change(Activity, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(document.css(".validation-errors").text).to include("1回の送信合計を10 MiB以下", "分けて追加")
+      expect(document.at_css("input[name='activity[title]']")["value"]).to eq(input[:title])
     end
 
     it "rolls back invalid images" do

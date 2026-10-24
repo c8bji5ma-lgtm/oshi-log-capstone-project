@@ -36,6 +36,15 @@ module Activities
           activity.emotion_ids = emotion_ids.map { |id| Emotion.type_for_attribute("id").cast(id) }.uniq
         end
         uploads = Array(new_images).compact_blank
+        attribute_uploads = if attributes.respond_to?(:[]) && (images = attributes[:images] || attributes["images"])
+          Array(images).compact_blank
+        else
+          []
+        end
+        if ImageUploadBatch.too_large?(uploads + attribute_uploads)
+          activity.errors.add(:images, "は1回の送信合計を10 MiB以下にしてください。分けて追加できます")
+          raise ActiveRecord::RecordInvalid, activity
+        end
         activity.images = activity.images.blobs.to_a + uploads if uploads.any?
         if ids.empty?
           activity.errors.add(:activity_oshis, "must include at least one oshi")

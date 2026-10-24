@@ -23,6 +23,9 @@ module UserOshis
         unless files.all? { |file| file.is_a?(ActionDispatch::Http::UploadedFile) }
           invalid_image("はファイルとして選択してください。")
         end
+        if ImageUploadBatch.too_large?(files)
+          invalid_image("は1回の送信合計を10 MiB以下にしてください。分けて追加できます")
+        end
 
         if remove_image_id
           remove_image(remove_image_id, clear_representative)
