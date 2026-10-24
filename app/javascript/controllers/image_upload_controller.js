@@ -2,6 +2,7 @@ import { Controller } from "@hotwired/stimulus"
 
 const CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"]
 const MAX_BYTES = 10 * 1024 * 1024
+const MAX_BATCH_BYTES = 10 * 1024 * 1024
 const MAX_SOURCE_BYTES = 25 * 1024 * 1024
 const MAX_DIMENSION = 2560
 const MAX_PIXELS = 5_000_000
@@ -59,6 +60,10 @@ export default class extends Controller {
         prepared.push(result.file)
         if (result.resized) resized += 1
       }
+      if (prepared.reduce((total, file) => total + file.size, 0) > MAX_BATCH_BYTES) {
+        throw new Error("1回に送信する画像の合計を10 MiB以下にしてください。分けて追加できます。")
+      }
+
       if (!this.current(version)) return
 
       const transfer = new DataTransfer()

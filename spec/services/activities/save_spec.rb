@@ -363,6 +363,41 @@ RSpec.describe Activities::Save do
       expect(activity.images.last.download).to eq(File.binread(Rails.root.join("spec/fixtures/files/image.webp")))
     end
 
+    it "accepts a new batch totaling exactly 10 MiB" do
+      save_activity(activity, new_images: [ image_upload(size: 5.megabytes), image_upload("image.webp", size: 5.megabytes) ])
+      expect(activity.reload.images.count).to eq(3)
+    end
+
+    it "rejects a batch over 10 MiB and rolls back scalar, links and pending images" do
+      original = activity.reload.attributes
+      original_oshi_ids = activity.oshi_ids
+      original_blob_ids = activity.images.map(&:blob_id)
+      counts = [ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]
+      replacement = create(:oshi)
+      create(:user_oshi, user: activity.user, oshi: replacement)
+      files = [ image_upload(size: 5.megabytes), image_upload("image.webp", size: 5.megabytes + 1) ]
+
+      expect do
+        save_activity(activity, attributes: { title: "変更しない" }, oshi_ids: [ replacement.id ], new_images: files)
+      end.to raise_error(ActiveRecord::RecordInvalid, /送信合計を10 MiB以下/)
+      expect(activity.reload.attributes).to eq(original)
+      expect(activity.oshi_ids).to eq(original_oshi_ids)
+      expect(activity.images.map(&:blob_id)).to eq(original_blob_ids)
+      expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq(counts)
+    end
+
+    it "does not count saved images and permits separate batches up to 10 MiB" do
+      2.times { save_activity(activity, new_images: [ image_upload(size: 10.megabytes) ]) }
+      expect(activity.reload.images.count).to eq(3)
+    end
+
+    it "applies the same limit to image attributes used by trusted callers" do
+      files = [ image_upload(size: 5.megabytes), image_upload("image.webp", size: 5.megabytes + 1) ]
+      expect { save_activity(activity, attributes: { images: files }) }
+        .to raise_error(ActiveRecord::RecordInvalid, /送信合計を10 MiB以下/)
+      expect(activity.reload.images.count).to eq(1)
+    end
+
     it "refreshes stale attachments under the parent lock before appending" do
       activity.images.blobs.load
       other_instance = Activity.find(activity.id)
