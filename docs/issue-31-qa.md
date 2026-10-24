@@ -115,6 +115,8 @@ CDPによるreflow確認はheaded Chromeで`Ctrl`+`+`を操作した結果では
 
 この報告は、VoiceOver、個別手順の全項目、保存後の画像表示遅延・透過、または本番環境を確認済みとするものではない。
 
+2026年10月24日、本人からiPhoneでの確認は完了しており作業を進めてよいとの追加報告があった。これは本人申告による完了記録であり、エージェントが独立して端末画面・操作結果を検証したものではない。確認した個別操作は列挙されていないため、PNGの実寸一致、VoiceOver、Safariの全機能、画像表示遅延・透過表示まで確認済みとは扱わない。
+
 ## 公開前の追加Chrome一巡
 
 2026年10月22日、最新mainのcommit `34d130c9e5d83b8e9ed9388fb5f4a571a54b27c6` に対し、`BUNDLE_FROZEN=true RAILS_ENV=test`、専用`my_app_test`、`tmp/storage`、合成データだけを使って追加確認した。
@@ -144,7 +146,7 @@ Git管理外の`tmp/issue31_release_readiness/screenshots/`へ8枚を保存し�
 ## 残る確認と優先順位
 
 1. `oshi_common_images`追加後の業務12テーブルを外部テーブル定義書・ER図へ同期し、Sheetsをネイティブ画面で目視してAPI読戻しでは判別できない表示上の欠落がないことを確認する
-2. Chrome以外の実ブラウザ、物理スマートフォン、支援技術を確認する
+2. 本人申告で完了したiPhone確認の範囲を必要に応じて特定し、Chrome以外の実ブラウザとVoiceOver等の実支援技術を確認する
 3. 実メール・外部API・本番環境、およびIssue #60の本番資源予算・複数worker・native hard timeoutを確認する
 4. iPhone Safariで保留した保存後表示遅延と透過表示を、原ファイル・保存blob・表示CSSを区別して再確認する
 
