@@ -6,9 +6,10 @@ export class PhotoTemplateState {
     this.libraries = new Map(inputs.map(input => [input.value, {
       name: input.dataset.name, editUrl: input.dataset.editUrl, images: JSON.parse(input.dataset.images)
     }]))
-    this.imageSources = new Map(this.selectedIds.map(id => [id, this.defaultImage(id)]))
+    this.imageSources = new Map()
     this.crops = new Map()
     this.cropVersion = 0
+    this.syncFrames()
   }
 
   defaultImage(ownerId) { return this.libraries.get(ownerId)?.images.find(image => image.representative)?.id || "" }
@@ -21,14 +22,85 @@ export class PhotoTemplateState {
     return null
   }
 
+  collageKeys() {
+    const ownerId = this.selectedIds[0]
+    return ownerId ? [ownerId, `${ownerId}-supplement-1`, `${ownerId}-supplement-2`] : []
+  }
+
+  frameKeys() { return this.selectedIds.length === 1 ? this.collageKeys() : [...this.selectedIds] }
+
+  frames() {
+    if (this.selectedIds.length !== 1) {
+      return this.selectedIds.map((id, index) => ({ key: id, ownerId: id, label: `${index + 1}. ${this.libraries.get(id).name}の画像`, supplementary: false }))
+    }
+    const ownerId = this.selectedIds[0]
+    const name = this.libraries.get(ownerId).name
+    return this.collageKeys().map((key, index) => ({
+      key, ownerId, supplementary: index > 0,
+      label: index === 0 ? `主写真：${name}` : `補助写真${index}：${name}`
+    }))
+  }
+
+  syncFrames() {
+    const keys = this.frameKeys()
+    const allowed = new Set(keys)
+    for (const key of this.imageSources.keys()) if (!allowed.has(key)) this.imageSources.delete(key)
+    for (const key of this.crops.keys()) if (!allowed.has(key)) this.crops.delete(key)
+    if (!keys.length) return
+
+    if (this.selectedIds.length === 1) {
+      const ownerId = this.selectedIds[0]
+      const library = this.libraries.get(ownerId)?.images || []
+      if (!this.imageSources.has(ownerId)) this.imageSources.set(ownerId, this.defaultImage(ownerId))
+      const initial = library.map(image => image.id).filter(id => id !== this.imageSources.get(ownerId))
+      keys.slice(1).forEach((key, index) => {
+        if (!this.imageSources.has(key)) this.imageSources.set(key, initial[index] || "")
+      })
+    } else {
+      keys.forEach(id => {
+        if (!this.imageSources.has(id)) this.imageSources.set(id, this.defaultImage(id))
+      })
+    }
+  }
+
+  select(ownerId) { this.selectedIds.push(ownerId); this.syncFrames() }
+
+  deselect(ownerId) {
+    this.selectedIds = this.selectedIds.filter(id => id !== ownerId)
+    this.syncFrames()
+    for (const id of this.selectedIds) {
+      const source = this.imageSources.get(id)
+      if (source && !this.image(source)) {
+        this.imageSources.set(id, this.defaultImage(id))
+        this.crops.delete(id)
+      }
+    }
+  }
+
+  layout(frameId, layouts, collageLayouts) {
+    if (this.selectedIds.length !== 1) return layouts[this.selectedIds.length]
+    const keys = this.collageKeys()
+    if (frameId === keys[0]) return collageLayouts.main
+    const visible = keys.slice(1).filter(key => this.imageSources.get(key))
+    if (visible.length <= 1) return collageLayouts.supplement_one
+    return frameId === visible[0] ? collageLayouts.supplement_left : collageLayouts.supplement_right
+  }
+
   payload(showIntroduction) {
-    return {
+    const payload = {
       template: "photo", user_oshi_ids: this.selectedIds,
       image_user_oshi_ids: this.selectedIds.map(id => this.image(this.imageSources.get(id))?.ownerId || ""),
-      image_attachment_ids: this.selectedIds.map(id => this.imageSources.get(id) || ""),
-      crops: this.selectedIds.map(id => this.crops.get(id) || defaultCrop()),
       show_introduction: showIntroduction
     }
+    if (this.selectedIds.length === 1) {
+      const keys = this.collageKeys()
+      payload.collage_image_attachment_ids = keys.map(key => this.imageSources.get(key) || "")
+      payload.collage_crops = keys.map(key => this.crops.get(key) || defaultCrop())
+    } else {
+      payload.image_attachment_ids = this.selectedIds.map(id => this.imageSources.get(id) || "")
+      payload.crops = this.selectedIds.map(id => this.crops.get(id) || defaultCrop())
+    }
+    return payload
   }
 
   clear() {

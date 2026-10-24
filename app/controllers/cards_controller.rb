@@ -166,7 +166,7 @@ class CardsController < ApplicationController
       if %w[memories memory].include?(template)
         return Cards::Memory.settings(input.to_unsafe_h.except("template")).merge(template: "memory")
       end
-      raise ArgumentError unless (input.keys - %w[template user_oshi_ids image_user_oshi_ids image_attachment_ids show_introduction crops]).empty?
+      raise ArgumentError unless (input.keys - %w[template user_oshi_ids image_user_oshi_ids image_attachment_ids show_introduction crops collage_image_attachment_ids collage_crops]).empty?
       # Rails removes nulls from arrays. Reject them before that normalization
       # can turn an invalid array into a different, apparently valid frame order.
       if request.media_type == "application/json" && request.raw_post.present?
@@ -199,6 +199,18 @@ class CardsController < ApplicationController
         settings[:crops] = crops.map do |crop|
           raise Cards::Crop::Invalid unless crop.is_a?(ActionController::Parameters)
 
+          Cards::Crop.normalize(crop.to_unsafe_h)
+        end
+      end
+      if input.key?(:collage_image_attachment_ids) || input.key?(:collage_crops)
+        raise ArgumentError unless ids.length == 1 && input.key?(:collage_image_attachment_ids) && input.key?(:collage_crops)
+        attachments = input[:collage_image_attachment_ids]
+        collage_crops = input[:collage_crops]
+        raise ArgumentError unless attachments.is_a?(Array) && attachments.length == 3
+        raise Cards::Crop::Invalid unless collage_crops.is_a?(Array) && collage_crops.length == 3
+        settings[:collage_image_attachment_ids] = attachments
+        settings[:collage_crops] = collage_crops.map do |crop|
+          raise Cards::Crop::Invalid unless crop.is_a?(ActionController::Parameters)
           Cards::Crop.normalize(crop.to_unsafe_h)
         end
       end

@@ -70,7 +70,7 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     click_link "カードを作成"
     expect(page).to have_css("main h1", text: "推し活カード作成", exact_text: true)
     initial_image = user_oshi.reload.representative_image.attached? ? "#{user_oshi.oshi.name}の代表画像" : "画像を表示しない"
-    expect(page).to have_select("1. #{user_oshi.oshi.name}の画像", selected: initial_image)
+    expect(page).to have_select("主写真：#{user_oshi.oshi.name}", selected: initial_image)
   end
 
   def check_loaded_image(alt)
@@ -534,7 +534,7 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     original = profile.attributes
     sign_in
     open_card
-    select "画像を表示しない", from: "1. #{user_oshi.oshi.name}の画像"
+    select "画像を表示しない", from: "主写真：#{user_oshi.oshi.name}"
     uncheck "保存済みの自己紹介を表示する"
     generate_preview
     choose "思い出・活動履歴重視", exact: true
@@ -640,7 +640,7 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     check_loaded_image("#{user_oshi.oshi.name}の現在の代表画像")
 
     open_card
-    expect(page).to have_css("[data-frame-source]", count: 1)
+    expect(page).to have_css("[data-frame-source]", count: 3)
     generate_preview
     others.each_with_index do |record, index|
       check record.oshi.name, exact: true
@@ -663,7 +663,7 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
 
     open_card
     expect(page).to have_checked_field(user_oshi.oshi.name, exact: true)
-    expect(page).to have_css("[data-frame-source]", count: 1)
+    expect(page).to have_css("[data-frame-source]", count: 3)
     expect(page).not_to have_css("[data-photo-card-target='preview']")
     expect(page).to have_css("img[data-photo-card-target='image']:not([src])", visible: :all)
   end
@@ -714,7 +714,7 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     check_invalidated_preview
     expect(@download_directory.children).to be_empty
 
-    select "画像を表示しない", from: "1. #{user_oshi.oshi.name}の画像"
+    select "画像を表示しない", from: "主写真：#{user_oshi.oshi.name}"
     check_changed_settings
     generate_preview
     download_png
