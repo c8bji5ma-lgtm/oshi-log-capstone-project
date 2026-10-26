@@ -11,6 +11,8 @@ RSpec.describe "管理者の推し共通画像管理", type: :system do
       fill_in "user_password", with: "password123"
       click_button "ログイン"
     end
+    expect(page).to have_current_path(root_path)
+    expect(page).to have_css("main h1", text: "ホーム", exact_text: true)
   end
 
   it "creates, lists, updates and deletes a common image through the browser" do
