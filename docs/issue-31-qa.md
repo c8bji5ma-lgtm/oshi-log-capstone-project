@@ -1,5 +1,51 @@
 # Issue #31 MVP最終QA対応表
 
+## 2026年10月26日の追記
+
+初回追記日時：2026年10月26日17:39 JST（08:39 UTC）。この追記では既存の結果を読み取り、テスト・起動・seed・外部通信は再実行していない。
+
+### 受入範囲と出典
+
+中継担当がGitHubで確認した[#31監査コメント](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/issues/31#issuecomment-6384581377)の共有範囲では、判定対象は原文と個別Issueの受入条件であり、開発2の提出URL・本番実証は#32、DPro正式合格・最終提出はCIやコード監査と別である。本担当は#31本文・卒業要件原文・外部コメント全文を取得していないため、未読部分の正式必須判定は確定しない。全例外の網羅、本番負荷試験、全実機確認などの追加監査を無条件に卒業必須へ拡大しない。
+
+### 統合・CIの現在地
+
+- **ローカル確認：** `7d90754a5ef7753aaf47e0afb1d00e270c043e71`はPR #115のmergeで、PR #117の補完履歴を含む。406対応commit `803b47bc31c0d0f6224ed59fd6470d800ffeda9f`はその直系で、差分は406 HTMLと関連Specの3ファイルのみ。guest変更を含まないため、今回の文書基点に使用した。
+- **親のGitHub確認報告：** [PR #115](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/115)・[PR #117](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/117)はmain統合済み、#111・#112・#113・#114はclosed。[PR #119](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/119)もmainへmerge済み（`a6904ecc8230e7ab83677fdc4570fb9ee4b62bbd`）。[PR #118](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/118)はPR #116のbranchへmerge済み（`508d6a3a15d5bcab5d16c6b953cc8b06a2f6ecb5`）。その後、本人承認を受け[PR #116](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/116)もmainへmerge済み（`8bc3b500f0667d4d762c21b247c0751b35906cbc`）、#109はコード・テスト受入としてclosed。**本番guest有効化・deployは未実施。**
+- **親のCI確認報告：** PR #118の[run 40277944271](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/actions/runs/40277944271)は4項目成功、PR #119の事前CIも成功（run IDは本担当へ未共有）。更新後PR #116の[run 40288148222](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/actions/runs/40288148222)も成功。これらはローカル検証件数とは別の証拠である。
+- `a6904ecc...`・`508d6a3a...`・`8bc3b500...`は本担当のlocal objectでは参照できなかった。fetchは行っておらず、現在の文書基点とGitHubの最新mainが同一treeであるとは断定しない。
+
+### 再利用するローカル証拠
+
+- **main相当コード：** `ec1826d7...`とmain `7d90754a...`は同一tree。1539 examples・失敗0、RuboCop 192ファイル・違反0の記録がある。実行コードは`6b9e286c...`で、`ec1826d7...`との差は結果記録JSONのみ（[件数・検証記録](issue-110-seed-counts.json)）。
+- **guestとの互換性確認：** `f56441ba92a7184886110cda21f734005a5b8b86`はmain `7d90754a...`と修正済みPR #116 `26df4961...`のローカル統合。focused 8／related 286／全RSpec 1558 examplesはすべて失敗0、exit 0。RuboCopは197ファイル・違反0。**406変更後のmain全体を実行した結果ではない。** 記録は`tmp/issue109-main-integration-verification.json`。
+- **エラー時の代表レイアウト：** `ec1826d7...`で375px／1280pxの複数入力エラー・266文字通知を4 examples確認し、失敗0、横溢れなし、修正保存・通知後の遷移成功。これは担当の実行報告で、追跡Spec・専用ログファイルは残していない。
+- **初回の追加QAは失敗を保持：** `f56441b...`の5 examplesは4成功・1失敗、exit 1。対応UAは200／日本語、未対応UAは406／英語、両guestのカード・統計・本人画像は200、他人画像は404。未知URLは404だったが英語で、日本語assertionが失敗した。`tmp/issue31-local-boundaries_spec.rb`と`tmp/issue31-local-boundaries-results.txt`を保持している。
+- **404の切り分け追加試験：** 同じRails stackでrequest指定のみではtest既定の`rescuable`・詳細表示`true`が優先された。テストプロセス内の表示envだけを`all`・詳細表示`false`に一時指定し、404・日本語本文・トップ`/`へのリンク・例外詳細なしを1 exampleで確認、失敗0、exit 0。既定値の復元も確認した。設定ファイル・認証仕様は変更していない。証拠は`tmp/issue31-public-404_spec.rb`と`tmp/issue31-public-404-results.txt`。本番・proxy経由の実証ではない。
+- **406の日本語化：** `803b47b...`でRequest 6 examples／System 2 examplesは失敗0、exit 0。対応UA200／未対応UA406を維持し、日本語案内・トップリンク・375px／1280pxのTab／Enter・横溢れなしを確認。RuboCop 2ファイル・違反0。`tmp/issue31-406-verification.json`にコマンド・SHA256・画像を記録し、独立readonly reviewはblockingなしとの親報告を受領した。初回QAの「406英語」は変更前の履歴であり、現在の406実装の説明ではない。
+
+`tmp/`の証拠はGit管理外のローカル保管で、公開repo上のリンクではない。異なるSHA・環境・CIの件数を合算したり、未実施の公開受入へ読み替えたりしない。
+
+### 外部原本の最新確認
+
+最終状況追記日時：2026年10月26日18:14 JST（09:14 UTC）。原本確認と本人承認後の限定更新・再読／画像確認は中継担当の実施報告による。本担当は外部照会・更新を行わず、取得済みコードの静的照合と本記録への反映だけを行った。
+
+- **原本確認済み（中継担当）：** [外部ER図](https://whimsical.com/yuki-atarashi/oshilog-er-mvp-PDbRKWDyLu1fJfbJxNVMP6)は2026年10月24日04:49:16 UTC更新で、業務12表・14コネクタ。`oshi_common_images`と追加2コネクタが存在する。[外部テーブル定義書](https://docs.google.com/spreadsheets/d/1hWaamzG78rVdf1tu79aZMsmti1YSxQMKiD_1AjhuCVg/edit#gid=1645989784)も同日04:50:10 UTC更新時点の原本で同じ業務12表を確認済み。以下のD160限定修正は、その後の実施報告である。
+- **確認された業務12表：** `users`、`profiles`、`oshis`、`oshi_aliases`、`user_oshis`、`activities`、`activity_oshis`、`subscriptions`、`subscription_oshis`、`emotions`、`activity_emotions`、`oshi_common_images`。下記の11表・12コネクタ／再同期未実施という記述は、10月22日照合時点の履歴として保持する。原本への業務12表の反映は確認済みである。
+- **外部3資料の限定修正完了（中継担当）：** Sheets D160へ`oshi_common_images`を推し統合の付替え対象として追加済み。書式・隣接書式・数式は不変で、ネイティブ画面でD160周辺の新文言と4行表示の維持を確認済み。[画面遷移図](https://whimsical.com/yuki-atarashi/oshilog-BXfu4fkBrWUUJmT5NJb2Qi)の既存前提note（`XieFN6RRxC5YPipM5otEDf`）へ「PATCH/PUT成功303→管理A（現在の推し名絞込）」を追記し、[ワイヤーフレーム](https://whimsical.com/yuki-atarashi/oshilog-kpi-4JZqsPQdZ6TfN7LoLxQJbw)の編集note（`Tmjq4i2D5Giv96K5EN2d8R`）にもUPDATE成功説明を追記済み。両noteの位置・大きさ・書式を維持し、再読・画像確認済み。画面遷移図の既存42コネクタは不変で、最終差分はnote文字のみ。成功遷移の新コネクタは追加しておらず、これを新しい未達条件にはしない。
+- **ローカル静的照合：** 共通画像の`oshi_id`を付替え、画像と権利情報等を保持し、合計10件超で統合全体を中止する。UPDATE成功時は303 → `/admin/common-images?q=<現在の推し名>`、notice「共通画像情報を更新しました。」、検証失敗・更新競合時は422で編集画面を再描画する。これは取得済み[統合service](../app/services/oshis/merge.rb)・[更新controller](../app/controllers/admin/oshi_common_images_controller.rb)の静的照合であり、今回のHTTP実測ではない。
+- **日時宣言と未確認事項：** [schema](../db/schema.rb)では`rights_confirmed_at`・`created_at`・`updated_at`はいずれも`datetime NOT NULL`。[対応migration](../db/migrate/20261022040000_create_oshi_common_images.rb)は前者を`t.datetime :rights_confirmed_at, null: false`、後二者を`t.timestamps`で宣言している。schema・migrationともprecisionの数値指定はない。この宣言から精度6や外部資料との不整合を断定しない。DBの実効精度・保存timezoneは今回未確認。Sheetsネイティブ画面は中継担当がD160周辺だけを確認済みで、シート全体の目視は未確認である。
+
+### 完了した整理と残る判断
+
+この追記で、#111〜#114および406のコード・Specの証拠、開発8・デザイン4/5・画面遷移4に関する代表条件の確認、初回失敗と補完結果を区別した。これを原文全条件の正式合格とは扱わない。
+
+- **#109：コード受入完了（親確認）。** 本文DoDはコード・Spec・CI中心、後続コメント／PRは公開デモ受入を追加しているという共有範囲で、親が本文と照合してclosedを確認した。本担当は未読の細部を推測しない。未検証の公開デモ分離・有効化・公開URLでの実機確認は#32へ追記済みとの親報告を受領しており、コード受入と別工程で管理する。本番有効化・deployは未実施。
+- **#110：** 既存計測はschema内14/15表が各5件以上、`ActiveStorage::VariantRecord`は0。正式な適用・除外解釈が未確定のため`UNVERIFIED`を維持する。修正済みPRへ旧seed問題が残っているとは扱わず、ダミーvariantを作らない。
+- **別途未確認・保留：** 外部資料の限定修正結果と未確認事項は[外部原本の最新確認](#外部原本の最新確認)を参照。実機・VoiceOver等、公開環境の受入、学校側の正式判断は未確認、外部API・AI連携は保留のまま。これらを根拠なく新しい#31必須条件へ追加しない。
+
+以下は追記以前の履歴であり、「現行」「最新」や#60完了までcloseしないとの方針は各確認当時の記録を指す。#60の本番資源・時間上限等は別Issueの未確認事項として維持し、卒業原文の必須条件と自動的に同一視しない。
+
 ## 基準
 
 - アプリQA確認日：2026年10月21日
@@ -17,8 +63,8 @@
 | Issue #31の確認項目 | 現在の根拠 | 状態・残る確認 |
 |---|---|---|
 | カタログ設計の高優先度機能 | 活動CRUD、履歴・絞り込み、集計・固定費のrequest/system spec | 代表導線をChrome/Seleniumで再確認済み |
-| テーブル定義書とDB構造 | `db/schema.rb`、model spec、DB制約spec、test DBメタデータ、更新後の外部テーブル定義書 | 2026年10月22日の照合時点は業務11テーブル。現行schemaは全15テーブルからActive Storage 3テーブルを除く業務12テーブルで、後から追加された`oshi_common_images`を外部資料へ再同期する必要がある。Sheetsネイティブ画面の目視も未実施 |
-| ER図とモデル関連 | model、association/constraint spec、更新後の外部ER図 | 2026年10月22日の外部ER図は業務11テーブル・12コネクタとして確認済み。現行schemaの`oshi_common_images`とActive Storage関連を含む構造への再同期は未実施 |
+| テーブル定義書とDB構造 | `db/schema.rb`、model spec、DB制約spec、test DBメタデータ、更新後の外部テーブル定義書 | 2026年10月22日の照合時点は業務11テーブル。現行schemaは全15テーブルからActive Storage 3テーブルを除く業務12テーブルで、後から追加された`oshi_common_images`を外部資料へ再同期する必要がある。Sheetsネイティブ画面の目視も未実施。当時の記録であり、[外部原本の最新確認](#外部原本の最新確認)を参照 |
+| ER図とモデル関連 | model、association/constraint spec、更新後の外部ER図 | 2026年10月22日の外部ER図は業務11テーブル・12コネクタとして確認済み。現行schemaの`oshi_common_images`とActive Storage関連を含む構造への再同期は未実施。当時の記録であり、[外部原本の最新確認](#外部原本の最新確認)を参照 |
 | 主要画面遷移 | authentication、推し管理、活動・データ、固定費、プロフィール・カード、管理者のsystem spec | 今回のcommitでChrome/Seleniumの代表12 examplesを再確認済み |
 | 主要画面・グローバルナビ | request/system spec、Issue #30の1280px/375px目視 | 主要幅で確認済み。全端末・支援技術の保証ではない |
 | ログイン・ログアウト・管理者 | authentication、admin authorization/merging spec | 自動検証済み |
@@ -38,7 +84,7 @@
 |---|---|---|
 | 感情タグ | Issue #67、PR #69 | `emotions`、`activity_emotions`を含む業務11テーブルとして反映 |
 | 推し画像ライブラリ | Issue #70、PR #71 | Active Storageによる代表画像・ライブラリ画像、合計30枚上限を注記。独自業務テーブルの追加なし |
-| 推し共通画像 | Issue #86、PR #87 | 現行schemaへ`oshi_common_images`を追加。全15テーブル、Active Storage 3テーブルを除く業務12テーブルとなった。2026年10月22日に確認した外部テーブル定義書・ER図は追加前のため再同期が必要 |
+| 推し共通画像 | Issue #86、PR #87 | 現行schemaへ`oshi_common_images`を追加。全15テーブル、Active Storage 3テーブルを除く業務12テーブルとなった。2026年10月22日に確認した外部テーブル定義書・ER図は追加前のため再同期が必要。当時の記録であり、[外部原本の最新確認](#外部原本の最新確認)を参照 |
 | 楽観ロック | Issue #61、PR #72 | `activities.lock_version`、`subscriptions.lock_version`を反映 |
 | 制約・将来機能 | 現行schema、Issue #26 | 複合UNIQUEの列組、NN、公開・URL・QR共有が将来機能であることを反映 |
 
@@ -145,7 +191,7 @@ Git管理外の`tmp/issue31_release_readiness/screenshots/`へ8枚を保存し�
 
 ## 残る確認と優先順位
 
-1. `oshi_common_images`追加後の業務12テーブルを外部テーブル定義書・ER図へ同期し、Sheetsをネイティブ画面で目視してAPI読戻しでは判別できない表示上の欠落がないことを確認する
+1. `oshi_common_images`追加後の業務12テーブルを外部テーブル定義書・ER図へ同期し、Sheetsをネイティブ画面で目視してAPI読戻しでは判別できない表示上の欠落がないことを確認する（当時の記録。[外部原本の最新確認](#外部原本の最新確認)を参照）
 2. 本人申告で完了したiPhone確認の範囲を必要に応じて特定し、Chrome以外の実ブラウザとVoiceOver等の実支援技術を確認する
 3. 実メール・外部API・本番環境、およびIssue #60の本番資源予算・複数worker・native hard timeoutを確認する
 4. iPhone Safariで保留した保存後表示遅延と透過表示を、原ファイル・保存blob・表示CSSを区別して再確認する

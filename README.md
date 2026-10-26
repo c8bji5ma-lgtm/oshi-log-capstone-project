@@ -101,13 +101,13 @@ BUNDLE_FROZEN=true bin/importmap audit
 
 ![ER図 下部](docs/images/er_diagram_20261022_lower.png)
 
-更新後のER図を上・中・下の3枚に分けて掲載しています。図全体と補足は以下のWhimsical原本を参照してください。
+掲載画像は2026年10月22日の保存版です。現行schemaとの照合状況は[Issue #31 QA対応表](docs/issue-31-qa.md)を、図全体と補足は以下のWhimsical原本を参照してください。
 
 [WhimsicalでER図を確認する](https://whimsical.com/yuki-atarashi/oshilog-er-mvp-PDbRKWDyLu1fJfbJxNVMP6)
 
 ## 画面遷移図・ワイヤーフレーム
 
-最新の画面設計を、左・中央・右の3枚に分けて掲載しています。
+2026年10月22日に保存した画面設計を、左・中央・右の3枚に分けて掲載しています。
 
 ### 左（推し管理・活動記録）
 
