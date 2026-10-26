@@ -325,5 +325,85 @@
       "ci": "NOT_RUN",
       "remote_and_release": "NOT_VERIFIED"
     }
+  },
+  "ci_guard_remediation": {
+    "recorded_at": "2026-10-27 03:45 JST / 2026-10-26 18:45 UTC",
+    "base_commit": "e9033a3aab1f6593772e9d1ee4fd36d16bdfb8f7",
+    "original_ci": {
+      "source": "親が正式GitHubログから確認した報告",
+      "run_url": "https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/actions/runs/40376731785",
+      "test_job": 121761707461,
+      "examples": 1567,
+      "failures": 13,
+      "exit_code": 1,
+      "failure_scope": "13件すべてseed Specのbeforeにある接続guardで失敗。個々のseed動作が失敗したとは未確認。",
+      "actual_current_database_and_server_address": "NOT_LOGGED"
+    },
+    "diagnosis": "旧guardはサーバー側inet_server_addr()をクライアント接続先のlocal判定に使用していた。workflowはlocalhost:5432経由のPostgreSQL serviceを宣言。loopback接続先とコンテナ側server addressが異なる条件をDBなしで再現し、旧判定の同一エラーを確認した。実CIで不一致だった値は未記録のため断定しない。",
+    "change": "test環境・実current_database=my_app_testを維持し、接続済PG clientのhostとhostaddrでTCP loopbackを確認する。Unix socketは絶対socketdir・hostaddr未設定・SQL server addressがNULLの全条件を確認。不明/remote/private client、development/production、別DBを拒否する。CIフラグによる無条件許可は行わない。",
+    "primary_references": [
+      "https://www.postgresql.org/docs/18/functions-info.html",
+      "https://deveiate.org/code/pg/PG/Connection.html"
+    ],
+    "validation": {
+      "validated_working_tree": {
+        "base_commit": "e9033a3aab1f6593772e9d1ee4fd36d16bdfb8f7",
+        "file_sha256": {
+          "spec/seeds/development_spec.rb": "1ce25b2416744d13801b7374d6fa283ffff5b858a3620d389a3d66627f3fb60b",
+          "spec/support/local_test_database.rb": "f03b6664bbdf7558a7d6589866a0e5cd6ae58ac9555951833cc1d64e092c44f0",
+          "spec/support/local_test_database_spec.rb": "16a44659ad8abf2dbb669ef1b9d705d1eb3ef95b0dfcb37ebb09bb29ac767523"
+        }
+      },
+      "reproduction_red": {
+        "command": "RAILS_ENV=test bundle exec rspec spec/support/local_test_database_spec.rb --example 'container-side server address' --format documentation",
+        "examples": 1,
+        "failures": 1,
+        "exit_code": 1,
+        "expected_failure": true,
+        "log": "tmp/issue110/ci-guard-reproduction-red.txt"
+      },
+      "pure_guard": {
+        "command": "RAILS_ENV=test bundle exec rspec spec/support/local_test_database_spec.rb --format documentation",
+        "examples": 22,
+        "failures": 0,
+        "exit_code": 0,
+        "log": "tmp/issue110/ci-guard-pure-final.txt"
+      },
+      "focused": {
+        "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec spec/seeds/development_spec.rb spec/support/local_test_database_spec.rb --format documentation",
+        "examples": 35,
+        "breakdown": {
+          "seed": 13,
+          "guard": 22
+        },
+        "failures": 0,
+        "exit_code": 0,
+        "log": "tmp/issue110/ci-guard-focused-final.txt"
+      },
+      "rubocop": {
+        "command": "bundle exec rubocop --cache false spec/seeds/development_spec.rb spec/support/local_test_database.rb spec/support/local_test_database_spec.rb",
+        "files": 3,
+        "offenses": 0,
+        "exit_code": 0,
+        "log": "tmp/issue110/ci-guard-rubocop-final.txt"
+      },
+      "real_connection": {
+        "database": "my_app_test",
+        "server_address": null,
+        "client_host": "/var/run/postgresql",
+        "client_host_address": ""
+      },
+      "current_local_observation": "Unix socket接続。Docker port forwardingの実接続は今回作成せず、当該条件の検証は純粋テストの入力による。",
+      "seed_evidence": "tmp/issue110/ci-guard-seed-counts.json",
+      "all_15_schema_tables_at_least_5": true,
+      "real_variants": 5,
+      "derived_bytes": 62416,
+      "second_upload_count": 0,
+      "cleanup_evidence": "tmp/issue110/ci-guard-after-test.json",
+      "original_seed_evidence_restored": true,
+      "full_suite": "NOT_RERUN_AFTER_FIX。既知変更統合c9e8f7562a38369fd72506a35a58cca28d687875の1567例成功は旧guardの証拠として保持し、今回の35例成功と区別する。",
+      "CI_after_fix": "NOT_RUN"
+    },
+    "application_seed_workflow_schema_auth_network_changes": false
   }
 }

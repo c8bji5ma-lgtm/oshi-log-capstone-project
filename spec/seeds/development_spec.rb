@@ -2,6 +2,7 @@ require "rails_helper"
 require "tmpdir"
 require "fileutils"
 require_relative "../support/image_attachments"
+require_relative "../support/local_test_database"
 require_relative "../../db/seeds/development"
 
 RSpec.describe DevelopmentSeeds::Dataset, type: :model do
@@ -23,9 +24,7 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
   around do |example|
     raise "Seed specs require the test environment" unless Rails.env.test?
     connection = ActiveRecord::Base.connection
-    @database_connection = connection.select_one("SELECT current_database() AS database, inet_server_addr()::text AS server_address")
-    raise "Seed specs require the local test database" unless @database_connection["database"] == "my_app_test" &&
-      [ nil, "127.0.0.1", "::1" ].include?(@database_connection["server_address"])
+    @database_connection = LocalTestDatabase.verify!(environment: Rails.env, connection: connection)
 
     baseline_ids = models.to_h { |model| [ model, model.pluck(:id) ] }
     original_services = ActiveStorage::Blob.services
