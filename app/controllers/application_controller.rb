@@ -22,7 +22,9 @@ class ApplicationController < ActionController::Base
 
   def enforce_read_only_guest_session
     role = session[:graduation_guest_role]
-    return if role.blank?
+    reserved_session = GraduationGuestSandbox.enabled? &&
+      GraduationGuestSandbox.reserved_email?(current_user&.email)
+    return if role.blank? && !reserved_session
 
     unless GraduationGuestSandbox.ready? && GraduationGuestSandbox.actor?(current_user, role)
       sign_out(:user)
