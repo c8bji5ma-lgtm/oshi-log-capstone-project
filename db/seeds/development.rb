@@ -206,9 +206,15 @@ module DevelopmentSeeds
           next if OshiCommonImage.exists?(oshi: oshi, source_url: source_url, registered_by_user: @users.fetch(:admin))
 
           path = Rails.root.join("db/seeds/assets", filename)
-          File.open(path, "rb") do |stream|
+          # UploadedFile#open delegates to tempfile.open; a plain File lacks
+          # the public Tempfile#open method expected by the production service.
+          tempfile = Tempfile.new([ "oshi-seed-", ".jpg" ])
+          begin
+            tempfile.binmode
+            tempfile.write(File.binread(path))
+            tempfile.rewind
             upload = ActionDispatch::Http::UploadedFile.new(
-              tempfile: stream, filename: filename, type: "image/jpeg"
+              tempfile: tempfile, filename: filename, type: "image/jpeg"
             )
             OshiCommonImages::Create.call(
               oshi: oshi, administrator: @users.fetch(:admin), file: upload,
@@ -220,6 +226,8 @@ module DevelopmentSeeds
                 active: true
               }
             )
+          ensure
+            tempfile.close!
           end
         end
       end
