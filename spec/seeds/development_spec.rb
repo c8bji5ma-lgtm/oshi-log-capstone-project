@@ -15,7 +15,8 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
   let(:dataset) { described_class.new(reference_date: reference_date) }
   let(:models) do
     [ User, Profile, Oshi, OshiAlias, UserOshi, Activity, ActivityOshi,
-      Subscription, SubscriptionOshi, ActiveStorage::Blob, ActiveStorage::Attachment ]
+      Emotion, ActivityEmotion, Subscription, SubscriptionOshi, OshiCommonImage,
+      ActiveStorage::Blob, ActiveStorage::Attachment ]
   end
   let(:emails) { %w[demo multi light empty admin].map { |name| "#{name}@example.com" } }
 
@@ -37,8 +38,9 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
       ensure
         # Delete only test rows absent from the pre-example snapshot, children
         # first. No callbacks/jobs may operate on storage after the test ends.
-        [ ActiveStorage::Attachment, ActivityOshi, SubscriptionOshi, OshiAlias,
-          UserOshi, Activity, Subscription, Profile, Oshi, User, ActiveStorage::Blob ].each do |model|
+        [ ActiveStorage::Attachment, OshiCommonImage, ActivityEmotion, ActivityOshi,
+          SubscriptionOshi, OshiAlias, UserOshi, Activity, Subscription,
+          Profile, Oshi, User, Emotion, ActiveStorage::Blob ].each do |model|
           model.where.not(id: baseline_ids.fetch(model)).delete_all
         end
         ActiveStorage::Blob.services = original_services
@@ -69,7 +71,9 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
   end
 
   it "does not automatically execute either entrypoint under the non-development guard" do
-    before = counts
+    # The global Emotion master is intentionally populated by db/seeds.rb in every environment.
+    business_models = models - [ Emotion ]
+    before = business_models.map(&:count)
     # Stub only the guard predicate; Rails.env and the test DB connection stay intact.
     allow(Rails.env).to receive(:development?).and_return(false)
     expect(described_class).not_to receive(:new)
@@ -77,14 +81,15 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
       load Rails.root.join("db/seeds.rb")
       load Rails.root.join("db/seeds/development.rb")
     end.not_to output.to_stdout
-    expect(counts).to eq(before)
+    expect(business_models.map(&:count)).to eq(before)
     expect(Rails.env.test?).to be(true)
   end
 
   it "keeps global and reserved dataset counts stable, with original image bytes on both runs" do
     before = counts
+    missing_emotion_names = Emotion::DEFAULT_NAMES.count { |name| !Emotion.exists?(name: name) }
     dataset.call
-    expected = [ 5, 5, 6, 2, 8, 42, 56, 12, 12, 7, 7 ]
+    expected = [ 5, 5, 6, 5, 8, 42, 56, missing_emotion_names, 5, 12, 12, 5, 12, 12 ]
     expect(counts.zip(before).map { |after, original| after - original }).to eq(expected)
     ids = models.map { |model| model.order(:id).pluck(:id) }
     expect_seed_images_downloadable
@@ -94,8 +99,13 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
     expect(User.where(email: emails).count).to eq(5)
     expect(Profile.where(user: User.where(email: emails)).count).to eq(5)
     expect(Oshi.where(created_by_user: User.where(email: emails)).count).to eq(6)
-    expect(OshiAlias.where(oshi: Oshi.where(created_by_user: User.where(email: emails))).count).to eq(2)
+    expect(OshiAlias.where(oshi: Oshi.where(created_by_user: User.where(email: emails))).count).to eq(5)
     expect(UserOshi.where(user: User.where(email: emails)).count).to eq(8)
+    expect(ActivityEmotion.joins(:activity).where(activities: { user_id: demo.id }).count).to eq(5)
+    common_images = OshiCommonImage.where(registered_by_user: User.find_by!(email: "admin@example.com"))
+    expect(common_images.count).to eq(5)
+    expect(common_images.map(&:creator_name).uniq).to match_array([ "Yvette de Wit", "Matt Botsford", "Christie Kim" ])
+    expect(common_images.all? { |image| image.image.attached? && image.valid? }).to be(true)
     expect(Activity.where(user: User.where(email: emails)).count).to eq(42)
     expect(ActivityOshi.where(activity: Activity.where(user: User.where(email: emails))).count).to eq(56)
     expect(Subscription.where(user: User.where(email: emails)).count).to eq(12)
