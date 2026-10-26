@@ -10,4 +10,12 @@ class User < ApplicationRecord
   has_many :subscriptions
 
   validates :admin, inclusion: { in: [ true, false ] }
+
+  # The published development-seed passwords must never authenticate the
+  # reserved demo actors through the regular sign-in form in sandbox mode.
+  def valid_for_authentication?
+    return false if GraduationGuestSandbox.enabled? && GraduationGuestSandbox.reserved_email?(email)
+
+    super
+  end
 end
