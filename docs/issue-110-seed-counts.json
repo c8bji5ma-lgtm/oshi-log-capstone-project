@@ -1,0 +1,177 @@
+{
+  "issue": 110,
+  "issue_url": "https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/issues/110",
+  "overall_assessment": "UNVERIFIED",
+  "reason": "schema内15表を実測。業務12表と実画像に由来するBlob/Attachmentは各5件以上。VariantRecordは0件で、正式な適用範囲の解釈が未確定のため除外・合格扱いにしない。",
+  "measured_on_jst": "2026-10-26",
+  "environment": "test",
+  "database": "my_app_test",
+  "connection": "local Unix socket",
+  "implementation_base_commit": "d8a38788a045c181d788bf34e79fd106929c4fad",
+  "seed_reference_date": "2026-10-06",
+  "reproduction": {
+    "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec spec/seeds/development_spec.rb",
+    "example": "keeps global and reserved dataset counts stable, with original image bytes on both runs",
+    "runtime_evidence": "tmp/issue110/seed-counts.json",
+    "isolation": "test専用データと一時DiskServiceを使用。テスト開始前のIDを保持し、このexampleで作成した行だけを後片付けする。development/production DBでseedは実行していない。",
+    "second_run": "件数だけでなく、全15モデルのID集合も1回目と一致することを確認する。"
+  },
+  "schema_table_count": 15,
+  "tables": [
+    {
+      "table": "active_storage_attachments",
+      "before": 0,
+      "after_first": 12,
+      "after_second": 12,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "active_storage_blobs",
+      "before": 0,
+      "after_first": 12,
+      "after_second": 12,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "active_storage_variant_records",
+      "before": 0,
+      "after_first": 0,
+      "after_second": 0,
+      "assessment": "UNVERIFIED"
+    },
+    {
+      "table": "activities",
+      "before": 0,
+      "after_first": 42,
+      "after_second": 42,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "activity_emotions",
+      "before": 0,
+      "after_first": 5,
+      "after_second": 5,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "activity_oshis",
+      "before": 0,
+      "after_first": 56,
+      "after_second": 56,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "emotions",
+      "before": 7,
+      "after_first": 7,
+      "after_second": 7,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "oshi_aliases",
+      "before": 0,
+      "after_first": 5,
+      "after_second": 5,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "oshi_common_images",
+      "before": 0,
+      "after_first": 5,
+      "after_second": 5,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "oshis",
+      "before": 0,
+      "after_first": 6,
+      "after_second": 6,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "profiles",
+      "before": 0,
+      "after_first": 5,
+      "after_second": 5,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "subscription_oshis",
+      "before": 0,
+      "after_first": 12,
+      "after_second": 12,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "subscriptions",
+      "before": 0,
+      "after_first": 12,
+      "after_second": 12,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "user_oshis",
+      "before": 0,
+      "after_first": 8,
+      "after_second": 8,
+      "assessment": "MEASURED_AT_LEAST_5"
+    },
+    {
+      "table": "users",
+      "before": 0,
+      "after_first": 5,
+      "after_second": 5,
+      "assessment": "MEASURED_AT_LEAST_5"
+    }
+  ],
+  "framework_tables_outside_schema": [
+    {
+      "table": "ar_internal_metadata",
+      "before": 1,
+      "after_first": 1,
+      "after_second": 1,
+      "assessment": "UNVERIFIED",
+      "reason": "db/schema.rbの15表には含まれないRails運用表。計測のみで、件数のために履歴・環境情報を追加しない。正式な適用判断は未確定。"
+    },
+    {
+      "table": "schema_migrations",
+      "before": 13,
+      "after_first": 13,
+      "after_second": 13,
+      "assessment": "UNVERIFIED",
+      "reason": "db/schema.rbの15表には含まれないRails運用表。計測のみで、件数のために履歴・環境情報を追加しない。正式な適用判断は未確定。"
+    }
+  ],
+  "source_rights": {
+    "evidence": "db/seeds/assets/SOURCES.md",
+    "existing_confirmation_date": "2026-10-06",
+    "precision": "既存資料は日付のみ。rights_confirmed_atはその日付を日本時間00:00として保存し、実際の確認時刻や新しい権利確認を主張しない。",
+    "reuse": "既存の3 JPEGのみを5件の共通画像に利用。出典URL・作者・ライセンス・帰属と原本bytesをSpecで照合。新規の画像取得・外部API呼出しはない。"
+  },
+  "verification": {
+    "focused_and_related": {
+      "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec spec/seeds/development_spec.rb spec/models/oshi_common_image_spec.rb spec/services/oshi_common_images/create_spec.rb",
+      "examples": 42,
+      "failures": 0,
+      "exit_code": 0
+    },
+    "full_suite": {
+      "validated_code_commit": "6b9e286cd9890045d1b693b5b7cb98437d835eb4",
+      "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec --format progress --out /tmp/oshilog-pr115-supplement-full-rspec.txt",
+      "examples": 1539,
+      "failures": 0,
+      "exit_code": 0
+    },
+    "rubocop": {
+      "command": "bundle exec rubocop --cache false",
+      "files": 192,
+      "offenses": 0,
+      "exit_code": 0
+    },
+    "ci": "NOT_RUN",
+    "remote_and_release": "NOT_VERIFIED"
+  },
+  "remaining_decision": "active_storage_variant_records等の運用表に原文「各テーブル」をどう適用するか、正式な解釈の確認が必要。未確認を理由なく対象外としない。",
+  "local_branch": "codex/pr115-mvp-evidence-supplement",
+  "scope": "PR #115の修正済みseedを保持し、全表の計測・資料照合・非seed保持を補完。旧版にあった7件期待の不整合は本baseでは解消済み。"
+}

@@ -769,3 +769,11 @@ fieldset {
   .activity-entry { grid-template-columns: 3rem minmax(0, 1fr); gap: 0.65rem; }
   .activity-entry-date { width: 3rem; height: 3rem; }
 }
+
+/* Graduation requirement: shared header / main / footer layout. */
+body { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+body > main { flex: 1 0 auto; }
+.site-footer { margin-top: auto; padding: 1.25rem 0; background: #fff; border-top: 1px solid #d5dee8; color: #4c5f73; }
+.site-footer .page-width { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; }
+.site-footer p { margin: 0; }
+.site-footer a { color: #245b8a; font-weight: 700; }

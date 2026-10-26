@@ -1247,6 +1247,12 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     counts = models.map(&:count)
     saved = []
     downloaded_paths = []
+    download_files = lambda do |directory|
+      # Ignore only Chrome's internal temporary file, not unfinished application downloads.
+      directory.glob("**/*").select(&:file?).reject do |path|
+        path.basename.to_s.match?(/\Adownloads\.html(?: \(\d+\))?\.crdownload\z/)
+      end
+    end
     verified_download = lambda do
       png = preview_png
       directory = @download_directory.join("template-#{saved.length + 1}")
@@ -1256,11 +1262,11 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
       expect(page).to have_css("[data-photo-card-target='status']", text: "ダウンロードを開始しました", wait: 10)
       downloaded = nil
       page.document.synchronize(10, errors: [ Capybara::ExpectationNotMet ]) do
-        fresh = directory.children
-        unless fresh.one? && fresh.first.extname == ".png" && directory.glob("*.crdownload").empty?
+        completed = download_files.call(directory)
+        unless completed.one? && completed.first.basename.to_s == "oshilog-card.png"
           raise Capybara::ExpectationNotMet, "Expected exactly one new completed PNG download"
         end
-        downloaded = fresh.first
+        downloaded = completed.first
       end
       expect(File.binread(downloaded)).to eq(png)
       expect(File.binread(downloaded, 8)).to eq(Cards::Photo::PNG_SIGNATURE)
@@ -1329,7 +1335,7 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     expect(page).to have_select("集計対象", selected: second.oshi.name)
     generate_preview
     expect(preview_png).to eq(saved[2])
-    files = @download_directory.glob("**/*").select(&:file?)
+    files = download_files.call(@download_directory)
     expect(files).to match_array(downloaded_paths)
     expect(files.map { |path| File.binread(path) }).to match_array(saved)
     expect(models.map(&:count)).to eq(counts)
