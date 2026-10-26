@@ -1,9 +1,11 @@
 Rails.application.routes.draw do
-  devise_for :users, skip: :registrations
+  devise_for :users, skip: :registrations, controllers: { sessions: "users/sessions" }
   devise_scope :user do
     get "users/sign_up", to: "devise/registrations#new", as: :new_user_registration
     post "users", to: "devise/registrations#create", as: :user_registration
   end
+  post "guest/:role", to: "guest_sessions#create", as: :guest_session,
+    constraints: { role: /viewer|admin/ }
   root "pages#index"
   get "home", to: "pages#home", as: :home
   get "my_page", to: "pages#my_page", as: :my_page
