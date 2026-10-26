@@ -33,7 +33,11 @@ class ApplicationController < ActionController::Base
     return if request.get? || request.head?
     return if devise_controller? && controller_name == "sessions" && action_name == "destroy"
 
-    render plain: "ゲストは閲覧専用です。登録・変更・削除はできません。", status: :forbidden
+    if html_navigation_request?
+      render "errors/guest_read_only", formats: [ :html ], status: :forbidden
+    else
+      render plain: "ゲストは閲覧専用です。登録・変更・削除はできません。", status: :forbidden
+    end
   end
 
   def first_activity_continuation?
