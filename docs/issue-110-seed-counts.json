@@ -1,43 +1,43 @@
 {
   "issue": 110,
   "issue_url": "https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/issues/110",
-  "overall_assessment": "UNVERIFIED",
-  "reason": "schema内15表を実測。業務12表と実画像に由来するBlob/Attachmentは各5件以上。VariantRecordは0件で、正式な適用範囲の解釈が未確定のため除外・合格扱いにしない。",
+  "overall_assessment": "SCHEMA_COUNTS_VERIFIED",
+  "reason": "test専用DBと隔離DiskServiceでschema内15表すべて各5件以上を確認。既存の共通画像5件から正規Active Storage APIで実在する縮小JPEGとVariantRecord 5件を生成した。学校の正式合格やschema外の運用表への適用判断とは区別する。",
   "measured_on_jst": "2026-10-26",
   "environment": "test",
   "database": "my_app_test",
   "connection": "local Unix socket",
-  "implementation_base_commit": "d8a38788a045c181d788bf34e79fd106929c4fad",
+  "implementation_base_commit": "0cf5ac31d361be27008673bd7620d2355648ef14",
   "seed_reference_date": "2026-10-06",
   "reproduction": {
-    "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec spec/seeds/development_spec.rb",
+    "command": "RAILS_ENV=test bundle exec rspec spec/seeds/development_spec.rb --format documentation",
     "example": "keeps global and reserved dataset counts stable, with original image bytes on both runs",
-    "runtime_evidence": "tmp/issue110/seed-counts.json",
+    "runtime_evidence": "tmp/issue110/real-variant-seed-counts.json",
     "isolation": "test専用データと一時DiskServiceを使用。テスト開始前のIDを保持し、このexampleで作成した行だけを後片付けする。development/production DBでseedは実行していない。",
-    "second_run": "件数だけでなく、全15モデルのID集合も1回目と一致することを確認する。"
+    "second_run": "全15モデルの件数・ID集合、原画像と派生画像のbytes、元Attachment・権利情報が一致。2回目の追加アップロードは0件。"
   },
   "schema_table_count": 15,
   "tables": [
     {
       "table": "active_storage_attachments",
       "before": 0,
-      "after_first": 12,
-      "after_second": 12,
+      "after_first": 17,
+      "after_second": 17,
       "assessment": "MEASURED_AT_LEAST_5"
     },
     {
       "table": "active_storage_blobs",
       "before": 0,
-      "after_first": 12,
-      "after_second": 12,
+      "after_first": 17,
+      "after_second": 17,
       "assessment": "MEASURED_AT_LEAST_5"
     },
     {
       "table": "active_storage_variant_records",
       "before": 0,
-      "after_first": 0,
-      "after_second": 0,
-      "assessment": "UNVERIFIED"
+      "after_first": 5,
+      "after_second": 5,
+      "assessment": "MEASURED_AT_LEAST_5"
     },
     {
       "table": "activities",
@@ -149,29 +149,181 @@
     "reuse": "既存の3 JPEGのみを5件の共通画像に利用。出典URL・作者・ライセンス・帰属と原本bytesをSpecで照合。新規の画像取得・外部API呼出しはない。"
   },
   "verification": {
-    "focused_and_related": {
-      "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec spec/seeds/development_spec.rb spec/models/oshi_common_image_spec.rb spec/services/oshi_common_images/create_spec.rb",
-      "examples": 42,
-      "failures": 0,
-      "exit_code": 0
+    "validated_working_tree": {
+      "base_commit": "0cf5ac31d361be27008673bd7620d2355648ef14",
+      "file_sha256": {
+        "db/seeds/development.rb": "7202a5480f109fd79ad65bc631b3aa69e0690bd0632eea337b73d959de193867",
+        "spec/seeds/development_spec.rb": "e259cd76842423fad59de7d5a87a1e0fdc5babaaf29e42728deab3f7f0bf1c4a"
+      }
     },
-    "full_suite": {
-      "validated_code_commit": "6b9e286cd9890045d1b693b5b7cb98437d835eb4",
-      "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec --format progress --out /tmp/oshilog-pr115-supplement-full-rspec.txt",
-      "examples": 1539,
+    "focused": {
+      "command": "RAILS_ENV=test bundle exec rspec spec/seeds/development_spec.rb --format documentation",
+      "examples": 13,
       "failures": 0,
-      "exit_code": 0
+      "exit_code": 0,
+      "log": "tmp/issue110/real-variant-focused-final.txt"
+    },
+    "related_initial": {
+      "command": "RAILS_ENV=test bundle exec rspec spec/models/oshi_common_image_spec.rb spec/services/oshi_common_images/create_spec.rb spec/requests/common_oshi_images_spec.rb spec/requests/images_spec.rb spec/requests/admin_oshi_common_images_spec.rb spec/system/admin_common_images_crud_spec.rb --format documentation",
+      "examples": 75,
+      "failures": 1,
+      "exit_code": 1,
+      "classification": "74例成功。System 1例はローカルChrome接続が既存proxy経由でECONNREFUSEDとなった。アプリ処理の失敗とは区別し、初回ログを保持。",
+      "log": "tmp/issue110/real-variant-related-final.txt"
+    },
+    "system_retry": {
+      "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec spec/system/admin_common_images_crud_spec.rb --format documentation",
+      "examples": 1,
+      "failures": 0,
+      "exit_code": 0,
+      "scope": "失敗したSystem 1例だけ、承認済みのテストプロセス内localhost除外を指定。永続設定は変更していない。",
+      "log": "tmp/issue110/real-variant-system-retry.txt"
     },
     "rubocop": {
-      "command": "bundle exec rubocop --cache false",
-      "files": 192,
+      "command": "bundle exec rubocop --cache false db/seeds/development.rb spec/seeds/development_spec.rb",
+      "files": 2,
       "offenses": 0,
-      "exit_code": 0
+      "exit_code": 0,
+      "log": "tmp/issue110/real-variant-rubocop-final.txt"
     },
+    "full_suite": "NOT_RERUN: seedと関連画像回帰を実行。以前の1539例成功は下記の履歴であり、今回の変更後の全suite結果とは扱わない。",
     "ci": "NOT_RUN",
-    "remote_and_release": "NOT_VERIFIED"
+    "remote_and_release": "NOT_PERFORMED"
   },
-  "remaining_decision": "active_storage_variant_records等の運用表に原文「各テーブル」をどう適用するか、正式な解釈の確認が必要。未確認を理由なく対象外としない。",
-  "local_branch": "codex/pr115-mvp-evidence-supplement",
-  "scope": "PR #115の修正済みseedを保持し、全表の計測・資料照合・非seed保持を補完。旧版にあった7件期待の不整合は本baseでは解消済み。"
+  "remaining_decision": "schema内15表のseed件数・実生成・再実行・非seed保持は検証済み。schema外のRails運用表に原文「各テーブル」を適用する正式解釈と学校の最終受入は未判定。件数のために運用履歴や環境情報を追加しない。",
+  "local_branch": "codex/issue-110-real-variant-seeds",
+  "scope": "developmentの自動seedとtestからの明示実行だけに、非表示の開発用派生画像サンプルを追加。現在の実アプリはvariants未使用で、業務UI・画像配信・schema・恒久設定・依存関係・原画像・権利情報は変更しない。development/production DBでseed・画像変換は実行していない。",
+  "runtime_confirmation": {
+    "connection": {
+      "database": "my_app_test",
+      "server_address": null,
+      "connection_host": "/var/run/postgresql"
+    },
+    "settings": {
+      "track_variants": true,
+      "variant_processor": "vips"
+    },
+    "settings_changed": false,
+    "initial_connection_attempt": "通常の実行権限ではUnix socket接続がOperation not permitted。正式な実行権限の承認後、同じ接続先への読み取り確認でlocal my_app_testと確認した。接続先・認証・恒久network設定は変更していない。",
+    "after_test_counts_match_before": true,
+    "after_cleanup": {
+      "active_storage_attachments": 0,
+      "active_storage_blobs": 0,
+      "active_storage_variant_records": 0,
+      "activities": 0,
+      "activity_emotions": 0,
+      "activity_oshis": 0,
+      "ar_internal_metadata": 1,
+      "emotions": 7,
+      "oshi_aliases": 0,
+      "oshi_common_images": 0,
+      "oshis": 0,
+      "profiles": 0,
+      "schema_migrations": 13,
+      "subscription_oshis": 0,
+      "subscriptions": 0,
+      "user_oshis": 0,
+      "users": 0
+    },
+    "evidence": "tmp/issue110/real-variant-post-test-state.json"
+  },
+  "variant_samples": {
+    "purpose": "既存の共通画像から小型画像を派生し、正規のtracked variant保存・再実行を確認できる開発用サンプル。画面には表示しない。",
+    "transformation": {
+      "resize_to_limit": [
+        320,
+        320
+      ],
+      "format": "jpg"
+    },
+    "creation_api": "blob.variant(VARIANT_SAMPLE).processed",
+    "generated_count": 5,
+    "total_derived_bytes": 62416,
+    "first_dataset_seconds": 1.111973692997708,
+    "second_dataset_seconds": 0.5003048040016438,
+    "timing_scope": "Dataset.call全体の実時間。画像変換だけのCPU時間・最大RSSは未測定。",
+    "first_upload_count": 17,
+    "first_upload_breakdown": {
+      "original": 12,
+      "derived": 5
+    },
+    "second_upload_count": 0,
+    "files": [
+      {
+        "variation_digest": "WJIE7ThKPiR43bXpbl1Pnk2+CCU=",
+        "sha256": "59e505ec1e111e1d2ae70237f6bfb6410e9de50b74ac41724db9ee7c1314f150",
+        "bytes": 15233,
+        "width": 320,
+        "height": 213
+      },
+      {
+        "variation_digest": "WJIE7ThKPiR43bXpbl1Pnk2+CCU=",
+        "sha256": "2e4e771cd076fc98ff7936b38383b9b23b684da3d42886836ce499318254284b",
+        "bytes": 9410,
+        "width": 320,
+        "height": 180
+      },
+      {
+        "variation_digest": "WJIE7ThKPiR43bXpbl1Pnk2+CCU=",
+        "sha256": "3e5dd18efe53c80dfbc960b42ae289cac890538dd7e3be6149e39f9b3155f6de",
+        "bytes": 13130,
+        "width": 213,
+        "height": 320
+      },
+      {
+        "variation_digest": "WJIE7ThKPiR43bXpbl1Pnk2+CCU=",
+        "sha256": "2e4e771cd076fc98ff7936b38383b9b23b684da3d42886836ce499318254284b",
+        "bytes": 9410,
+        "width": 320,
+        "height": 180
+      },
+      {
+        "variation_digest": "WJIE7ThKPiR43bXpbl1Pnk2+CCU=",
+        "sha256": "59e505ec1e111e1d2ae70237f6bfb6410e9de50b74ac41724db9ee7c1314f150",
+        "bytes": 15233,
+        "width": 320,
+        "height": 213
+      }
+    ],
+    "verified": "Vipsで実bytesをデコードしJPEG・最大320px・原画像と異なるbytes・digest対応を確認。2回で全モデルID集合、派生ID/Attachment/Blob/bytes、原画像・権利情報が一致。",
+    "retention_and_retry": "非seedレコード/画像/variant、seed画像の別transform、手動置換画像を保持。欠落した原画像と派生ファイルはIDを変えず復元。新規派生の保存後にIOErrorを注入し、当該新規派生だけを補償削除、既存ファイルを保持して再試行が5件へ収束することを確認。",
+    "initial_focused_run": "12 examples, 0 failures。entrypoint再読時の定数再定義警告を修正し、実行環境ガードのSpec追加後に最終13例成功。"
+  },
+  "previous_measurement_without_variants": {
+    "measured_on_jst": "2026-10-26",
+    "assessment": "UNVERIFIED",
+    "schema_tables_at_least_5": 14,
+    "active_storage_counts": {
+      "blobs": 12,
+      "attachments": 12,
+      "variant_records": 0
+    },
+    "original_document_git_ref": "0cf5ac31d361be27008673bd7620d2355648ef14:docs/issue-110-seed-counts.json",
+    "original_document_sha256": "04738260da089c7325d90a1aee607d44781b6ca59f188bf20d9e4ef097f57067",
+    "runtime_evidence": "tmp/issue110/seed-counts.json",
+    "runtime_evidence_sha256": "a087bac141ae2478a1dfeffd671a0c260f61030e02c932dc22d976010dbf809d",
+    "verification": {
+      "focused_and_related": {
+        "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec spec/seeds/development_spec.rb spec/models/oshi_common_image_spec.rb spec/services/oshi_common_images/create_spec.rb",
+        "examples": 42,
+        "failures": 0,
+        "exit_code": 0
+      },
+      "full_suite": {
+        "validated_code_commit": "6b9e286cd9890045d1b693b5b7cb98437d835eb4",
+        "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec --format progress --out /tmp/oshilog-pr115-supplement-full-rspec.txt",
+        "examples": 1539,
+        "failures": 0,
+        "exit_code": 0
+      },
+      "rubocop": {
+        "command": "bundle exec rubocop --cache false",
+        "files": 192,
+        "offenses": 0,
+        "exit_code": 0
+      },
+      "ci": "NOT_RUN",
+      "remote_and_release": "NOT_VERIFIED"
+    }
+  }
 }
