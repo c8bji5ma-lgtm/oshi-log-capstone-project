@@ -4,7 +4,19 @@
 >
 > **原文：** [オリジナルアプリケーションの課題説明](https://github.com/divic-corp/cdp_web_text/blob/master/text/ja/ruby_original_application_development/dep_original_application.md)。
 > **監査基準：** [main `97e2778e9559da3f1d51ef6887a1a3e220c2cef4`](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/commit/97e2778e9559da3f1d51ef6887a1a3e220c2cef4)。
-> **状態：** `WORKING_DRAFT`。コードの修正案・Pull Requestは**未マージ／未リリース**です。DProの公式提出・合格を表すものではありません。
+> **初回監査時点の状態：** `WORKING_DRAFT`。コードの修正案・Pull Requestは**未マージ／未リリース**です。DProの公式提出・合格を表すものではありません。
+
+## 2026年10月26日の追記
+
+追記更新日時：17:39 JST（08:39 UTC）。第1〜6節はmain `97e2778e...`時点の監査・提出準備履歴として残し、以下の更新と区別する。今回は文書のみの照合で、テスト・外部通信・提出を実行していない。
+
+- PR #115・#117はmain `7d90754a...`へ統合済み。#111・#112・#113・#114 closedは親のGitHub確認報告であり、下表の当初不足が現在も未修正という意味ではない。
+- 406対応commit `803b47bc31c0d0f6224ed59fd6470d800ffeda9f`はローカル確認済み。Request 6／System 2 examples・失敗0、RuboCop 2ファイル・違反0、独立review blockingなし（reviewは親報告）。PR #119はmainへmerge済みという親報告を受領した（`a6904ecc8230e7ab83677fdc4570fb9ee4b62bbd`）。このmerge objectは手元未取得のため、今回の文書基点は`803b47b...`とした。
+- PR #118はPR #116のbranchへmerge済み（`508d6a3a15d5bcab5d16c6b953cc8b06a2f6ecb5`、objectは手元未取得）。PR #118／#119の事前CI、更新PR #116の[CI 40288148222](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/actions/runs/40288148222)成功は親確認の情報である。その後、本人承認を受けPR #116もmainへmerge済み（`8bc3b500f0667d4d762c21b247c0751b35906cbc`、objectは手元未取得）、#109はコード・テスト受入としてclosedと親が確認した。本番有効化・deployは未実施。
+- ローカル統合`f56441b...`の全RSpec 1558 examples・失敗0／lint 197ファイル・違反0は、main `7d90754a...`＋修正済みPR #116のコードを対象とする。最新remote main全体の再実行結果とは扱わない。初回追加QAの5例4成功1失敗と、表示envを切り分けた404追加1例成功も別証拠として保持した。
+- #109のコード受入は完了（親確認）。公開デモ分離・有効化・公開URLでの実機確認は未検証として#32へ追記済みとの親報告を受領し、公開工程とコード受入を分ける。#110は14/15表が各5件以上・VariantRecord 0、正式な要件解釈未確定の`UNVERIFIED`である。外部ER／Sheets、実機・VoiceOver、公開環境・学校側判断は未確認、外部API・AI連携は保留。
+
+親が確認した[#31監査コメント](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/issues/31#issuecomment-6384581377)の共有範囲に従い、原文と個別Issueの受入条件だけを判定対象とし、開発2の提出URL・本番実証は#32、正式合格・最終提出はコード／CIと別に管理する。本担当は原文・コメント全文を取得しておらず、未読部分の正式判定や全例外・本番試験等の新しい必須化は行わない。対象SHA、コマンド、ローカル証拠の所在・限界は[Issue #31 QA対応表](../issue-31-qa.md)を参照。
 
 ## 1. 監査の結論
 

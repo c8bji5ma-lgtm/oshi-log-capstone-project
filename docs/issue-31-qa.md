@@ -1,5 +1,41 @@
 # Issue #31 MVP最終QA対応表
 
+## 2026年10月26日の追記
+
+追記更新日時：2026年10月26日17:39 JST（08:39 UTC）。この追記では既存の結果を読み取り、テスト・起動・seed・外部通信は再実行していない。
+
+### 受入範囲と出典
+
+中継担当がGitHubで確認した[#31監査コメント](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/issues/31#issuecomment-6384581377)の共有範囲では、判定対象は原文と個別Issueの受入条件であり、開発2の提出URL・本番実証は#32、DPro正式合格・最終提出はCIやコード監査と別である。本担当は#31本文・卒業要件原文・外部コメント全文を取得していないため、未読部分の正式必須判定は確定しない。全例外の網羅、本番負荷試験、全実機確認などの追加監査を無条件に卒業必須へ拡大しない。
+
+### 統合・CIの現在地
+
+- **ローカル確認：** `7d90754a5ef7753aaf47e0afb1d00e270c043e71`はPR #115のmergeで、PR #117の補完履歴を含む。406対応commit `803b47bc31c0d0f6224ed59fd6470d800ffeda9f`はその直系で、差分は406 HTMLと関連Specの3ファイルのみ。guest変更を含まないため、今回の文書基点に使用した。
+- **親のGitHub確認報告：** [PR #115](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/115)・[PR #117](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/117)はmain統合済み、#111・#112・#113・#114はclosed。[PR #119](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/119)もmainへmerge済み（`a6904ecc8230e7ab83677fdc4570fb9ee4b62bbd`）。[PR #118](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/118)はPR #116のbranchへmerge済み（`508d6a3a15d5bcab5d16c6b953cc8b06a2f6ecb5`）。その後、本人承認を受け[PR #116](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/pull/116)もmainへmerge済み（`8bc3b500f0667d4d762c21b247c0751b35906cbc`）、#109はコード・テスト受入としてclosed。**本番guest有効化・deployは未実施。**
+- **親のCI確認報告：** PR #118の[run 40277944271](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/actions/runs/40277944271)は4項目成功、PR #119の事前CIも成功（run IDは本担当へ未共有）。更新後PR #116の[run 40288148222](https://github.com/c8bji5ma-lgtm/oshi-log-capstone-project/actions/runs/40288148222)も成功。これらはローカル検証件数とは別の証拠である。
+- `a6904ecc...`・`508d6a3a...`・`8bc3b500...`は本担当のlocal objectでは参照できなかった。fetchは行っておらず、現在の文書基点とGitHubの最新mainが同一treeであるとは断定しない。
+
+### 再利用するローカル証拠
+
+- **main相当コード：** `ec1826d7...`とmain `7d90754a...`は同一tree。1539 examples・失敗0、RuboCop 192ファイル・違反0の記録がある。実行コードは`6b9e286c...`で、`ec1826d7...`との差は結果記録JSONのみ（[件数・検証記録](issue-110-seed-counts.json)）。
+- **guestとの互換性確認：** `f56441ba92a7184886110cda21f734005a5b8b86`はmain `7d90754a...`と修正済みPR #116 `26df4961...`のローカル統合。focused 8／related 286／全RSpec 1558 examplesはすべて失敗0、exit 0。RuboCopは197ファイル・違反0。**406変更後のmain全体を実行した結果ではない。** 記録は`tmp/issue109-main-integration-verification.json`。
+- **エラー時の代表レイアウト：** `ec1826d7...`で375px／1280pxの複数入力エラー・266文字通知を4 examples確認し、失敗0、横溢れなし、修正保存・通知後の遷移成功。これは担当の実行報告で、追跡Spec・専用ログファイルは残していない。
+- **初回の追加QAは失敗を保持：** `f56441b...`の5 examplesは4成功・1失敗、exit 1。対応UAは200／日本語、未対応UAは406／英語、両guestのカード・統計・本人画像は200、他人画像は404。未知URLは404だったが英語で、日本語assertionが失敗した。`tmp/issue31-local-boundaries_spec.rb`と`tmp/issue31-local-boundaries-results.txt`を保持している。
+- **404の切り分け追加試験：** 同じRails stackでrequest指定のみではtest既定の`rescuable`・詳細表示`true`が優先された。テストプロセス内の表示envだけを`all`・詳細表示`false`に一時指定し、404・日本語本文・トップ`/`へのリンク・例外詳細なしを1 exampleで確認、失敗0、exit 0。既定値の復元も確認した。設定ファイル・認証仕様は変更していない。証拠は`tmp/issue31-public-404_spec.rb`と`tmp/issue31-public-404-results.txt`。本番・proxy経由の実証ではない。
+- **406の日本語化：** `803b47b...`でRequest 6 examples／System 2 examplesは失敗0、exit 0。対応UA200／未対応UA406を維持し、日本語案内・トップリンク・375px／1280pxのTab／Enter・横溢れなしを確認。RuboCop 2ファイル・違反0。`tmp/issue31-406-verification.json`にコマンド・SHA256・画像を記録し、独立readonly reviewはblockingなしとの親報告を受領した。初回QAの「406英語」は変更前の履歴であり、現在の406実装の説明ではない。
+
+`tmp/`の証拠はGit管理外のローカル保管で、公開repo上のリンクではない。異なるSHA・環境・CIの件数を合算したり、未実施の公開受入へ読み替えたりしない。
+
+### 完了した整理と残る判断
+
+この追記で、#111〜#114および406のコード・Specの証拠、開発8・デザイン4/5・画面遷移4に関する代表条件の確認、初回失敗と補完結果を区別した。これを原文全条件の正式合格とは扱わない。
+
+- **#109：コード受入完了（親確認）。** 本文DoDはコード・Spec・CI中心、後続コメント／PRは公開デモ受入を追加しているという共有範囲で、親が本文と照合してclosedを確認した。本担当は未読の細部を推測しない。未検証の公開デモ分離・有効化・公開URLでの実機確認は#32へ追記済みとの親報告を受領しており、コード受入と別工程で管理する。本番有効化・deployは未実施。
+- **#110：** 既存計測はschema内14/15表が各5件以上、`ActiveStorage::VariantRecord`は0。正式な適用・除外解釈が未確定のため`UNVERIFIED`を維持する。修正済みPRへ旧seed問題が残っているとは扱わず、ダミーvariantを作らない。
+- **別途未確認・保留：** 外部ER／テーブル定義書の業務12表への再同期・Sheets目視、実機・VoiceOver等、公開環境の受入、学校側の正式判断。外部API・AI連携は保留のまま。これらを根拠なく新しい#31必須条件へ追加しない。
+
+以下は追記以前の履歴であり、「現行」「最新」や#60完了までcloseしないとの方針は各確認当時の記録を指す。#60の本番資源・時間上限等は別Issueの未確認事項として維持し、卒業原文の必須条件と自動的に同一視しない。
+
 ## 基準
 
 - アプリQA確認日：2026年10月21日
