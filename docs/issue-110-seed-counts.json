@@ -155,7 +155,19 @@
       "failures": 0,
       "exit_code": 0
     },
-    "full_suite": "NOT_YET_RUN_ON_THIS_BRANCH",
+    "full_suite": {
+      "validated_code_commit": "6b9e286cd9890045d1b693b5b7cb98437d835eb4",
+      "command": "NO_PROXY=localhost,127.0.0.1,::1 no_proxy=localhost,127.0.0.1,::1 RAILS_ENV=test bundle exec rspec --format progress --out /tmp/oshilog-pr115-supplement-full-rspec.txt",
+      "examples": 1539,
+      "failures": 0,
+      "exit_code": 0
+    },
+    "rubocop": {
+      "command": "bundle exec rubocop --cache false",
+      "files": 192,
+      "offenses": 0,
+      "exit_code": 0
+    },
     "ci": "NOT_RUN",
     "remote_and_release": "NOT_VERIFIED"
   },
