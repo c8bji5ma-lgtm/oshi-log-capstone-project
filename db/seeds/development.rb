@@ -222,7 +222,9 @@ module DevelopmentSeeds
                 source_url: source_url, creator_name: author, license_name: "Unsplash License",
                 attribution_text: "写真：#{author} / Unsplash",
                 usage_notes: "開発用のイメージ写真です。架空の推し本人を撮影したものではありません。",
-                rights_confirmed_at: Time.zone.local(2026, 10, 6, 12),
+                # SOURCES.md records this existing confirmation date, not a new
+                # review. Midnight represents date-only precision; no time is claimed.
+                rights_confirmed_at: Date.new(2026, 10, 6).in_time_zone,
                 active: true
               }
             )

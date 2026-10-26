@@ -16,7 +16,7 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
   let(:models) do
     [ User, Profile, Oshi, OshiAlias, UserOshi, Activity, ActivityOshi,
       Emotion, ActivityEmotion, Subscription, SubscriptionOshi, OshiCommonImage,
-      ActiveStorage::Blob, ActiveStorage::Attachment ]
+      ActiveStorage::Blob, ActiveStorage::Attachment, ActiveStorage::VariantRecord ]
   end
   let(:emails) { %w[demo multi light empty admin].map { |name| "#{name}@example.com" } }
 
@@ -38,7 +38,7 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
       ensure
         # Delete only test rows absent from the pre-example snapshot, children
         # first. No callbacks/jobs may operate on storage after the test ends.
-        [ ActiveStorage::Attachment, OshiCommonImage, ActivityEmotion, ActivityOshi,
+        [ ActiveStorage::VariantRecord, ActiveStorage::Attachment, OshiCommonImage, ActivityEmotion, ActivityOshi,
           SubscriptionOshi, OshiAlias, UserOshi, Activity, Subscription,
           Profile, Oshi, User, Emotion, ActiveStorage::Blob ].each do |model|
           model.where.not(id: baseline_ids.fetch(model)).delete_all
@@ -51,6 +51,13 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
 
   def counts
     models.map(&:count)
+  end
+
+  def table_counts
+    connection = ActiveRecord::Base.connection
+    connection.tables.sort.to_h do |table|
+      [ table, connection.select_value("SELECT COUNT(*) FROM #{connection.quote_table_name(table)}").to_i ]
+    end
   end
 
   def demo
@@ -86,16 +93,32 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
   end
 
   it "keeps global and reserved dataset counts stable, with original image bytes on both runs" do
+    schema_tables = Rails.root.join("db/schema.rb").read.scan(/^\s*create_table "([^"]+)"/).flatten
+    expect(models.map(&:table_name)).to match_array(schema_tables)
+    before_tables = table_counts
     before = counts
     missing_emotion_names = Emotion::DEFAULT_NAMES.count { |name| !Emotion.exists?(name: name) }
     dataset.call
-    expected = [ 5, 5, 6, 5, 8, 42, 56, missing_emotion_names, 5, 12, 12, 5, 12, 12 ]
+    expected = [ 5, 5, 6, 5, 8, 42, 56, missing_emotion_names, 5, 12, 12, 5, 12, 12, 0 ]
     expect(counts.zip(before).map { |after, original| after - original }).to eq(expected)
+    first_tables = table_counts
+    models.reject { |model| model == ActiveStorage::VariantRecord }.each do |model|
+      expect(first_tables.fetch(model.table_name)).to be >= 5
+    end
     ids = models.map { |model| model.order(:id).pluck(:id) }
     expect_seed_images_downloadable
 
     dataset.call
     expect(models.map { |model| model.order(:id).pluck(:id) }).to eq(ids)
+    second_tables = table_counts
+    expect(second_tables).to eq(first_tables)
+    directory = Rails.root.join("tmp/issue110")
+    FileUtils.mkdir_p(directory)
+    File.write(directory.join("seed-counts.json"), JSON.pretty_generate({
+      environment: Rails.env, database: ActiveRecord::Base.connection_db_config.database,
+      reference_date: reference_date.iso8601, schema_tables: schema_tables.sort,
+      before: before_tables, after_first: first_tables, after_second: second_tables
+    }))
     expect(User.where(email: emails).count).to eq(5)
     expect(Profile.where(user: User.where(email: emails)).count).to eq(5)
     expect(Oshi.where(created_by_user: User.where(email: emails)).count).to eq(6)
@@ -106,6 +129,17 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
     expect(common_images.count).to eq(5)
     expect(common_images.map(&:creator_name).uniq).to match_array([ "Yvette de Wit", "Matt Botsford", "Christie Kim" ])
     expect(common_images.all? { |image| image.image.attached? && image.valid? }).to be(true)
+    source_rows = Rails.root.join("db/seeds/assets/SOURCES.md").read.lines.filter_map do |line|
+      next unless line.start_with?("| seed-")
+
+      filename, _service, url, author, _license = line.split("|").map(&:strip).drop(1)
+      [ filename, { source_url: url, creator_name: author } ]
+    end.to_h
+    common_images.each do |image|
+      expect(image).to have_attributes(**source_rows.fetch(image.image.filename.to_s), license_name: "Unsplash License")
+      expect(image.rights_confirmed_at.to_date).to eq(reference_date)
+      expect(image.attribution_text).to eq("写真：#{image.creator_name} / Unsplash")
+    end
     expect(Activity.where(user: User.where(email: emails)).count).to eq(42)
     expect(ActivityOshi.where(activity: Activity.where(user: User.where(email: emails))).count).to eq(56)
     expect(Subscription.where(user: User.where(email: emails)).count).to eq(12)
@@ -161,9 +195,13 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
     activity = create(:activity, user: user, title: "【デモ】合同ライブ", activity_oshis: [ ActivityOshi.new(oshi: unrelated) ], oshis_count: 0)
     subscription = create(:subscription, user: user, name: "【デモ】推し活クラウド")
     link = create(:subscription_oshi, subscription: subscription, oshi: unrelated)
+    common_image = create(:oshi_common_image, oshi: unrelated, registered_by_user: user)
+    emotion = Emotion.create!(name: "手入力の感情", position: 99)
+    emotion_link = ActivityEmotion.create!(activity: activity, emotion: emotion)
     profile.profile_image.attach(image_upload)
     activity.images.attach(image_upload("image.jpg"))
-    records = [ user, profile, unrelated, registration, activity, subscription, link, *activity.activity_oshis,
+    records = [ user, profile, unrelated, registration, activity, subscription, link, common_image, emotion, emotion_link,
+      *activity.activity_oshis,
       *ActiveStorage::Blob.all, *ActiveStorage::Attachment.all ]
     attributes = records.map(&:attributes)
     dataset.call
