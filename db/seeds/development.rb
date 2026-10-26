@@ -30,11 +30,14 @@ module DevelopmentSeeds
         create_oshis
         create_registrations
         create_activities
+        Emotion.seed_defaults!
+        create_activity_emotions
         create_subscriptions
       end
       # Phase 2 is retryable, not atomic with Phase 1. Errors propagate; the
       # canonical DB records remain committed for the next seed run to repair.
       @image_definitions.each { |record, attribute, filenames| sync_images(record, attribute, filenames) }
+      create_common_images
       report if Rails.env.development?
     end
 
@@ -82,7 +85,7 @@ module DevelopmentSeeds
           record = Oshi.find_or_initialize_by(name: name, oshi_type: type, created_by_user: @users.fetch(owner))
           @oshis[name] = upsert(record, affiliation: affiliation, status: status)
         end
-        { "LUMINA" => "ルミナ", "ASTER" => "アスター" }.each do |name, alias_name|
+        { "LUMINA" => "ルミナ", "ASTER" => "アスター", "MIO" => "ミオ", "NOVA" => "ノヴァ", "SOL" => "ソル" }.each do |name, alias_name|
           @oshis.fetch(name).oshi_aliases.find_or_create_by!(alias_name: alias_name)
         end
       end
@@ -174,6 +177,50 @@ module DevelopmentSeeds
         [ "SOL配信デビュー", "SOL新曲配信", "SOLライブ初参加", "SOL小ホール公演" ].each_with_index do |title, index|
           activity(:light, title, month_date(index % 2), index < 2 ? "配信視聴" : "ライブ・イベント",
             index < 2 ? nil : 3000, [ "SOL" ])
+        end
+      end
+
+      # Link five actual demo activities to the seeded emotion master.
+      def create_activity_emotions
+        [ "周年ライブ", "合同ライブ", "福岡公演", "ライブ後のカフェ", "コラボイベント" ]
+          .zip(Emotion::DEFAULT_NAMES.first(5)).each do |title, name|
+          activity = @users.fetch(:demo).activities.find_by!(title: "【デモ】#{title}")
+          emotion = Emotion.find_by!(name: name)
+          ActivityEmotion.find_or_create_by!(activity: activity, emotion: emotion)
+        end
+      end
+
+      # Only existing, documented Unsplash-licensed local images may be used.
+      # This uses the same validated create service as the administrator UI;
+      # no HTTP download, fabricated authorship or production seed is allowed.
+      def create_common_images
+        sources = [
+          [ "LUMINA", "seed-concert.jpg", "https://unsplash.com/photos/group-of-people-attending-a-performance-8XLapfNMW04", "Yvette de Wit" ],
+          [ "LUMINA", "seed-microphone.jpg", "https://unsplash.com/photos/condenser-microphone-with-black-background-OKLqGsCT8qs", "Matt Botsford" ],
+          [ "ASTER", "seed-flowers.jpg", "https://unsplash.com/photos/red-flower-arrangement-on-white-table-0IsBu45B3T8", "Christie Kim" ],
+          [ "ASTER", "seed-microphone.jpg", "https://unsplash.com/photos/condenser-microphone-with-black-background-OKLqGsCT8qs", "Matt Botsford" ],
+          [ "SOL", "seed-concert.jpg", "https://unsplash.com/photos/group-of-people-attending-a-performance-8XLapfNMW04", "Yvette de Wit" ]
+        ]
+        sources.each do |oshi_name, filename, source_url, author|
+          oshi = @oshis.fetch(oshi_name)
+          next if OshiCommonImage.exists?(oshi: oshi, source_url: source_url, registered_by_user: @users.fetch(:admin))
+
+          path = Rails.root.join("db/seeds/assets", filename)
+          File.open(path, "rb") do |stream|
+            upload = ActionDispatch::Http::UploadedFile.new(
+              tempfile: stream, filename: filename, type: "image/jpeg"
+            )
+            OshiCommonImages::Create.call(
+              oshi: oshi, administrator: @users.fetch(:admin), file: upload,
+              attributes: {
+                source_url: source_url, creator_name: author, license_name: "Unsplash License",
+                attribution_text: "写真：#{author} / Unsplash",
+                usage_notes: "開発用のイメージ写真です。架空の推し本人を撮影したものではありません。",
+                rights_confirmed_at: Time.zone.local(2026, 10, 6, 12),
+                active: true
+              }
+            )
+          end
         end
       end
 
