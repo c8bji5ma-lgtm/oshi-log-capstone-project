@@ -14,6 +14,10 @@
 
 module DevelopmentSeeds
   class Dataset
+    # A single real thumbnail per demo common image illustrates tracked variants.
+    # These development samples are not used by the application's image endpoints.
+    VARIANT_SAMPLE = { resize_to_limit: [ 320, 320 ].freeze, format: :jpg }.freeze unless const_defined?(:VARIANT_SAMPLE, false)
+
     def initialize(reference_date: Date.current)
       @date = reference_date
       @users = {}
@@ -21,9 +25,12 @@ module DevelopmentSeeds
     end
 
     def call
+      raise ArgumentError, "Demo data is only available in development or test" unless Rails.env.development? || Rails.env.test?
       raise ArgumentError, "Run the dataset outside an existing DB transaction" if ActiveRecord::Base.connection.transaction_open?
+      raise ArgumentError, "Tracked variants must already be enabled" unless ActiveStorage.track_variants
 
       @image_definitions = []
+      @variant_sample_blobs = []
       # Phase 1: database records and links commit before any file operations.
       ActiveRecord::Base.transaction do
         create_users
@@ -38,6 +45,7 @@ module DevelopmentSeeds
       # canonical DB records remain committed for the next seed run to repair.
       @image_definitions.each { |record, attribute, filenames| sync_images(record, attribute, filenames) }
       create_common_images
+      @variant_sample_blobs.each { |blob| create_variant_sample(blob) }
       report if Rails.env.development?
     end
 
@@ -203,7 +211,11 @@ module DevelopmentSeeds
         ]
         sources.each do |oshi_name, filename, source_url, author|
           oshi = @oshis.fetch(oshi_name)
-          next if OshiCommonImage.exists?(oshi: oshi, source_url: source_url, registered_by_user: @users.fetch(:admin))
+          existing = OshiCommonImage.find_by(oshi: oshi, source_url: source_url, registered_by_user: @users.fetch(:admin))
+          if existing
+            remember_variant_source(existing, filename)
+            next
+          end
 
           path = Rails.root.join("db/seeds/assets", filename)
           # UploadedFile#open delegates to tempfile.open; a plain File lacks
@@ -216,7 +228,7 @@ module DevelopmentSeeds
             upload = ActionDispatch::Http::UploadedFile.new(
               tempfile: tempfile, filename: filename, type: "image/jpeg"
             )
-            OshiCommonImages::Create.call(
+            record = OshiCommonImages::Create.call(
               oshi: oshi, administrator: @users.fetch(:admin), file: upload,
               attributes: {
                 source_url: source_url, creator_name: author, license_name: "Unsplash License",
@@ -228,10 +240,58 @@ module DevelopmentSeeds
                 active: true
               }
             )
+            remember_variant_source(record, filename)
           ensure
             tempfile.close!
           end
         end
+      end
+
+      def remember_variant_source(record, filename)
+        return unless record.image.attached?
+
+        blob = record.image.blob
+        path = Rails.root.join("db/seeds/assets", filename)
+        # A manually replaced image remains outside the dataset's ownership.
+        return unless blob.filename.to_s == filename && blob.checksum == Digest::MD5.file(path).base64digest
+
+        unless stored_file_valid?(blob)
+          File.open(path, "rb") { |file| blob.upload(file) }
+        end
+        @variant_sample_blobs << blob
+      end
+
+      def create_variant_sample(blob)
+        variant = blob.variant(VARIANT_SAMPLE)
+        digest = variant.variation.digest
+        existed = blob.variant_records.exists?(variation_digest: digest)
+        variant.processed
+        # A record alone does not prove that an after-commit upload succeeded.
+        unless stored_file_valid?(variant.image.blob)
+          blob.open do |input|
+            variant.variation.transform(input) { |output| variant.image.blob.upload(output) }
+          end
+        end
+      rescue StandardError
+        # Compensate only this new sample, outside a DB transaction. Previously
+        # generated samples and other transforms are retained for a safe retry.
+        if digest && !existed
+          failed = blob.variant_records.find_by(variation_digest: digest)
+          if failed
+            begin
+              failed.image.purge
+            ensure
+              failed.destroy!
+            end
+          end
+        end
+        raise
+      end
+
+      def stored_file_valid?(blob)
+        blob.open { |_file| true }
+      rescue ActiveStorage::FileNotFoundError, ActiveStorage::IntegrityError, Errno::ENOENT
+        false
       end
 
       def subscription(user, name, amount, cycle, names, started: nil, ended: nil)

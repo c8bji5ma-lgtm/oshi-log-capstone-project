@@ -2,6 +2,7 @@ require "rails_helper"
 require "tmpdir"
 require "fileutils"
 require_relative "../support/image_attachments"
+require_relative "../support/local_test_database"
 require_relative "../../db/seeds/development"
 
 RSpec.describe DevelopmentSeeds::Dataset, type: :model do
@@ -22,6 +23,8 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
 
   around do |example|
     raise "Seed specs require the test environment" unless Rails.env.test?
+    connection = ActiveRecord::Base.connection
+    @database_connection = LocalTestDatabase.verify!(environment: Rails.env, connection: connection)
 
     baseline_ids = models.to_h { |model| [ model, model.pluck(:id) ] }
     original_services = ActiveStorage::Blob.services
@@ -69,11 +72,31 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
   end
 
   def expect_seed_images_downloadable
-    ActiveStorage::Attachment.includes(:blob).each do |attachment|
+    ActiveStorage::Attachment.where(record_type: %w[Profile UserOshi Activity OshiCommonImage]).includes(:blob).each do |attachment|
       filename = attachment.blob.filename.to_s
       next unless filename.start_with?("seed-")
 
       expect(attachment.download).to eq(File.binread(Rails.root.join("db/seeds/assets", filename)))
+    end
+  end
+
+  def variant_snapshot
+    ActiveStorage::VariantRecord.order(:id).map do |record|
+      bytes = record.image.download
+      image = Vips::Image.new_from_buffer(bytes, "", access: :sequential)
+      expect(record.variation_digest).to eq(record.blob.variant(described_class::VARIANT_SAMPLE).variation.digest)
+      expect(record.image.blob.content_type).to eq("image/jpeg")
+      expect(image.width).to be_between(1, 320)
+      expect(image.height).to be_between(1, 320)
+      expect(bytes).not_to eq(record.blob.download)
+      [ record.id, record.blob_id, record.variation_digest, record.image.attachment.id,
+        record.image.blob.id, Digest::SHA256.hexdigest(bytes), bytes.bytesize, image.width, image.height ]
+    end
+  end
+
+  def common_image_snapshot
+    OshiCommonImage.order(:id).map do |record|
+      [ record.attributes, record.image.attachment.attributes, record.image.blob.attributes, record.image.download ]
     end
   end
 
@@ -98,26 +121,49 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
     before_tables = table_counts
     before = counts
     missing_emotion_names = Emotion::DEFAULT_NAMES.count { |name| !Emotion.exists?(name: name) }
+    service = ActiveStorage::Blob.services.fetch(:test)
+    uploads = []
+    allow(service).to receive(:upload).and_wrap_original do |original, key, *args, **kwargs|
+      uploads << key
+      original.call(key, *args, **kwargs)
+    end
+    first_started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     dataset.call
-    expected = [ 5, 5, 6, 5, 8, 42, 56, missing_emotion_names, 5, 12, 12, 5, 12, 12, 0 ]
+    first_seconds = Process.clock_gettime(Process::CLOCK_MONOTONIC) - first_started
+    expected = [ 5, 5, 6, 5, 8, 42, 56, missing_emotion_names, 5, 12, 12, 5, 17, 17, 5 ]
     expect(counts.zip(before).map { |after, original| after - original }).to eq(expected)
     first_tables = table_counts
-    models.reject { |model| model == ActiveStorage::VariantRecord }.each do |model|
+    models.each do |model|
       expect(first_tables.fetch(model.table_name)).to be >= 5
     end
     ids = models.map { |model| model.order(:id).pluck(:id) }
     expect_seed_images_downloadable
+    first_variants = variant_snapshot
+    expect(first_variants.size).to eq(5)
+    originals = common_image_snapshot
+    first_upload_count = uploads.size
+    expect(first_upload_count).to eq(17)
 
+    second_started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     dataset.call
+    second_seconds = Process.clock_gettime(Process::CLOCK_MONOTONIC) - second_started
     expect(models.map { |model| model.order(:id).pluck(:id) }).to eq(ids)
+    expect(variant_snapshot).to eq(first_variants)
+    expect(common_image_snapshot).to eq(originals)
+    expect(uploads.size).to eq(first_upload_count)
     second_tables = table_counts
     expect(second_tables).to eq(first_tables)
     directory = Rails.root.join("tmp/issue110")
     FileUtils.mkdir_p(directory)
-    File.write(directory.join("seed-counts.json"), JSON.pretty_generate({
-      environment: Rails.env, database: ActiveRecord::Base.connection_db_config.database,
+    File.write(directory.join("real-variant-seed-counts.json"), JSON.pretty_generate({
+      environment: Rails.env, connection: @database_connection,
       reference_date: reference_date.iso8601, schema_tables: schema_tables.sort,
-      before: before_tables, after_first: first_tables, after_second: second_tables
+      before: before_tables, after_first: first_tables, after_second: second_tables,
+      runtime: { track_variants: ActiveStorage.track_variants, variant_processor: ActiveStorage.variant_processor },
+      first_seconds: first_seconds, second_seconds: second_seconds,
+      first_upload_count: first_upload_count, second_upload_count: uploads.size - first_upload_count,
+      variant_columns: %w[id source_blob_id variation_digest attachment_id blob_id sha256 bytes width height],
+      variants: first_variants, variant_bytes: first_variants.sum { |row| row[6] }
     }))
     expect(User.where(email: emails).count).to eq(5)
     expect(Profile.where(user: User.where(email: emails)).count).to eq(5)
@@ -196,13 +242,15 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
     subscription = create(:subscription, user: user, name: "【デモ】推し活クラウド")
     link = create(:subscription_oshi, subscription: subscription, oshi: unrelated)
     common_image = create(:oshi_common_image, oshi: unrelated, registered_by_user: user)
+    manual_variant = common_image.image.variant(resize_to_limit: [ 64, 64 ]).processed
+    manual_variant_bytes = manual_variant.download
     emotion = Emotion.create!(name: "手入力の感情", position: 99)
     emotion_link = ActivityEmotion.create!(activity: activity, emotion: emotion)
     profile.profile_image.attach(image_upload)
     activity.images.attach(image_upload("image.jpg"))
     records = [ user, profile, unrelated, registration, activity, subscription, link, common_image, emotion, emotion_link,
       *activity.activity_oshis,
-      *ActiveStorage::Blob.all, *ActiveStorage::Attachment.all ]
+      *ActiveStorage::Blob.all, *ActiveStorage::Attachment.all, *ActiveStorage::VariantRecord.all ]
     attributes = records.map(&:attributes)
     dataset.call
     # Reserved users can also have records whose keys are not in the dataset.
@@ -217,6 +265,7 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
     expect(additional.map { |record| record.reload.attributes }).to eq(additional_attributes)
     expect(profile.reload.profile_image.download).to eq(File.binread(Rails.root.join("spec/fixtures/files/image.png")))
     expect(activity.reload.images.sole.download).to eq(File.binread(Rails.root.join("spec/fixtures/files/image.jpg")))
+    expect(manual_variant.download).to eq(manual_variant_bytes)
   end
 
   it "repairs missing, changed and duplicate seed images while retaining manual one/many images" do
@@ -297,7 +346,88 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
     dataset.call
     expect(missing.attachments.sole.id).to eq(attachment_id)
     expect_seed_images_downloadable
-    expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq([ 12, 12 ])
+    expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq([ 17, 17 ])
+  end
+
+  it "repairs missing original and variant files without changing their IDs or rights metadata" do
+    dataset.call
+    first_variants = variant_snapshot
+    record = OshiCommonImage.first
+    attributes = record.attributes
+    ids = models.map { |model| model.order(:id).pluck(:id) }
+    service = ActiveStorage::Blob.services.fetch(:test)
+    service.delete(record.image.blob.key)
+    service.delete(ActiveStorage::VariantRecord.first.image.blob.key)
+
+    dataset.call
+
+    expect(models.map { |model| model.order(:id).pluck(:id) }).to eq(ids)
+    expect(record.reload.attributes).to eq(attributes)
+    expect(variant_snapshot).to eq(first_variants)
+    expect_seed_images_downloadable
+  end
+
+  it "cleans a failed new variant upload and converges on retry without touching existing files" do
+    dataset.call
+    missing = ActiveStorage::VariantRecord.first
+    missing.image.purge
+    missing.destroy!
+    existing = variant_snapshot
+    ids = models.map { |model| model.order(:id).pluck(:id) }
+    service = ActiveStorage::Blob.services.fetch(:test)
+    failed_key = nil
+    allow(service).to receive(:upload).and_wrap_original do |original, key, *args, **kwargs|
+      expect(ActiveRecord::Base.connection.transaction_open?).to be(false)
+      original.call(key, *args, **kwargs)
+      failed_key = key
+      raise IOError, "simulated variant upload failure"
+    end
+
+    expect { dataset.call }.to raise_error(IOError, "simulated variant upload failure")
+    expect(models.map { |model| model.order(:id).pluck(:id) }).to eq(ids)
+    expect(variant_snapshot).to eq(existing)
+    expect(service.exist?(failed_key)).to be(false)
+    expect_seed_images_downloadable
+
+    allow(service).to receive(:upload).and_call_original
+    dataset.call
+    expect(variant_snapshot.size).to eq(5)
+    expect(variant_snapshot.select { |row| existing.any? { |old| old[0] == row[0] } }).to eq(existing)
+    expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq([ 17, 17 ])
+    expect_seed_images_downloadable
+  end
+
+  it "retains a non-sample transform of a seed image and a manually replaced common image" do
+    dataset.call
+    record = OshiCommonImage.first
+    other = record.image.variant(resize_to_limit: [ 64, 64 ]).processed
+    bytes = other.download
+    ids = [ other.image.attachment.id, other.image.blob.id ]
+    manual = OshiCommonImage.last
+    manual.image.purge
+    manual.image.attach(image_upload)
+    manual_blob_id = manual.image.blob.id
+
+    dataset.call
+
+    expect(other.download).to eq(bytes)
+    expect([ other.image.attachment.id, other.image.blob.id ]).to eq(ids)
+    expect(manual.reload.image.blob.id).to eq(manual_blob_id)
+    expect(manual.image.download).to eq(File.binread(Rails.root.join("spec/fixtures/files/image.png")))
+  end
+
+  it "refuses disabled variant tracking before changing any data" do
+    before = counts
+    allow(ActiveStorage).to receive(:track_variants).and_return(false)
+    expect { dataset.call }.to raise_error(ArgumentError, /must already be enabled/)
+    expect(counts).to eq(before)
+  end
+
+  it "refuses a direct call outside development and test before changing any data" do
+    before = counts
+    allow(Rails.env).to receive_messages(development?: false, test?: false)
+    expect { dataset.call }.to raise_error(ArgumentError, /only available in development or test/)
+    expect(counts).to eq(before)
   end
 
   it "rejects an outer transaction before any DB or image changes" do
