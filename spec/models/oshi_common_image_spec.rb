@@ -1,79 +1,194 @@
 require "rails_helper"
+require_relative "../support/image_attachments"
 
 RSpec.describe OshiCommonImage, type: :model do
-  it "accepts a rights-confirmed image with all required metadata" do
-    expect(build(:oshi_common_image)).to be_valid
+  include ImageAttachments
+
+  subject(:record) { build(:oshi_common_image) }
+
+  it "is valid with all required rights metadata and an attached image" do
+    expect(record).to be_valid
   end
 
-  %i[source_url creator_name license_name attribution_text rights_confirmed_at].each do |attribute|
-    it "rejects a missing #{attribute}" do
-      image = build(:oshi_common_image)
-      image.public_send("#{attribute}=", nil)
-      expect(image).not_to be_valid
-      expect(image.errors[attribute]).to be_present
+  describe "source_url validation" do
+    it "requires a value" do
+      [ nil, "", " " ].each do |value|
+        candidate = build(:oshi_common_image, source_url: value)
+        candidate.validate
+
+        expect(candidate.errors.details[:source_url]).to include(error: :blank)
+      end
+    end
+
+    it "accepts HTTP and HTTPS URLs" do
+      [ "http://example.test/image", "https://example.test/image" ].each do |value|
+        expect(build(:oshi_common_image, source_url: value)).to be_valid
+      end
+    end
+
+    it "rejects unsupported, incomplete, and whitespace-containing URLs" do
+      [ "ftp://example.test/image", "example.test/image", "https://example.test/an image" ].each do |value|
+        candidate = build(:oshi_common_image, source_url: value)
+        candidate.validate
+
+        expect(candidate.errors.details[:source_url]).to include(error: :invalid, value: value)
+      end
+    end
+
+    it "accepts exactly 2048 characters" do
+      prefix = "https://example.test/"
+      expect(build(:oshi_common_image, source_url: prefix + "a" * (2048 - prefix.length))).to be_valid
+    end
+
+    it "rejects more than 2048 characters" do
+      prefix = "https://example.test/"
+      candidate = build(:oshi_common_image, source_url: prefix + "a" * (2049 - prefix.length))
+      candidate.validate
+
+      expect(candidate.errors.details[:source_url]).to include(error: :too_long, count: 2048)
     end
   end
 
-  %w[http https].each do |scheme|
-    it "accepts the #{scheme} source URL scheme" do
-      image = build(:oshi_common_image, source_url: "#{scheme}://example.com/photo")
-      expect(image).to be_valid
+  { creator_name: 255, license_name: 255 }.each do |attribute, maximum|
+    describe "#{attribute} validation" do
+      it "requires a value" do
+        [ nil, "", " " ].each do |value|
+          candidate = build(:oshi_common_image, attribute => value)
+          candidate.validate
+
+          expect(candidate.errors.details[attribute]).to include(error: :blank)
+        end
+      end
+
+      it "accepts exactly #{maximum} characters" do
+        expect(build(:oshi_common_image, attribute => "あ" * maximum)).to be_valid
+      end
+
+      it "rejects more than #{maximum} characters" do
+        candidate = build(:oshi_common_image, attribute => "あ" * (maximum + 1))
+        candidate.validate
+
+        expect(candidate.errors.details[attribute]).to include(error: :too_long, count: maximum)
+      end
     end
   end
 
-  %w[ftp://example.com/photo https://example.com/with\ space not-a-url].each do |url|
-    it "rejects a non-HTTP or malformed source URL: #{url}" do
-      image = build(:oshi_common_image, source_url: url)
-      expect(image).not_to be_valid
-      expect(image.errors[:source_url]).to be_present
+  it "requires attribution_text" do
+    [ nil, "", " " ].each do |value|
+      candidate = build(:oshi_common_image, attribution_text: value)
+      candidate.validate
+
+      expect(candidate.errors.details[:attribution_text]).to include(error: :blank)
     end
   end
 
-  it "accepts exactly 2048 URL characters and rejects 2049" do
-    prefix = "https://example.com/"
-    image = build(:oshi_common_image, source_url: prefix.ljust(2048, "a"))
-    expect(image).to be_valid
-    image.source_url = prefix.ljust(2049, "a")
-    expect(image).not_to be_valid
-    expect(image.errors[:source_url]).to be_present
+  it "requires rights_confirmed_at" do
+    candidate = build(:oshi_common_image, rights_confirmed_at: nil)
+    candidate.validate
+
+    expect(candidate.errors.details[:rights_confirmed_at]).to include(error: :blank)
   end
 
-  %i[creator_name license_name].each do |attribute|
-    it "accepts 255 characters and rejects 256 for #{attribute}" do
-      image = build(:oshi_common_image, attribute => "あ" * 255)
-      expect(image).to be_valid
-      image.public_send("#{attribute}=", "あ" * 256)
-      expect(image).not_to be_valid
-      expect(image.errors[attribute]).to be_present
+  it "accepts both boolean active values" do
+    [ true, false ].each do |value|
+      expect(build(:oshi_common_image, active: value)).to be_valid
     end
   end
 
-  it "requires a definite true or false active flag" do
-    expect(build(:oshi_common_image, active: true)).to be_valid
-    expect(build(:oshi_common_image, active: false)).to be_valid
-    image = build(:oshi_common_image, active: nil)
-    expect(image).not_to be_valid
-    expect(image.errors[:active]).to be_present
+  it "rejects a nil active value" do
+    candidate = build(:oshi_common_image, active: nil)
+    candidate.validate
+
+    expect(candidate.errors.details[:active]).to include(error: :inclusion, value: nil)
   end
 
-  it "requires an uploaded image" do
-    image = described_class.new(
-      oshi: create(:oshi, :approved), source_url: "https://example.com/photo",
-      creator_name: "作成者", license_name: "許諾済み",
-      attribution_text: "作成者の画像", rights_confirmed_at: Time.current,
-      active: true
-    )
-    expect(image).not_to be_valid
-    expect(image.errors[:image]).to be_present
-  end
+  describe "image validation" do
+    def record_without_image
+      described_class.new(
+        oshi: build(:oshi), source_url: "https://example.test/source", creator_name: "権利者",
+        license_name: "利用許諾済み", attribution_text: "画像提供：権利者",
+        rights_confirmed_at: Time.current, active: true
+      )
+    end
 
-  it "rejects a non-image attachment" do
-    image = build(:oshi_common_image)
-    image.image.attach(io: StringIO.new("plain-text"), filename: "text.txt", content_type: "text/plain")
-    expect(image).not_to be_valid
-    expect(image.errors[:image]).to be_present
-  end
+    it "requires an attachment" do
+      candidate = record_without_image
+      candidate.validate
 
+      expect(candidate.errors[:image]).to include("を選択してください")
+    end
+
+    %w[image.jpg image.png image.webp].each do |filename|
+      it "accepts a valid #{filename} fixture" do
+        candidate = record_without_image
+        candidate.image.attach(image_upload(filename))
+
+        expect(candidate).to be_valid
+      end
+    end
+
+    it "rejects a disallowed MIME type" do
+      candidate = record_without_image
+      candidate.image.attach(image_upload("invalid.txt"))
+
+      expect(candidate).not_to be_valid
+      expect(candidate.errors[:image]).to include("はJPEG・PNG・WebP形式の画像を指定してください")
+    end
+
+    it "rejects corrupt image bytes with an allowed MIME type" do
+      candidate = record_without_image
+      bytes = ImageAttachmentInspector::PNG_SIGNATURE + "broken"
+      candidate.image.attach(image_upload_data(bytes, filename: "broken.png"))
+
+      expect(candidate).not_to be_valid
+      expect(candidate.errors[:image]).to include("を画像として読み取れません")
+    end
+
+    it "accepts exactly 10 MiB" do
+      candidate = record_without_image
+      candidate.image.attach(image_upload(size: 10 * 1024 * 1024))
+
+      expect(candidate).to be_valid
+    end
+
+    it "rejects more than 10 MiB" do
+      candidate = record_without_image
+      candidate.image.attach(image_upload(size: 10 * 1024 * 1024 + 1))
+
+      expect(candidate).not_to be_valid
+      expect(candidate.errors[:image]).to include("は1画像あたり10 MiB以下にしてください")
+    end
+
+    it "accepts the maximum edge boundary" do
+      candidate = record_without_image
+      candidate.image.attach(image_upload_data(flat_png(2560, 100)))
+
+      expect(candidate).to be_valid
+    end
+
+    it "rejects an image over the maximum edge boundary" do
+      candidate = record_without_image
+      candidate.image.attach(image_upload_data(flat_png(2561, 100)))
+
+      expect(candidate).not_to be_valid
+      expect(candidate.errors[:image]).to include("は最大辺2560px・総画素数500万以下にしてください")
+    end
+
+    it "accepts the total pixel boundary" do
+      candidate = record_without_image
+      candidate.image.attach(image_upload_data(flat_png(2500, 2000)))
+
+      expect(candidate).to be_valid
+    end
+
+    it "rejects an image over the total pixel boundary" do
+      candidate = record_without_image
+      candidate.image.attach(image_upload_data(flat_png(2500, 2001)))
+
+      expect(candidate).not_to be_valid
+      expect(candidate.errors[:image]).to include("は最大辺2560px・総画素数500万以下にしてください")
+    end
+  end
   it "filters inactive images using the declared active scope" do
     active = create(:oshi_common_image, active: true)
     inactive = create(:oshi_common_image, active: false)
