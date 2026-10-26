@@ -259,7 +259,7 @@ RSpec.describe DevelopmentSeeds::Dataset, type: :model do
     dataset.call
     expect(missing.attachments.sole.id).to eq(attachment_id)
     expect_seed_images_downloadable
-    expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq([ 7, 7 ])
+    expect([ ActiveStorage::Blob.count, ActiveStorage::Attachment.count ]).to eq([ 12, 12 ])
   end
 
   it "rejects an outer transaction before any DB or image changes" do
