@@ -7,6 +7,16 @@
     <%= link_to "ログイン", new_user_session_path, class: "button" %>
     <%= link_to "新規登録", new_user_registration_path, class: "button button-secondary" %>
   </div>
+  <% if GraduationGuestSandbox.ready? %>
+    <section aria-labelledby="guest-login-title">
+      <h2 id="guest-login-title">ゲストとして試す</h2>
+      <p>デモ専用のデータを閲覧できます。登録・編集・削除はできません。</p>
+      <div class="actions">
+        <%= button_to "一般ユーザーとしてゲストログイン", guest_session_path(role: "viewer"), class: "button" %>
+        <%= button_to "管理者としてゲストログイン", guest_session_path(role: "admin"), class: "button button-secondary" %>
+      </div>
+    </section>
+  <% end %>
 </section>
 
 <div class="cards">
