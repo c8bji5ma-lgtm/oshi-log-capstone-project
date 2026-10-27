@@ -15,7 +15,7 @@ class SubscriptionsController < ApplicationController
   def create
     @subscription = current_user.subscriptions.new
     if save_subscription
-      redirect_to subscriptions_path, notice: "固定費を登録しました。", status: :see_other
+      redirect_to subscriptions_path, notice: t("notices.subscriptions.created"), status: :see_other
     else
       render :new, formats: [ :html ], status: :unprocessable_content
     end
@@ -28,7 +28,7 @@ class SubscriptionsController < ApplicationController
   def update
     result = save_subscription
     if result == true
-      redirect_to subscriptions_path, notice: "固定費を更新しました。", status: :see_other
+      redirect_to subscriptions_path, notice: t("notices.subscriptions.updated"), status: :see_other
     elsif result == :conflict
       render :edit, formats: [ :html ], status: :conflict
     elsif result == :bad_request
@@ -43,9 +43,9 @@ class SubscriptionsController < ApplicationController
       @subscription.subscription_oshis.each(&:destroy!)
       @subscription.destroy!
     end
-    redirect_to subscriptions_path, notice: "固定費を削除しました。", status: :see_other
+    redirect_to subscriptions_path, notice: t("notices.subscriptions.deleted"), status: :see_other
   rescue ActiveRecord::RecordNotDestroyed
-    redirect_to subscriptions_path, alert: "固定費を削除できませんでした。", status: :see_other
+    redirect_to subscriptions_path, alert: t("alerts.subscriptions.delete_failed"), status: :see_other
   end
 
   private
@@ -77,13 +77,13 @@ class SubscriptionsController < ApplicationController
       @selected_oshi_ids = raw_ids.reject(&:blank?).map(&:to_i).uniq if valid_shape
       unless lock_version_valid
         @subscription.assign_attributes(attributes)
-        @subscription.errors.add(:base, "編集情報が不正です。最新の編集画面を読み込み直してください。")
+        @subscription.errors.add(:base, t("form_errors.invalid_edit"))
         @latest_subscription = current_user.subscriptions.includes(:oshis).find(@subscription.id)
         return :bad_request
       end
       unless valid_shape && (@selected_oshi_ids - @selectable_oshis.map(&:id)).empty?
         @subscription.assign_attributes(attributes)
-        @subscription.errors.add(:base, "対象の推しは登録済みの推しを正しい形式で選択してください。")
+        @subscription.errors.add(:base, t("form_errors.subscriptions.oshi_format"))
         return false
       end
       Subscriptions::Save.call(subscription: @subscription, attributes: attributes, oshi_ids: @selected_oshi_ids,
@@ -91,14 +91,14 @@ class SubscriptionsController < ApplicationController
       true
     rescue ActiveRecord::StaleObjectError
       @subscription.assign_attributes(attributes)
-      @subscription.errors.add(:base, "この固定費は別の画面で更新されています。最新内容を確認して編集し直してください。")
+      @subscription.errors.add(:base, t("form_errors.subscriptions.conflict"))
       @latest_subscription = current_user.subscriptions.includes(:oshis).find(@subscription.id)
       :conflict
     rescue ActiveRecord::RecordInvalid => error
-      @subscription.errors.add(:base, "対象の推しを保存できませんでした。#{error.record.errors.full_messages.join('、')}") unless error.record == @subscription
+      @subscription.errors.add(:base, t("form_errors.subscriptions.association", errors: error.record.errors.full_messages.join("、"))) unless error.record == @subscription
       false
     rescue ActiveRecord::RecordNotSaved, ActiveRecord::RecordNotDestroyed
-      @subscription.errors.add(:base, "固定費と対象の推しを保存できませんでした。")
+      @subscription.errors.add(:base, t("form_errors.subscriptions.save_failed"))
       false
     end
 

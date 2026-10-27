@@ -12,7 +12,7 @@ class ActivitiesController < ApplicationController
         @filters[key] = value.to_s
       else
         @filters[key] = ""
-        @filter_errors << "検索条件の形式が正しくありません。"
+        @filter_errors << t("form_errors.activities.filter_format")
       end
     end
     scope = current_user.activities
@@ -22,18 +22,18 @@ class ActivitiesController < ApplicationController
         first = Date.new(year.to_i, 1, 1)
         scope = scope.where(occurred_on: first...first.next_year)
       else
-        @filter_errors << "年はYYYY形式で指定してください。"
+        @filter_errors << t("form_errors.activities.year_format")
       end
     end
     month = @filters["month"]
-    @filter_errors << "年と年月は同時に指定できません。" if year.present? && month.present?
+    @filter_errors << t("form_errors.activities.year_and_month") if year.present? && month.present?
     if month.present?
       begin
         raise ArgumentError unless month.match?(/\A[0-9]{4}-(0[1-9]|1[0-2])\z/) && month[0, 4].to_i.positive?
         first = Date.strptime(month, "%Y-%m")
         scope = scope.where(occurred_on: first...first.next_month)
       rescue ArgumentError
-        @filter_errors << "年月はYYYY-MM形式で指定してください。"
+        @filter_errors << t("form_errors.activities.month_format")
       end
     end
     if @filters["oshi_id"].present?
@@ -41,7 +41,7 @@ class ActivitiesController < ApplicationController
       if id && @selectable_oshis.any? { |oshi| oshi.id == id }
         scope = scope.joins(:activity_oshis).where(activity_oshis: { oshi_id: id }).distinct
       else
-        @filter_errors << "登録済みの推しを選択してください。"
+        @filter_errors << t("form_errors.activities.filter_oshi")
       end
     end
     through = @filters["through"]
@@ -51,7 +51,7 @@ class ActivitiesController < ApplicationController
         raise ArgumentError unless through == through_date.iso8601
         scope = scope.where(occurred_on: ..through_date)
       rescue ArgumentError
-        @filter_errors << "集計期間の終了日が正しくありません。"
+        @filter_errors << t("form_errors.activities.period_end")
       end
     end
     category = @filters["activity_type"]
@@ -59,7 +59,7 @@ class ActivitiesController < ApplicationController
       if Activity::ACTIVITY_TYPES.include?(category)
         scope = scope.where(activity_type: category)
       else
-        @filter_errors << "カテゴリが正しくありません。"
+        @filter_errors << t("form_errors.activities.category")
       end
     end
     if @filters["q"].present?
@@ -74,7 +74,7 @@ class ActivitiesController < ApplicationController
     render :index, status: :bad_request if @filter_errors.any?
   rescue Activities::KeysetPage::InvalidCursor
     @activities = []
-    @filter_errors << "ページ情報が正しくありません。絞り込み条件からやり直してください。"
+    @filter_errors << t("form_errors.activities.page")
     render :index, status: :bad_request
   end
 
@@ -84,7 +84,7 @@ class ActivitiesController < ApplicationController
     @selected_emotion_ids = []
     @existing_images = []
     if params.key?(:initial_oshi_id) && @selected_oshi_ids.empty?
-      @activity.errors.add(:base, "最初に記録する推しを確認できませんでした。登録済みの推しを選び直してください。")
+      @activity.errors.add(:base, t("form_errors.activities.first_oshi"))
       render :new, status: :bad_request
     end
   end
@@ -93,7 +93,7 @@ class ActivitiesController < ApplicationController
     @activity = current_user.activities.new
     @existing_images = []
     if save_activity
-      redirect_to activities_path, notice: "活動記録を登録しました。", status: :see_other
+      redirect_to activities_path, notice: t("notices.activities.created"), status: :see_other
     else
       render :new, status: :unprocessable_content
     end
@@ -111,7 +111,7 @@ class ActivitiesController < ApplicationController
   def update
     result = save_activity
     if result == true
-      redirect_to activity_path(@activity), notice: "活動記録を更新しました。", status: :see_other
+      redirect_to activity_path(@activity), notice: t("notices.activities.updated"), status: :see_other
     elsif result == :conflict
       render :edit, formats: [ :html ], status: :conflict
     elsif result == :bad_request
@@ -123,9 +123,9 @@ class ActivitiesController < ApplicationController
 
   def destroy
     destroy_activity
-    redirect_to activities_path, notice: "活動記録を削除しました。", status: :see_other
+    redirect_to activities_path, notice: t("notices.activities.deleted"), status: :see_other
   rescue ActiveRecord::RecordNotDestroyed
-    redirect_to activity_path(@activity), alert: "活動記録を削除できませんでした。", status: :see_other
+    redirect_to activity_path(@activity), alert: t("alerts.activities.delete_failed"), status: :see_other
   end
 
   private
@@ -179,17 +179,17 @@ class ActivitiesController < ApplicationController
       selection_valid = ids_valid && (@selected_oshi_ids - allowed).empty?
       unless lock_version_valid
         @activity.assign_attributes(attributes)
-        @activity.errors.add(:base, "編集情報が不正です。最新の編集画面を読み込み直してください。")
+        @activity.errors.add(:base, t("form_errors.invalid_edit"))
         @latest_activity = current_user.activities.with_attached_images.includes(:oshis, :emotions).find(@activity.id)
         @existing_images = @latest_activity.images.attachments.to_a
         return :bad_request
       end
       if !selection_valid || @selected_oshi_ids.empty? || !images_valid || !emotions_valid
         @activity.assign_attributes(attributes)
-        @activity.errors.add(:base, "登録済みの推しを正しい形式で選択してください。") unless selection_valid
-        @activity.errors.add(:base, "推しを1件以上選択してください") if ids_valid && @selected_oshi_ids.empty?
-        @activity.errors.add(:images, "はファイルとして選択してください。") unless images_valid
-        @activity.errors.add(:emotion_ids, "は候補から正しい形式で選択してください。") unless emotions_valid
+        @activity.errors.add(:base, t("form_errors.activities.oshi_format")) unless selection_valid
+        @activity.errors.add(:base, t("form_errors.activities.oshi_required")) if ids_valid && @selected_oshi_ids.empty?
+        @activity.errors.add(:images, t("form_errors.file_required")) unless images_valid
+        @activity.errors.add(:emotion_ids, t("form_errors.activities.emotion_format")) unless emotions_valid
         return false
       end
       Activities::Save.call(activity: @activity, attributes: attributes, oshi_ids: @selected_oshi_ids,
@@ -198,7 +198,7 @@ class ActivitiesController < ApplicationController
       true
     rescue ActiveRecord::StaleObjectError
       @activity.assign_attributes(attributes)
-      @activity.errors.add(:base, "この活動記録は別の画面で更新されています。最新内容を確認して編集し直してください。")
+      @activity.errors.add(:base, t("form_errors.activities.conflict"))
       @latest_activity = current_user.activities.with_attached_images.includes(:oshis, :emotions).find(@activity.id)
       @existing_images = @latest_activity.images.attachments.to_a
       :conflict

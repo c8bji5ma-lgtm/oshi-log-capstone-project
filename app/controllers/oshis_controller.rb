@@ -16,7 +16,7 @@ class OshisController < ApplicationController
     UserOshis::Save.call(user_oshi: @user_oshi,
       new_images: params.fetch(:user_oshi, ActionController::Parameters.new)[:library_images])
 
-    redirect_to post_oshi_registration_path(@user_oshi), notice: "推しを登録しました。", status: :see_other
+    redirect_to post_oshi_registration_path(@user_oshi), notice: t("notices.oshis.created"), status: :see_other
   rescue ActiveRecord::RecordInvalid
     @oshi.valid?
     @user_oshi.valid? if @user_oshi.errors.empty?

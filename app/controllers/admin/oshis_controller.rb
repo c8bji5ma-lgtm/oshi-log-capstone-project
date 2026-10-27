@@ -9,11 +9,11 @@ module Admin
     end
 
     def approve
-      update_status(:approved, "推しを承認しました。")
+      update_status(:approved, t("notices.oshis.approved"))
     end
 
     def reject
-      update_status(:rejected, "推しを却下しました。")
+      update_status(:rejected, t("notices.oshis.rejected"))
     end
 
     def new_merge
@@ -30,24 +30,24 @@ module Admin
     def merge
       input = params.require(:oshi_merge)
       unless input.is_a?(ActionController::Parameters)
-        raise Oshis::Merge::InvalidInput, "統合元と統合先を正しく選択してください。"
+        raise Oshis::Merge::InvalidInput, t("alerts.oshis.merge_invalid")
       end
       attributes = input.permit(:source_id, :target_id)
       target = Oshis::Merge.call(source_id: attributes[:source_id], target_id: attributes[:target_id])
-      redirect_to admin_oshis_path, notice: "#{target.name}に推しを統合しました。", status: :see_other
+      redirect_to admin_oshis_path, notice: t("notices.oshis.merged", name: target.name), status: :see_other
     rescue ActionController::ParameterMissing
-      redirect_to merge_retry_location, alert: "統合元と統合先を選択してください。", status: :see_other
+      redirect_to merge_retry_location, alert: t("alerts.oshis.merge_missing"), status: :see_other
     rescue Oshis::Merge::Conflict => error
-      label = { started_period: "推し始め", ended_period: "推し終わり", representative_image: "代表画像" }.fetch(error.attribute, "登録情報")
+      label = { started_period: t("ui.labels.started_period"), ended_period: t("ui.labels.finished_period"), representative_image: t("ui.labels.representative_image") }.fetch(error.attribute, t("ui.labels.registration_information"))
       redirect_to merge_retry_location,
-        alert: "ユーザーID：#{error.user_id}の#{label}が競合するため、統合を中止しました。登録内容を確認してください。", status: :see_other
+        alert: t("alerts.oshis.merge_conflict", user_id: error.user_id, label: label), status: :see_other
     rescue Oshis::Merge::Error => error
       redirect_to merge_retry_location, alert: error.message, status: :see_other
     rescue ActiveRecord::RecordNotFound
-      redirect_to merge_retry_location, alert: "対象の推しが見つかりません。選択し直してください。", status: :see_other
+      redirect_to merge_retry_location, alert: t("alerts.oshis.merge_not_found"), status: :see_other
     rescue StandardError => error
       Rails.logger.error("Oshi merge failed: #{error.full_message}")
-      redirect_to merge_retry_location, alert: "推しを統合できませんでした。登録内容を確認して再度お試しください。", status: :see_other
+      redirect_to merge_retry_location, alert: t("alerts.oshis.merge_failed"), status: :see_other
     end
 
     private
@@ -91,7 +91,7 @@ module Admin
         if html_navigation_request?
           render "errors/forbidden", formats: [ :html ], status: :forbidden
         else
-          render plain: "管理者権限が必要です。", status: :forbidden
+          render plain: t("alerts.oshis.admin_required"), status: :forbidden
         end
       end
 
@@ -104,12 +104,12 @@ module Admin
         if updated
           redirect_to admin_oshis_path, notice: notice, status: :see_other
         else
-          redirect_to admin_oshis_path, alert: "承認待ちの推しのみ変更できます。一覧を確認してください。", status: :see_other
+          redirect_to admin_oshis_path, alert: t("alerts.oshis.pending_only"), status: :see_other
         end
       rescue ActiveRecord::RecordInvalid
-        redirect_to admin_oshis_path, alert: "推しを更新できませんでした。登録内容を確認してください。", status: :see_other
+        redirect_to admin_oshis_path, alert: t("alerts.oshis.update_failed"), status: :see_other
       rescue ActiveRecord::RecordNotFound
-        redirect_to admin_oshis_path, alert: "対象の推しが見つかりません。一覧を確認してください。", status: :see_other
+        redirect_to admin_oshis_path, alert: t("alerts.oshis.not_found"), status: :see_other
       end
   end
 end

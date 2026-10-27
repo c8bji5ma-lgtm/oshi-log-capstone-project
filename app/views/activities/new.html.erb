@@ -1,5 +1,5 @@
-<% content_for :title, "活動記録を登録 | OshiLog" %>
-<h1>活動記録を登録</h1>
-<p>まずは最低限だけで記録できます。必要に応じて、場所・金額・メモ・画像も追加できます。</p>
+<% content_for :title, t("ui.activity.new_page_title") %>
+<h1><%= t("ui.activity.new_title") %></h1>
+<p><%= t("ui.activity.minimum_help") %></p>
 <%= render "form" %>
-<p><%= link_to "活動記録一覧へ戻る", activities_path %></p>
+<p><%= link_to t("ui.activity.back_to_index"), activities_path %></p>

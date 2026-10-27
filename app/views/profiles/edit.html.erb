@@ -1,26 +1,26 @@
-<% content_for :title, "プロフィール編集 | OshiLog" %>
-<h1>プロフィール編集</h1>
+<% content_for :title, t("ui.profile.page_title") %>
+<h1><%= t("ui.profile.title") %></h1>
 <section class="card">
-  <h2>あなたのプロフィール</h2>
-  <%= attachment_image_tag @profile_image, alt: "現在のプロフィール画像", class: "representative-image" %>
+  <h2><%= t("ui.profile.heading") %></h2>
+  <%= attachment_image_tag @profile_image, alt: t("ui.profile.current_image"), class: "representative-image" %>
   <%= render "shared/validation_errors", resource: @profile %>
   <%= form_with model: @profile, url: profile_path, method: :patch do |f| %>
     <div class="form-field">
-      <%= f.label :display_name, "表示名（必須）" %>
-      <%= f.text_field :display_name, required: true, maxlength: 50, aria: { invalid: @profile.errors[:display_name].any?, describedby: "display-name-help" } %>
-      <p id="display-name-help">50文字以内で入力してください。</p>
+      <%= f.label :display_name, t("ui.profile.name_label") %>
+      <%= f.text_field :display_name, placeholder: t("ui.placeholders.display_name"), required: true, maxlength: 50, aria: { invalid: @profile.errors[:display_name].any?, describedby: "display-name-help" } %>
+      <p id="display-name-help"><%= t("ui.profile.name_help") %></p>
     </div>
     <div class="form-field">
-      <%= f.label :introduction, "自己紹介" %>
-      <%= f.text_area :introduction, rows: 5, aria: { invalid: @profile.errors[:introduction].any? } %>
+      <%= f.label :introduction, t("ui.profile.introduction_label") %>
+      <%= f.text_area :introduction, placeholder: t("ui.placeholders.introduction"), rows: 5, aria: { invalid: @profile.errors[:introduction].any? } %>
     </div>
     <div class="form-field" data-controller="image-upload">
-      <%= f.label :profile_image, "プロフィール画像" %>
+      <%= f.label :profile_image, t("ui.profile.image_label") %>
       <%= f.file_field :profile_image, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { invalid: @profile.errors[:profile_image].any?, describedby: "profile-image-help profile-image-status" } %>
-      <p id="profile-image-help">JPEG・PNG・WebP、10 MiB以下・最大辺2560px・500万画素以下。変更する場合だけ選択してください。入力エラー後は画像を再選択してください。</p>
+      <p id="profile-image-help"><%= t("ui.profile.image_help") %></p>
       <p id="profile-image-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
     </div>
-    <%= f.submit "プロフィールを保存", class: "button" %>
+    <%= f.submit t("ui.actions.save_profile"), class: "button" %>
   <% end %>
 </section>
-<p><%= link_to "マイページへ戻る", my_page_path %></p>
+<p><%= link_to t("ui.actions.back_to_my_page"), my_page_path %></p>

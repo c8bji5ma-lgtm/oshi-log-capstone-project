@@ -1,40 +1,40 @@
-<% content_for :title, "推し編集 | OshiLog" %>
-<h1>推し編集</h1>
+<% content_for :title, t("ui.oshi.edit_page_title") %>
+<h1><%= t("ui.oshi.edit_title") %></h1>
 <section class="card">
-  <h2>共通推し情報（読み取り専用）</h2>
+  <h2><%= t("ui.oshi.read_only_heading") %></h2>
   <dl class="detail-rows">
-    <dt>推し名</dt><dd><%= @user_oshi.oshi.name %></dd>
-    <dt>種別</dt><dd><%= @user_oshi.oshi.oshi_type %></dd>
-    <dt>所属・作品</dt><dd><%= @user_oshi.oshi.affiliation.presence || "未設定" %></dd>
+    <dt><%= t("ui.labels.oshi_name") %></dt><dd><%= @user_oshi.oshi.name %></dd>
+    <dt><%= t("ui.labels.oshi_type") %></dt><dd><%= @user_oshi.oshi.oshi_type %></dd>
+    <dt><%= t("ui.labels.affiliation") %></dt><dd><%= @user_oshi.oshi.affiliation.presence || t("ui.states.not_set") %></dd>
   </dl>
-  <h2>あなたの推し情報</h2>
-  <%= attachment_image_tag @representative_image, alt: "#{@user_oshi.oshi.name}の現在の代表画像", class: "representative-image" %>
+  <h2><%= t("ui.oshi.personal_heading") %></h2>
+  <%= attachment_image_tag @representative_image, alt: t("ui.oshi.current_image_alt", name: @user_oshi.oshi.name), class: "representative-image" %>
   <%= render "shared/validation_errors", resource: @user_oshi %>
   <%= form_with model: @user_oshi do |f| %>
-    <p id="edit-period-help">推し始め・終了時期はYYYY または YYYY/MMで入力してください（例：2023、2023/05）。</p>
+    <p id="edit-period-help"><%= t("ui.oshi.edit_period_help") %></p>
     <div class="form-field">
-      <%= f.label :started_period, "推し始め" %>
+      <%= f.label :started_period, t("ui.labels.started_period") %>
       <%= f.text_field :started_period, aria: { invalid: @user_oshi.errors[:started_period].any?, describedby: "edit-period-help" } %>
     </div>
     <div class="form-field">
-      <%= f.label :ended_period, "推し終了時期" %>
+      <%= f.label :ended_period, t("ui.labels.ended_period") %>
       <%= f.text_field :ended_period, aria: { invalid: @user_oshi.errors[:ended_period].any?, describedby: "edit-period-help" } %>
     </div>
     <div class="form-field" data-controller="image-upload">
-      <%= f.label :representative_image, "代表画像" %>
+      <%= f.label :representative_image, t("ui.labels.representative_image") %>
       <%= f.file_field :representative_image, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { invalid: @user_oshi.errors[:representative_image].any?, describedby: "image-help image-status" } %>
-      <p id="image-help">JPEG・PNG・WebP、10 MiB以下・最大辺2560px・500万画素以下。新しい代表画像を追加する場合に選択してください。以前の画像も保持されます。入力エラー後は画像を再選択してください。</p>
+      <p id="image-help"><%= t("ui.oshi.image_help") %></p>
       <p id="image-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
     </div>
-    <%= f.submit "推し情報を更新", class: "button" %>
+    <%= f.submit t("ui.actions.update_oshi"), class: "button" %>
   <% end %>
 </section>
 <section class="card oshi-image-library" aria-labelledby="library-heading">
-  <h2 id="library-heading">画像ライブラリ</h2>
+  <h2 id="library-heading"><%= t("ui.oshi.library_heading") %></h2>
   <%= render "user_oshis/image_gallery", manage: true %>
   <%= form_with model: @user_oshi, url: user_oshi_images_path(@user_oshi), method: :post, namespace: :library do |f| %>
-    <%= render "user_oshis/image_upload", f: f, label: "追加画像", help_id: "library-image-help" %>
-    <%= f.submit "画像を追加", class: "button", disabled: @images.size >= UserOshi::IMAGE_LIMIT %>
+    <%= render "user_oshis/image_upload", f: f, label: t("ui.labels.additional_images"), help_id: "library-image-help" %>
+    <%= f.submit t("ui.actions.add_images"), class: "button", disabled: @images.size >= UserOshi::IMAGE_LIMIT %>
   <% end %>
 </section>
-<p><%= link_to "推し一覧へ戻る", oshis_path %></p>
+<p><%= link_to t("ui.actions.back_to_oshis"), oshis_path %></p>
