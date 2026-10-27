@@ -1,4 +1,4 @@
-<% content_for :title, "活動記録を編集 | OshiLog" %>
-<h1>活動記録を編集</h1>
+<% content_for :title, t("ui.activity.edit_page_title") %>
+<h1><%= t("ui.activity.edit_title") %></h1>
 <%= render "form" %>
-<p><%= link_to "詳細へ戻る", activity_path(@activity) %></p>
+<p><%= link_to t("ui.activity.back_to_detail"), activity_path(@activity) %></p>

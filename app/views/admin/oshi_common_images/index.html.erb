@@ -1,37 +1,37 @@
-<% content_for :title, "推し共通画像管理 | OshiLog" %>
-<h1>推し共通画像管理</h1>
-<p>権利を確認済みの画像だけを登録してください。外部URLから画像を取得する機能ではありません。</p>
+<% content_for :title, t("ui.common_images.page_title") %>
+<h1><%= t("ui.common_images.title") %></h1>
+<p><%= t("ui.common_images.rights_help") %></p>
 <%= form_with url: admin_oshi_common_images_path, method: :get do |f| %>
   <div class="form-field">
-    <%= f.label :q, "推しを検索" %>
-    <%= f.search_field :q, value: @query, required: true, placeholder: "名前・別名・所属・作品で検索" %>
+    <%= f.label :q, t("ui.labels.search_oshi") %>
+    <%= f.search_field :q, value: @query, required: true, placeholder: t("ui.placeholders.oshi_search") %>
   </div>
-  <%= f.submit "検索", class: "button" %>
+  <%= f.submit t("ui.actions.search"), class: "button" %>
 <% end %>
 <% @oshis.each do |oshi| %>
   <section class="card common-image-admin-card">
     <h2><%= oshi.name %></h2>
-    <p><%= oshi.oshi_type %>／<%= oshi.affiliation.presence || "所属未設定" %></p>
-    <p>共通画像：<%= oshi.oshi_common_images.size %>/<%= OshiCommonImage::LIMIT_PER_OSHI %>枚</p>
+    <p><%= oshi.oshi_type %>／<%= oshi.affiliation.presence || t("ui.states.affiliation_not_set") %></p>
+    <p><%= t("ui.common_images.count_prefix") %><%= oshi.oshi_common_images.size %>/<%= OshiCommonImage::LIMIT_PER_OSHI %>枚</p>
     <% if oshi.oshi_common_images.size < OshiCommonImage::LIMIT_PER_OSHI %>
-      <%= link_to "共通画像を追加", new_admin_oshi_common_image_path(oshi_id: oshi.id), class: "button" %>
+      <%= link_to t("ui.common_images.add"), new_admin_oshi_common_image_path(oshi_id: oshi.id), class: "button" %>
     <% end %>
     <div class="common-image-admin-list">
       <% oshi.oshi_common_images.sort_by(&:id).each do |image| %>
         <section class="card">
-          <%= image_tag common_oshi_image_path(image.image.attachment), alt: "#{oshi.name}の共通画像", class: "common-oshi-image", loading: "lazy" if image.active? %>
-          <p>状態：<%= image.active? ? "有効" : "無効" %></p>
-          <p>作者・権利者：<%= image.creator_name %></p>
-          <p>ライセンス：<%= image.license_name %></p>
+          <%= image_tag common_oshi_image_path(image.image.attachment), alt: t("ui.common_images.image_alt", name: oshi.name), class: "common-oshi-image", loading: "lazy" if image.active? %>
+          <p><%= t("ui.common_images.status_prefix") %><%= image.active? ? t("ui.states.active") : t("ui.states.inactive") %></p>
+          <p><%= t("ui.common_images.creator_prefix") %><%= image.creator_name %></p>
+          <p><%= t("ui.common_images.license_prefix") %><%= image.license_name %></p>
           <div class="actions">
-            <%= link_to "編集", edit_admin_oshi_common_image_path(image) %>
-            <%= button_to "削除", admin_oshi_common_image_path(image), method: :delete,
+            <%= link_to t("ui.actions.edit"), edit_admin_oshi_common_image_path(image) %>
+            <%= button_to t("ui.actions.delete"), admin_oshi_common_image_path(image), method: :delete,
               params: { oshi_common_image: { lock_version: image.lock_version } }, class: "button button-secondary",
-              form: { data: { turbo_confirm: "この共通画像を削除しますか？" } } %>
+              form: { data: { turbo_confirm: t("ui.common_images.delete_confirm") } } %>
           </div>
         </section>
       <% end %>
     </div>
   </section>
 <% end %>
-<p><%= link_to "推し承認管理へ戻る", admin_oshis_path %></p>
+<p><%= link_to t("ui.merge.back"), admin_oshis_path %></p>

@@ -19,7 +19,7 @@ module Admin
       @oshi = Oshi.find(params.require(:oshi_common_image).require(:oshi_id))
       @common_image = OshiCommonImages::Create.call(oshi: @oshi, administrator: current_user,
         attributes: common_image_params, file: params.dig(:oshi_common_image, :image))
-      redirect_to admin_oshi_common_images_path(q: @oshi.name), notice: "共通画像を登録しました。", status: :see_other
+      redirect_to admin_oshi_common_images_path(q: @oshi.name), notice: t("notices.common_images.created"), status: :see_other
     rescue ActiveRecord::RecordInvalid => error
       @common_image = error.record
       render :new, status: :unprocessable_content
@@ -35,10 +35,10 @@ module Admin
 
         @common_image.update!(common_image_params)
       end
-      redirect_to admin_oshi_common_images_path(q: @common_image.oshi.name), notice: "共通画像情報を更新しました。", status: :see_other
+      redirect_to admin_oshi_common_images_path(q: @common_image.oshi.name), notice: t("notices.common_images.updated"), status: :see_other
     rescue ActiveRecord::RecordInvalid, ActiveRecord::StaleObjectError
       @oshi = @common_image.oshi
-      @common_image.errors.add(:base, "他の更新と競合しました。内容を確認してください。") if @common_image.errors.empty?
+      @common_image.errors.add(:base, t("alerts.common_images.conflict")) if @common_image.errors.empty?
       render :edit, status: :unprocessable_content
     end
 
@@ -49,9 +49,9 @@ module Admin
 
         @common_image.destroy!
       end
-      redirect_to admin_oshi_common_images_path(q: oshi_name), notice: "共通画像を削除しました。", status: :see_other
+      redirect_to admin_oshi_common_images_path(q: oshi_name), notice: t("notices.common_images.deleted"), status: :see_other
     rescue ActiveRecord::StaleObjectError
-      redirect_to admin_oshi_common_images_path(q: oshi_name), alert: "他の更新と競合しました。内容を確認してください。", status: :see_other
+      redirect_to admin_oshi_common_images_path(q: oshi_name), alert: t("alerts.common_images.conflict"), status: :see_other
     end
 
     private
@@ -77,7 +77,7 @@ module Admin
         if html_navigation_request?
           render "errors/forbidden", formats: [ :html ], status: :forbidden
         else
-          render plain: "管理者権限が必要です。", status: :forbidden
+          render plain: t("alerts.oshis.admin_required"), status: :forbidden
         end
       end
   end

@@ -1,4 +1,4 @@
-<% content_for :title, "固定費を登録 | OshiLog" %>
-<h1>固定費を登録</h1>
+<% content_for :title, t("ui.subscription.new_page_title") %>
+<h1><%= t("ui.subscription.new_title") %></h1>
 <%= render "form" %>
-<p><%= link_to "固定費一覧へ戻る", subscriptions_path %></p>
+<p><%= link_to t("ui.subscription.back"), subscriptions_path %></p>

@@ -1,6 +1,6 @@
 <% if resource.errors.any? %>
   <div class="validation-errors" role="alert">
-    <p>入力内容を確認してください。</p>
+    <p><%= t("ui.validation.check_input") %></p>
     <ul>
       <% resource.errors.full_messages.each do |message| %>
         <li><%= message %></li>

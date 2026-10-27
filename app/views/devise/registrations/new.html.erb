@@ -1,32 +1,32 @@
 <section class="card" aria-labelledby="registration-title">
-  <h1 id="registration-title">新規登録</h1>
+  <h1 id="registration-title"><%= t("ui.actions.sign_up") %></h1>
 
   <%= form_for(resource, as: resource_name, url: registration_path(resource_name)) do |form| %>
     <%= render "devise/shared/error_messages", resource: resource %>
 
     <div class="form-field">
-      <%= form.label :email, "メールアドレス" %>
-      <%= form.email_field :email, autofocus: true, autocomplete: "email", required: true,
+      <%= form.label :email, t("activerecord.attributes.user.email") %>
+      <%= form.email_field :email, placeholder: t("ui.placeholders.email"), autofocus: true, autocomplete: "email", required: true,
                             aria: { invalid: resource.errors.include?(:email) } %>
     </div>
 
     <div class="form-field">
-      <%= form.label :password, "パスワード" %>
+      <%= form.label :password, t("activerecord.attributes.user.password") %>
       <% if @minimum_password_length %>
-        <p id="password-length-help"><%= @minimum_password_length %>文字以上で入力してください。</p>
+        <p id="password-length-help"><%= t("ui.auth.minimum_password_length", count: @minimum_password_length) %></p>
       <% end %>
       <%= form.password_field :password, autocomplete: "new-password", required: true,
                                aria: { invalid: resource.errors.include?(:password), describedby: ("password-length-help" if @minimum_password_length) } %>
     </div>
 
     <div class="form-field">
-      <%= form.label :password_confirmation, "パスワード（確認用）" %>
+      <%= form.label :password_confirmation, t("activerecord.attributes.user.password_confirmation") %>
       <%= form.password_field :password_confirmation, autocomplete: "new-password", required: true,
                                aria: { invalid: resource.errors.include?(:password_confirmation) } %>
     </div>
 
     <div class="actions">
-      <%= form.submit "登録する", class: "button" %>
+      <%= form.submit t("ui.actions.register"), class: "button" %>
     </div>
   <% end %>
 

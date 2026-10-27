@@ -1,5 +1,5 @@
 module SubscriptionsHelper
   def billing_cycle_label(cycle)
-    { "monthly" => "月額", "yearly" => "年額" }.fetch(cycle)
+    t({ "monthly" => "ui.billing_cycles.monthly", "yearly" => "ui.billing_cycles.yearly" }.fetch(cycle))
   end
 end

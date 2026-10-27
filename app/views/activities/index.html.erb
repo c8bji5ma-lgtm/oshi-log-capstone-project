@@ -1,11 +1,11 @@
-<% content_for :title, "活動記録一覧 | OshiLog" %>
-<h1>活動記録一覧</h1>
-<p><%= link_to "記録する", new_activity_path, class: "button" %></p>
+<% content_for :title, t("ui.activity.index_page_title") %>
+<h1><%= t("ui.navigation.activities") %></h1>
+<p><%= link_to t("ui.actions.record"), new_activity_path, class: "button" %></p>
 <% if @filters["year"].present? || @filters["month"].present? || @filters["oshi_id"].present? || @filters["activity_type"].present? || @filters["q"].present? %>
   <section class="card" aria-labelledby="activity-filter-summary">
     <h2 id="activity-filter-summary">適用中の条件</h2>
     <ul>
-      <li>期間: <%= @filters["month"].presence || (@filters["year"].present? ? "#{@filters['year']}年" : "すべて") %></li>
+      <li>期間: <%= @filters["month"].presence || (@filters["year"].present? ? "#{@filters['year']}年" : t("ui.states.all")) %></li>
       <% if @filters["oshi_id"].present? %><li>推し: <%= @selectable_oshis.find { |oshi| oshi.id.to_s == @filters["oshi_id"] }&.name || "確認できない推し" %></li><% end %>
       <% if @filters["activity_type"].present? %><li>カテゴリ: <%= @filters["activity_type"] %></li><% end %>
       <% if @filters["q"].present? %><li>キーワード: <%= @filters["q"] %></li><% end %>
@@ -19,25 +19,25 @@
 <% end %>
 <%= form_with url: activities_path, method: :get, class: "activity-filter" do |f| %>
   <div class="form-field">
-    <%= f.label :month, "年月" %>
+    <%= f.label :month, t("ui.labels.month") %>
     <%= f.month_field :month, value: @filters["month"], aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
     <%= f.hidden_field :year, value: @filters["year"] if @filters["year"].present? %>
     <%= f.hidden_field :through, value: @filters["through"] if @filters["through"].present? %>
   </div>
   <div class="form-field">
-    <%= f.label :oshi_id, "推し" %>
-    <%= f.select :oshi_id, options_from_collection_for_select(@selectable_oshis, :id, :name, @filters["oshi_id"]), { include_blank: "すべて" }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
+    <%= f.label :oshi_id, t("ui.labels.oshi") %>
+    <%= f.select :oshi_id, options_from_collection_for_select(@selectable_oshis, :id, :name, @filters["oshi_id"]), { include_blank: t("ui.states.all") }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
   </div>
   <div class="form-field">
-    <%= f.label :activity_type, "カテゴリ" %>
-    <%= f.select :activity_type, options_for_select(Activity::ACTIVITY_TYPES, @filters["activity_type"]), { include_blank: "すべて" }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
+    <%= f.label :activity_type, t("ui.labels.category") %>
+    <%= f.select :activity_type, options_for_select(Activity::ACTIVITY_TYPES, @filters["activity_type"]), { include_blank: t("ui.states.all") }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
   </div>
   <div class="form-field">
-    <%= f.label :q, "キーワード" %>
-    <%= f.search_field :q, value: @filters["q"], aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
+    <%= f.label :q, t("ui.labels.keyword") %>
+    <%= f.search_field :q, placeholder: t("ui.placeholders.activity_search"), value: @filters["q"], aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
   </div>
-  <%= f.submit "絞り込む", class: "button" %>
-  <%= link_to "条件をクリア", activities_path %>
+  <%= f.submit t("ui.actions.filter"), class: "button" %>
+  <%= link_to t("ui.actions.clear_filters"), activities_path %>
 <% end %>
 <% if @activities.empty? %>
   <p>該当する活動記録はありません。</p>
@@ -53,7 +53,7 @@
               <p class="activity-entry-meta"><span><%= activity.activity_type %></span><span><%= activity.amount.nil? ? "—" : "#{number_with_delimiter(activity.amount)}円" %></span></p>
               <h3><%= link_to activity.title, activity_path(activity) %></h3>
               <% if activity.emotions.any? %>
-                <p class="activity-emotions" aria-label="感情タグ"><%= activity.emotions.map(&:name).join("、") %></p>
+                <p class="activity-emotions" aria-label="<%= t("ui.labels.emotions") %>"><%= activity.emotions.map(&:name).join("、") %></p>
               <% end %>
             </div>
           </li>

@@ -16,7 +16,7 @@ class UserOshisController < ApplicationController
     @existing_user_oshi = current_user.user_oshis.new(started_period_params.merge(oshi: oshi))
 
     UserOshis::Save.call(user_oshi: @existing_user_oshi, new_images: image_upload_params)
-    redirect_to post_oshi_registration_path(@existing_user_oshi), notice: "推しを登録しました。", status: :see_other
+    redirect_to post_oshi_registration_path(@existing_user_oshi), notice: t("notices.oshis.created"), status: :see_other
   rescue ActiveRecord::RecordInvalid
     if @existing_user_oshi.errors.of_kind?(:oshi_id, :taken)
       redirect_duplicate
@@ -41,7 +41,7 @@ class UserOshisController < ApplicationController
 
   def update
     UserOshis::Save.call(user_oshi: @user_oshi, attributes: user_oshi_params, new_images: image_upload_params)
-    redirect_to oshis_path, notice: "推し情報を更新しました。", status: :see_other
+    redirect_to oshis_path, notice: t("notices.oshis.updated"), status: :see_other
   rescue ActiveRecord::RecordInvalid
     load_saved_images
     render :edit, status: :unprocessable_content
@@ -78,6 +78,6 @@ class UserOshisController < ApplicationController
     end
 
     def redirect_duplicate
-      redirect_to oshis_path, alert: "この推しはすでに登録されています。", status: :see_other
+      redirect_to oshis_path, alert: t("alerts.oshis.already_registered"), status: :see_other
     end
 end

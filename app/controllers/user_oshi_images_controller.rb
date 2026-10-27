@@ -6,18 +6,18 @@ class UserOshiImagesController < ApplicationController
   def create
     UserOshis::Save.call(user_oshi: @user_oshi,
       new_images: params.fetch(:user_oshi, ActionController::Parameters.new)[:library_images])
-    redirect_to edit_user_oshi_path(@user_oshi), notice: "画像を追加しました。", status: :see_other
+    redirect_to edit_user_oshi_path(@user_oshi), notice: t("notices.images.added"), status: :see_other
   end
 
   def update
     UserOshis::Save.call(user_oshi: @user_oshi, representative_image_id: params[:id])
-    redirect_to edit_user_oshi_path(@user_oshi), notice: "代表画像を変更しました。", status: :see_other
+    redirect_to edit_user_oshi_path(@user_oshi), notice: t("notices.images.representative_changed"), status: :see_other
   end
 
   def destroy
     UserOshis::Save.call(user_oshi: @user_oshi, remove_image_id: params[:id],
       clear_representative: params[:clear_representative] == "1")
-    redirect_to edit_user_oshi_path(@user_oshi), notice: "画像を削除しました。", status: :see_other
+    redirect_to edit_user_oshi_path(@user_oshi), notice: t("notices.images.deleted"), status: :see_other
   end
 
   private

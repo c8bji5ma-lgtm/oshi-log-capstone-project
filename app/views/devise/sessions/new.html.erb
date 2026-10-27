@@ -1,26 +1,26 @@
 <section class="card" aria-labelledby="session-title">
-  <h1 id="session-title">ログイン</h1>
+  <h1 id="session-title"><%= t("ui.actions.sign_in") %></h1>
 
   <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |form| %>
     <div class="form-field">
-      <%= form.label :email, "メールアドレス" %>
-      <%= form.email_field :email, autofocus: true, autocomplete: "email", required: true %>
+      <%= form.label :email, t("activerecord.attributes.user.email") %>
+      <%= form.email_field :email, placeholder: t("ui.placeholders.email"), autofocus: true, autocomplete: "email", required: true %>
     </div>
 
     <div class="form-field">
-      <%= form.label :password, "パスワード" %>
+      <%= form.label :password, t("activerecord.attributes.user.password") %>
       <%= form.password_field :password, autocomplete: "current-password", required: true %>
     </div>
 
     <% if devise_mapping.rememberable? %>
       <div class="form-field">
         <%= form.check_box :remember_me %>
-        <%= form.label :remember_me, "ログイン状態を保持する" %>
+        <%= form.label :remember_me, t("ui.auth.remember_me") %>
       </div>
     <% end %>
 
     <div class="actions">
-      <%= form.submit "ログイン", class: "button" %>
+      <%= form.submit t("ui.actions.sign_in"), class: "button" %>
     </div>
   <% end %>
 
