@@ -13,17 +13,38 @@ RSpec.describe "デモのサブパス", type: :request do
     previous_flag = ENV["OSHI_GUEST_SANDBOX"]
     previous_root = ActionController::Base.config.relative_url_root
     previous_application_root = Rails.application.config.relative_url_root
+    previous_importmap = Rails.application.importmap
+    ordinary = ActionDispatch::Integration::Session.new(Rails.application)
+    ordinary.get "/"
+    expect(ordinary.response).to have_http_status(:ok)
+    @ordinary_imports = importmap_urls(ordinary.response)
+
     ENV["OSHI_GUEST_SANDBOX"] = "isolated"
     ActionController::Base.config.relative_url_root = "/demo"
     Rails.application.config.relative_url_root = "/demo"
+    # Real deployments build separate maps at boot; resolved URLs are memoized.
+    Rails.application.importmap = Importmap::Map.new.tap do |map|
+      Rails.application.config.importmap.paths.each { |path| map.draw(path) }
+    end
     example.run
   ensure
     previous_flag.nil? ? ENV.delete("OSHI_GUEST_SANDBOX") : ENV["OSHI_GUEST_SANDBOX"] = previous_flag
     ActionController::Base.config.relative_url_root = previous_root
     Rails.application.config.relative_url_root = previous_application_root
+    Rails.application.importmap = previous_importmap
+    if ordinary && @ordinary_imports
+      ordinary.get "/"
+      expect(ordinary.response).to have_http_status(:ok)
+      expect(importmap_urls(ordinary.response)).to eq(@ordinary_imports)
+    end
   end
 
-  it "keeps entry forms, icons, stylesheets and importmap assets beneath /demo" do
+  def importmap_urls(response)
+    document = Nokogiri::HTML(response.body)
+    JSON.parse(document.at_css("script[type='importmap']").text).fetch("imports")
+  end
+
+  it "keeps entry forms, icons, stylesheets and importmap assets beneath /demo after an ordinary render" do
     client.get "/demo/"
     expect(client.response).to have_http_status(:ok)
     document = Nokogiri::HTML(client.response.body)
@@ -35,6 +56,12 @@ RSpec.describe "デモのサブパス", type: :request do
       client.get path
       expect(client.response).to have_http_status(:ok)
     end
+  end
+
+  it "resolves the same imports separately for the ordinary application and demo" do
+    client.get "/demo/"
+    expect(client.response).to have_http_status(:ok)
+    expect(importmap_urls(client.response)).to eq(@ordinary_imports.transform_values { |path| "/demo#{path}" })
   end
 
   it "keeps viewer redirects and logout inside the mount and rejects administrator access" do
