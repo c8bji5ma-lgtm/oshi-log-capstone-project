@@ -175,6 +175,18 @@ RSpec.describe "Activities", type: :request do
       expect(titles).to be_empty
     end
 
+    it "explains keyword search while preserving its label, example, and submitted value" do
+      get activities_path, params: { q: "ライブ" }
+
+      expect(response).to have_http_status(:ok)
+      keyword = document.at_css("form.activity-filter input[name='q']")
+      expect(document.at_css("label[for='#{keyword['id']}']").text).to eq("キーワード")
+      expect(keyword["placeholder"]).to eq("例：ライブ、会場名")
+      expect(keyword["value"]).to eq("ライブ")
+      expect(keyword["aria-describedby"]).to eq("activity-keyword-help")
+      expect(document.at_css("#activity-keyword-help").text).to eq("タイトル・場所・メモを検索します。推し名で探す場合は「推し」を選んでください。")
+    end
+
     [ { month: "2026-13" }, { month: "0000-01" }, { month: "2026-1" }, { activity_type: "未知" }, { month: [ "2026-10" ] }, { q: { bad: "value" } }, { activity_type: [ "その他" ] }, { oshi_id: { bad: "id" } } ].each do |filters|
       it "renders a filter error with 400 for #{filters.inspect}" do
         activity_for(title: "本人記録")
@@ -182,7 +194,8 @@ RSpec.describe "Activities", type: :request do
         get activities_path, params: filters
         expect(response).to have_http_status(:bad_request)
         expect(document.at_css("#activity-filter-errors[role='alert']")).to be_present
-        expect(document.css("form.activity-filter [aria-describedby='activity-filter-errors']").size).to eq(4)
+        expect(document.css("form.activity-filter [aria-describedby~='activity-filter-errors']").size).to eq(4)
+        expect(document.at_css("input[name='q']")["aria-describedby"].split).to contain_exactly("activity-keyword-help", "activity-filter-errors")
         expect(titles).to be_empty
         expect(response.body).not_to include("秘密")
       end
