@@ -34,7 +34,8 @@
   </div>
   <div class="form-field">
     <%= f.label :q, t("ui.labels.keyword") %>
-    <%= f.search_field :q, placeholder: t("ui.placeholders.activity_search"), value: @filters["q"], aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
+    <%= f.search_field :q, placeholder: t("ui.placeholders.activity_search"), value: @filters["q"], aria: { describedby: [ "activity-keyword-help", ("activity-filter-errors" if @filter_errors.any?) ].compact.join(" ") } %>
+    <p id="activity-keyword-help"><%= t("ui.activity.keyword_help") %></p>
   </div>
   <%= f.submit t("ui.actions.filter"), class: "button" %>
   <%= link_to t("ui.actions.clear_filters"), activities_path %>
