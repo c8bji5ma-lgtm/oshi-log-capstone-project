@@ -2,6 +2,7 @@ class ActivitiesController < ApplicationController
   before_action :set_activity, only: [ :show, :edit, :update, :destroy ]
   before_action :set_selectable_oshis, only: [ :index, :new, :create, :edit, :update ]
   before_action :set_selectable_emotions, only: [ :new, :create, :edit, :update ]
+  before_action :set_list_context, only: :show
 
   def index
     @filters = {}
@@ -132,6 +133,19 @@ class ActivitiesController < ApplicationController
   end
 
   private
+
+    def set_list_context
+      @list_context = {}
+      context = params[:list_context]
+      return if context.nil?
+
+      filters = context.slice(*%w[year month through oshi_id activity_type q]) if context.is_a?(ActionController::Parameters)
+      unless filters && filters.values.all? { |value| value.is_a?(String) }
+        return render file: Rails.public_path.join("400.html"), layout: false, status: :bad_request
+      end
+
+      @list_context = filters.to_unsafe_h
+    end
 
     def set_activity
       @activity = current_user.activities.with_attached_images.find(params[:id])

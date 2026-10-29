@@ -26,4 +26,4 @@
     <%= button_to "削除", activity_path(@activity), method: :delete, class: "destructive-button", form: { data: { turbo_confirm: "この活動記録を削除しますか？" } } %>
   </div>
 </section>
-<p><%= link_to "活動記録一覧へ戻る", activities_path %></p>
+<p><%= link_to "活動記録一覧へ戻る", activities_path(@list_context) %></p>

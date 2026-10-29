@@ -121,7 +121,25 @@ RSpec.describe "Editing a personal profile", type: :request do
         expected = build(:profile, display_name: name)
         expected.valid?
         expect(document.at_css(".validation-errors[role='alert']").text).to include(*expected.errors.full_messages)
+        expect(document.at_css(".validation-errors[role='alert']").text).not_to include("Display name")
+        expect(document.at_css(".validation-errors[role='alert']").text).to include("表示名を入力してください") if name.blank?
       end
+    end
+
+    it "keeps a whitespace-only first profile unsaved until its Japanese validation is corrected" do
+      submitted = "  初回の自己紹介\n次の行  "
+      expect { update_profile(display_name: " ", introduction: submitted) }.not_to change(Profile, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(user.reload.profile).to be_nil
+      expect(document.at_css(".validation-errors[role='alert']").text).to include("表示名を入力してください")
+      expect(document.at_css(".validation-errors[role='alert']").text).not_to include("Display name")
+      expect(document.at_css("input[name='profile[display_name]']")["value"]).to eq(" ")
+      expect(document.at_css("textarea[name='profile[introduction]']").text).to eq(submitted)
+
+      expect { update_profile(display_name: "訂正した表示名", introduction: submitted) }.to change(Profile, :count).by(1)
+      expect(response).to redirect_to(my_page_path)
+      expect(user.reload.profile).to have_attributes(display_name: "訂正した表示名", introduction: submitted)
     end
 
     it "does not persist a new profile, blob or attachment when first-save validation fails" do

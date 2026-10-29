@@ -127,6 +127,34 @@ RSpec.describe "Oshi search and registration", type: :request do
       end
     end
 
+    it "identifies a successful empty search without creating a record or pre-filling the server form" do
+      query = "未登録の推し<&>"
+      expect {
+        get new_oshi_path, params: { q: query, continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION }
+      }.not_to change(Oshi, :count)
+      expect(response).to have_http_status(:ok)
+      result = document.at_css("#oshi-search-results")
+      expect(result["data-oshi-search-query"]).to eq(query)
+      expect(result["data-oshi-search-state"]).to eq("empty")
+      expect(result["data-oshi-search-count"]).to eq("0")
+      expect(document.at_css("#oshi_name")["value"]).to be_blank
+      expect(document.at_css("#new_continue")["value"]).to eq(ApplicationController::FIRST_ACTIVITY_CONTINUATION)
+      expect(document.at_css("#existing_query")["value"]).to eq(query)
+    end
+
+    it "distinguishes unsubmitted and whitespace searches from successful matching results" do
+      [ nil, "", "  ", "　" ].each do |query|
+        get new_oshi_path, params: { q: query }
+        expect(document.at_css("#oshi-search-results")["data-oshi-search-state"]).to eq("initial")
+      end
+      candidate = create(:oshi, :approved, name: "検索が成功した候補")
+      get new_oshi_path, params: { q: candidate.name }
+      result = document.at_css("#oshi-search-results")
+      expect(result["data-oshi-search-state"]).to eq("results")
+      expect(result["data-oshi-search-count"]).to eq("1")
+      expect(result.at_css("input[name='oshi_id']")["value"]).to eq(candidate.id.to_s)
+    end
+
     it "safely returns no candidates for a long unmatched query" do
       create(:oshi, :approved, affiliation: "短い所属")
       get new_oshi_path, params: { q: "該当しない検索語" * 100 }
@@ -160,7 +188,7 @@ RSpec.describe "Oshi search and registration", type: :request do
         continuation: ApplicationController::FIRST_ACTIVITY_CONTINUATION)
       expect(response).to have_http_status(:unprocessable_content)
       expect(document.at_css("input#new_continue")["value"]).to eq(ApplicationController::FIRST_ACTIVITY_CONTINUATION)
-      expect(document.at_css("input[name='user_oshi[started_period]']")["value"]).to eq("2023/13")
+      expect(document.at_css("#new_user_oshi_started_period")["value"]).to eq("2023/13")
     end
 
     it "continues a newly registered pending oshi to a preselected first activity" do
@@ -189,7 +217,7 @@ RSpec.describe "Oshi search and registration", type: :request do
         .to change(Oshi, :count).by(0).and change(UserOshi, :count).by(0)
       expect(response).to have_http_status(:unprocessable_content)
       expect(document.css(".validation-errors[role='alert']").size).to eq(2)
-      expect(document.at_css("input[name='user_oshi[started_period]']")["value"]).to eq("2023/13")
+      expect(document.at_css("#new_user_oshi_started_period")["value"]).to eq("2023/13")
     end
 
     it "rolls back the saved oshi when the user period is invalid" do
@@ -197,7 +225,7 @@ RSpec.describe "Oshi search and registration", type: :request do
         .to change(Oshi, :count).by(0).and change(UserOshi, :count).by(0)
       expect(response).to have_http_status(:unprocessable_content)
       expect(document.at_css("input[name='oshi[name]']")["value"]).to eq("新しい推し")
-      expect(document.at_css("input[name='user_oshi[started_period]']")["aria-invalid"]).to eq("true")
+      expect(document.at_css("#new_user_oshi_started_period")["aria-invalid"]).to eq("true")
       expect(document.css(".validation-errors")).not_to be_empty
     end
 

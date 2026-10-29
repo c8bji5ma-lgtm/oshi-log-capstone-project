@@ -58,7 +58,7 @@
             <time class="activity-entry-date" datetime="<%= activity.occurred_on.iso8601 %>"><span><%= activity.occurred_on.strftime("%-m/%-d") %></span></time>
             <div class="activity-entry-body">
               <p class="activity-entry-meta"><span><%= activity.activity_type %></span><span><%= activity.amount.nil? ? "—" : "#{number_with_delimiter(activity.amount)}円" %></span></p>
-              <h3><%= link_to activity.title, activity_path(activity) %></h3>
+              <h3><%= link_to activity.title, activity_path(activity, list_context: @filters.reject { |_, value| value.empty? }) %></h3>
               <% if activity.emotions.any? %>
                 <p class="activity-emotions" aria-label="<%= t("ui.labels.emotions") %>"><%= activity.emotions.map(&:name).join("、") %></p>
               <% end %>

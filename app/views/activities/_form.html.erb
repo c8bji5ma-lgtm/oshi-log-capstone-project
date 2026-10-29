@@ -1,5 +1,6 @@
 <% if @selectable_oshis.empty? %>
-  <p><%= t("ui.activity.register_oshi_first") %><%= link_to t("ui.actions.register_oshi"), new_oshi_path %></p>
+  <% registration_path = @activity.persisted? ? new_oshi_path : new_oshi_path(continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION) %>
+  <p><%= t("ui.activity.register_oshi_first") %><%= link_to t("ui.actions.register_oshi"), registration_path %></p>
 <% end %>
 <%= render "shared/validation_errors", resource: @activity %>
 <% if @latest_activity %>
@@ -53,7 +54,8 @@
     </div>
     <div class="form-field">
       <%= f.label :amount, t("ui.activity.amount_label") %>
-      <%= f.number_field :amount, min: 0, step: 1, aria: { invalid: @activity.errors[:amount].any? } %>
+      <%= f.number_field :amount, min: 0, step: 1, aria: { invalid: @activity.errors[:amount].any?, describedby: "activity-amount-help" } %>
+      <p id="activity-amount-help"><%= t("ui.activity.amount_help") %></p>
     </div>
   </div>
   <fieldset class="form-field choice-field" aria-describedby="emotion-selection-help" aria-invalid="<%= @activity.errors[:emotion_ids].any? %>">

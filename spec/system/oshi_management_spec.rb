@@ -1,6 +1,8 @@
 require "rails_helper"
+require_relative "../support/started_period_picker"
 
 RSpec.describe "Oshi registration and moderation in the browser", type: :system do
+  include StartedPeriodPicker
   let(:user) { create(:user) }
   let(:admin) { create(:user, :admin) }
 
@@ -39,7 +41,7 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
   def add_candidate(name, started_period:)
     within("form[action='#{user_oshis_path}']") do
       choose name, exact: false
-      fill_in "推し始め", with: started_period
+      select_started_period started_period
       click_button "選んだ推しを追加"
     end
     expect(page).to have_current_path(oshis_path)
@@ -71,7 +73,7 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
     first_radio.click
 
     within("form[action='#{user_oshis_path}']") do
-      fill_in "推し始め", with: "2026/13"
+      select_started_period "2026/13"
       click_button "選んだ推しを追加"
     end
     expect(page).to have_current_path(new_oshi_path, ignore_query: true)
@@ -98,8 +100,8 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
     end
     expect(page).to have_css("main h1", text: "推し編集", exact_text: true)
     within("main form[action='#{user_oshi_path(user.user_oshis.find_by!(oshi: oshi))}']") do
-      expect(page).to have_field("推し始め", with: "2023/05")
-      fill_in "推し始め", with: "2021/02"
+      expect(page).to have_field("推し始め", with: "2023/05", visible: :all)
+      select_started_period "2021/02"
       fill_in "推し終了時期", with: "2025/07"
       click_button "推し情報を更新"
     end
@@ -126,7 +128,7 @@ RSpec.describe "Oshi registration and moderation in the browser", type: :system 
       fill_in "推し名（必須）", with: name
       select "声優", from: "種別（必須）"
       fill_in "所属・作品", with: "ブラウザ検証作品"
-      fill_in "推し始め", with: "2024/04"
+      select_started_period "2024/04"
       click_button "新しい推しを登録", exact: true
     end
     expect(page).to have_current_path(oshis_path)

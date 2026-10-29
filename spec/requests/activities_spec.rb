@@ -48,6 +48,21 @@ RSpec.describe "Activities", type: :request do
     document.css(".activity-list a").map(&:text)
   end
 
+  def expect_amount_guidance(invalid: false)
+    field = document.at_css("input[name='activity[amount]']")
+    expect(field).to be_present
+    expect(document.css("[id='#{field['id']}']").size).to eq(1)
+    expect(document.css("label[for='#{field['id']}']").map(&:text)).to eq([ "金額（円）" ])
+    expect(field["aria-describedby"].to_s.split).to include("activity-amount-help")
+    expect(document.css("#activity-amount-help").size).to eq(1)
+    expect(document.at_css("#activity-amount-help").text).to eq("任意です。記録しない場合は空欄、0円として記録する場合は0を入力してください。")
+    expect(field["aria-invalid"]).to eq(invalid.to_s)
+    expect(field["required"]).to be_nil
+    expect(field["min"]).to eq("0")
+    expect(field["step"]).to eq("1")
+    field
+  end
+
   describe "invalid activity parameter groups" do
     [ {}, { activity: nil }, { activity: {} }, { activity: "invalid" },
       { activity: [ "invalid" ] }, { activity: false } ].each do |parameters|
@@ -288,7 +303,7 @@ RSpec.describe "Activities", type: :request do
   end
 
   describe "new and create" do
-    it "shows only registered choices, fixed categories, and multiple upload inputs" do
+    it "shows only registered choices, fixed categories, and multiple upload inputs", :amount_guidance do
       unregistered = create(:oshi, :approved)
       get new_activity_path
       expect(response).to have_http_status(:ok)
@@ -299,6 +314,7 @@ RSpec.describe "Activities", type: :request do
       expect(document.at_css("input[type='file']")["multiple"]).to be_present
       expect(document.css("select[name='activity[activity_type]'] option").map(&:text)).to include(*Activity::ACTIVITY_TYPES)
       expect(document.at_css("input[name='activity[occurred_on]']")["value"]).to eq(Date.current.iso8601)
+      expect_amount_guidance
     end
 
     it "preselects only an owned registered oshi from the first-record continuation" do
@@ -324,7 +340,39 @@ RSpec.describe "Activities", type: :request do
       post user_session_path, params: { user: { email: other_user.email, password: "password123" } }
       get new_activity_path
       expect(response.body).to include("先に推しを登録してください")
-      expect(document.at_css("a[href='#{new_oshi_path}']")).to be_present
+      expect(document.at_css("a[href='#{new_oshi_path(continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION)}']")).to be_present
+      expect(document.at_css("form[action='#{activities_path}']")).to be_nil
+      expect(document.at_css("#activity_title")).to be_nil
+      expect(document.at_css("#activity_images")).to be_nil
+    end
+
+
+    it "keeps invalid initial selections as errors even when the user has no oshis" do
+      delete destroy_user_session_path
+      post user_session_path, params: { user: { email: other_user.email, password: "password123" } }
+      [ "bad", oshi.id.to_s, [ oshi.id.to_s ] ].each do |value|
+        get new_activity_path, params: { initial_oshi_id: value }
+
+        expect(response).to have_http_status(:bad_request)
+        expect(document.at_css(".validation-errors[role='alert']")).to be_present
+        expect(document.at_css("#activity_title")).to be_present
+        expect(document.css("input[name='activity[oshi_ids][]'][checked]")).to be_empty
+      end
+    end
+
+    it "keeps submitted values and errors when a user without oshis posts an invalid activity" do
+      delete destroy_user_session_path
+      post user_session_path, params: { user: { email: other_user.email, password: "password123" } }
+
+      expect {
+        post activities_path, params: { activity: input(title: "入力を表示する記録", memo: "残すメモ", oshi_ids: [ "" ]) }
+      }.not_to change(Activity, :count)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(document.at_css(".validation-errors[role='alert']")).to be_present
+      expect(document.at_css("#activity_title")["value"]).to eq("入力を表示する記録")
+      expect(document.at_css("#activity_memo").text.delete_prefix("\n")).to eq("残すメモ")
+      expect(document.at_css("a[href='#{new_oshi_path(continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION)}']")).to be_present
     end
 
     it "creates for the current user, deduplicates ids, redirects and flashes" do
@@ -383,10 +431,15 @@ RSpec.describe "Activities", type: :request do
     end
 
     [ { title: "" }, { occurred_on: "2026-02-30" }, { activity_type: "不明" }, { amount: "-1" }, { amount: "1.5" }, { amount: "abc" } ].each do |changes|
-      it "renders scalar validation errors for #{changes.inspect}" do
+      it "renders scalar validation errors for #{changes.inspect}", :amount_guidance do
         expect { post activities_path, params: { activity: input(**changes) } }.not_to change(Activity, :count)
         expect(response).to have_http_status(:unprocessable_content)
         expect(document.at_css(".validation-errors")).to be_present
+        field = expect_amount_guidance(invalid: changes.key?(:amount))
+        expect(field["value"]).to eq(changes[:amount]) if changes.key?(:amount) && changes[:amount] != "abc"
+        expect(document.at_css("#activity_title")["value"]).to eq(input(**changes)[:title])
+        expect(document.at_css("#activity_place")["value"]).to eq(input[:place])
+        expect(document.at_css("#activity_memo").text.delete_prefix("\n")).to eq(input[:memo])
       end
     end
 
@@ -397,7 +450,7 @@ RSpec.describe "Activities", type: :request do
     end
 
     { "" => nil, "0" => 0 }.each do |value, expected|
-      it "preserves amount #{value.inspect}" do
+      it "preserves amount #{value.inspect}", :amount_guidance do
         post activities_path, params: { activity: input(amount: value) }
         expect(user.activities.last.amount).to eq(expected)
         follow_redirect!
@@ -477,6 +530,26 @@ RSpec.describe "Activities", type: :request do
   end
 
   describe "update" do
+    it "keeps amount guidance and other submitted fields on edit errors", :amount_guidance do
+      activity = activity_for(title: "保存済み", amount: 1250)
+      get edit_activity_path(activity)
+      expect(response).to have_http_status(:ok)
+      expect(expect_amount_guidance["value"]).to eq("1250")
+
+      %w[-1 1.5 abc].each do |amount|
+        original = activity.reload.attributes
+        patch activity_path(activity), params: { activity: versioned(activity, input(amount: amount, title: "訂正中")) }
+        expect(response).to have_http_status(:unprocessable_content)
+        field = expect_amount_guidance(invalid: true)
+        expect(field["value"]).to eq(amount) unless amount == "abc"
+        expect(document.at_css("#activity_title")["value"]).to eq("訂正中")
+        expect(document.at_css("#activity_place")["value"]).to eq("福岡")
+        expect(document.at_css("#activity_memo").text.delete_prefix("\n")).to eq("感想")
+        expect(activity.reload.attributes).to eq(original)
+        expect(activity.oshi_ids).to eq([ oshi.id ])
+      end
+    end
+
     it "updates scalars and selection, preserves owner, redirects to detail with notice" do
       activity = activity_for
       patch activity_path(activity), params: { activity: versioned(activity, input(title: "更新", amount: "0", user_id: other_user.id, oshi_ids: [ second_oshi.id.to_s ])) }
@@ -733,5 +806,21 @@ RSpec.describe "Read-only guest activity empty states", type: :request do
       post activities_path, params: { activity: { title: "保存されないゲスト記録" } }
     }.not_to change(Activity, :count)
     expect(response).to have_http_status(:forbidden)
+  end
+
+  it "shows a read-only guest prerequisite message without inviting activity or oshi creation" do
+    create(:user, email: "demo@example.com")
+    create(:user, :admin, email: "admin@example.com")
+    %w[multi light empty].each { |name| create(:user, email: "#{name}@example.com") }
+
+    post guest_session_path(role: "admin")
+    expect(response).to redirect_to(root_path)
+    get new_activity_path
+
+    expect(response).to have_http_status(:ok)
+    document = Nokogiri::HTML(response.body)
+    expect(response.body).to include("ゲストは閲覧専用です。活動記録の登録はできません。")
+    expect(document.at_css("form[action='#{activities_path}']")).to be_nil
+    expect(document.css("main a[href^='#{new_oshi_path}']")).to be_empty
   end
 end

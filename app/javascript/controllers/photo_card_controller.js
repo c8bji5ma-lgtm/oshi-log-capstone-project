@@ -568,9 +568,13 @@ export default class extends Controller {
       setTimeout(() => URL.revokeObjectURL(url), 1000)
       this.statusTarget.textContent = "ダウンロードを開始しました。保存先をブラウザーで確認してください。"
     } catch (error) {
-      if (this.current(sequence) && error.name !== "AbortError") {
+      if (this.current(sequence) && this.result === result && error.name !== "AbortError") {
         if (error.invalidatesPreview) this.invalidate()
-        this.errorTarget.textContent = error.message
+        this.errorTarget.textContent = error instanceof TypeError
+          ? "画像を保存できませんでした。通信状況を確認し、もう一度「PNGをダウンロード」を押してください。"
+          : error.message
+        this.statusTarget.textContent = ""
+        if (error instanceof TypeError) this.errorTarget.scrollIntoView({ block: "nearest" })
       }
     } finally {
       if (this.current(sequence) && this.result) this.downloadButtonTarget.disabled = false

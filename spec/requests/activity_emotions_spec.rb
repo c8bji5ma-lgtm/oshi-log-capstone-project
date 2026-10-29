@@ -128,7 +128,8 @@ RSpec.describe "Activity emotion tags", type: :request do
     expect(response).to have_http_status(:ok)
     rows = document.css(".activity-list li")
     expect(rows.size).to eq(2)
-    row = rows.find { |item| item.at_css("a")["href"] == activity_path(tagged) }
+    row = rows.find { |item| URI.parse(item.at_css("a")["href"]).path == activity_path(tagged) }
+    expect(row).to be_present
     expect(row.at_css(".activity-emotions").text).to eq("嬉しい、感動")
     expect(response.body).not_to include("寂しい")
     get activity_path(tagged)
