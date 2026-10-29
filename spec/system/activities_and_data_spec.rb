@@ -49,6 +49,38 @@ RSpec.describe "Activity records and visualization in the browser", type: :syste
     expect(page).to have_css("#activity-amount", text: amount, exact_text: true)
   end
 
+  [ 375, 1280 ].each do |width|
+    it "guides empty history and clears unmatched results at #{width}px" do
+      page.current_window.resize_to(width, 900)
+      sign_in
+      open_activity_list
+
+      expect(page).to have_text("活動記録はまだありません。上の「記録する」から、最初の活動を残してみましょう。")
+      within("main") { expect(page).to have_link("記録する", href: new_activity_path, count: 1) }
+      expect(page.evaluate_script("document.documentElement.scrollWidth - window.innerWidth")).to be <= 1
+
+      click_link "記録する", exact: true
+      expect(page).to have_css("main h1", text: "活動記録を登録", exact_text: true)
+      activity = recorded_activity(oshi: oshi, title: "一覧に戻る記録")
+      open_activity_list
+
+      within("form.activity-filter") do
+        fill_in "キーワード", with: "一致しない条件"
+        click_button "絞り込む"
+      end
+
+      expect(page).to have_text("条件に一致する活動記録はありません。検索条件を見直すか、「条件をクリア」で一覧に戻ってください。")
+      expect(page).not_to have_text("活動記録はまだありません。上の「記録する」から、最初の活動を残してみましょう。")
+      expect(page).not_to have_link(activity.title)
+      expect(page.evaluate_script("document.documentElement.scrollWidth - window.innerWidth")).to be <= 1
+
+      within("form.activity-filter") { click_link "条件をクリア", exact: true }
+
+      expect(page).to have_link(activity.title)
+      expect(page).not_to have_text("条件に一致する活動記録はありません。検索条件を見直すか、「条件をクリア」で一覧に戻ってください。")
+    end
+  end
+
   it "records, filters and edits an activity and updates year and oshi aggregates" do
     previous = recorded_activity(oshi: oshi, title: "比較用の前年記録", occurred_on: Date.new(2024, 5, 10), amount: 700)
     sign_in

@@ -69,6 +69,9 @@ class ActivitiesController < ApplicationController
     page = Activities::KeysetPage.call(scope: (@filter_errors.empty? ? scope : scope.none).includes(:emotions),
       cursor: params[:cursor], direction: params[:direction], purpose: "index")
     @activities = page.records
+    if @activities.empty? && @filter_errors.empty? && params[:cursor].blank?
+      @show_first_activity_help = !current_user.activities.exists?
+    end
     @older_cursor = page.older_cursor if page.has_older
     @newer_cursor = page.newer_cursor if page.has_newer
     render :index, status: :bad_request if @filter_errors.any?

@@ -76,6 +76,78 @@ RSpec.describe "Activities", type: :request do
       expect(response).to redirect_to(new_user_session_path)
     end
 
+    describe "empty states" do
+      let(:first_activity_help) { "活動記録はまだありません。上の「記録する」から、最初の活動を残してみましょう。" }
+      let(:no_results_help) { "条件に一致する活動記録はありません。検索条件を見直すか、「条件をクリア」で一覧に戻ってください。" }
+
+      it "guides an empty owned history to the existing record action without counting other users" do
+        activity_for(other_user, title: "他人の記録")
+
+        get activities_path
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(first_activity_help)
+        expect(response.body).not_to include(no_results_help, "他人の記録")
+        expect(document.css("main a[href='#{new_activity_path}']").map(&:text)).to eq([ "記録する" ])
+      end
+
+      it "keeps first-record guidance for an empty history with valid search conditions" do
+        get activities_path, params: { month: "2026-10", q: "ライブ" }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(first_activity_help)
+        expect(response.body).not_to include(no_results_help)
+      end
+
+      it "explains unmatched conditions and restores owned records through the existing clear action" do
+        activity = activity_for(title: "登録済みの記録", occurred_on: "2026-10-01")
+        filters = [
+          { year: "2025" }, { month: "2026-09" }, { through: "2026-09-30" },
+          { oshi_id: second_oshi.id }, { activity_type: "配信視聴" }, { q: "見つからない記録" }
+        ]
+
+        filters.each do |parameters|
+          get activities_path, params: parameters
+
+          expect(response).to have_http_status(:ok)
+          expect(titles).to be_empty
+          expect(response.body).to include(no_results_help)
+          expect(response.body).not_to include(first_activity_help)
+        end
+
+        clear_link = document.at_css("form.activity-filter a[href='#{activities_path}']")
+        expect(clear_link.text).to eq("条件をクリア")
+        get clear_link["href"]
+
+        expect(response).to have_http_status(:ok)
+        expect(titles).to eq([ activity.title ])
+        expect(response.body).not_to include(first_activity_help, no_results_help)
+      end
+
+      it "does not call an empty cursor page first use even when no records are owned" do
+        activity_for(other_user, title: "他人の記録")
+        page = Activities::KeysetPage.call(scope: other_user.activities, cursor: nil, direction: nil, purpose: "index")
+
+        get activities_path, params: { cursor: page.older_cursor, direction: "older" }
+
+        expect(response).to have_http_status(:ok)
+        expect(titles).to be_empty
+        expect(response.body).to include(no_results_help)
+        expect(response.body).not_to include(first_activity_help, "他人の記録")
+      end
+
+      it "keeps invalid filters and page cursors as errors for an empty history" do
+        [ { month: "bad" }, { q: [ "bad" ] }, { cursor: "invalid", direction: "older" } ].each do |parameters|
+          get activities_path, params: parameters
+
+          expect(response).to have_http_status(:bad_request)
+          expect(document.at_css("#activity-filter-errors[role='alert']")).to be_present
+          expect(titles).to be_empty
+          expect(response.body).not_to include(first_activity_help, no_results_help)
+        end
+      end
+    end
+
     it "lists only owned records grouped by month with stable descending order" do
       activity_for(title: "古い", occurred_on: "2026-09-30")
       activity_for(title: "同日早い", created_at: Time.utc(2026, 10, 1, 1))
@@ -628,5 +700,38 @@ RSpec.describe "Activities", type: :request do
       follow_redirect!
       expect(document.at_css("[role='alert']").text).to eq("活動記録を削除できませんでした。")
     end
+  end
+end
+
+RSpec.describe "Read-only guest activity empty states", type: :request do
+  around do |example|
+    previous = ENV["OSHI_GUEST_SANDBOX"]
+    ENV["OSHI_GUEST_SANDBOX"] = "isolated"
+    example.run
+  ensure
+    previous.nil? ? ENV.delete("OSHI_GUEST_SANDBOX") : ENV["OSHI_GUEST_SANDBOX"] = previous
+  end
+
+  it "does not invite an administrator guest with no records to create an activity" do
+    create(:user, email: "demo@example.com")
+    administrator = create(:user, :admin, email: "admin@example.com")
+    %w[multi light empty].each { |name| create(:user, email: "#{name}@example.com") }
+    expect(administrator.activities).to be_empty
+
+    post guest_session_path(role: "admin")
+    expect(response).to redirect_to(root_path)
+    get activities_path
+
+    expect(response).to have_http_status(:ok)
+    document = Nokogiri::HTML(response.body)
+    expect(document.css(".activity-list")).to be_empty
+    expect(response.body).to include("活動記録はまだありません。ゲストは閲覧専用のため、登録・変更・削除はできません。")
+    expect(response.body).not_to include("最初の活動を残してみましょう", "上の「記録する」")
+    expect(document.css("main a[href='#{new_activity_path}']").map(&:text)).to eq([ "記録する" ])
+
+    expect {
+      post activities_path, params: { activity: { title: "保存されないゲスト記録" } }
+    }.not_to change(Activity, :count)
+    expect(response).to have_http_status(:forbidden)
   end
 end
