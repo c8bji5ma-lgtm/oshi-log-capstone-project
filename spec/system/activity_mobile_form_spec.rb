@@ -76,7 +76,7 @@ RSpec.describe "Mobile activity form", type: :system do
             expect(page).to have_field("メモ", with: "保持するメモ")
             native << { value: invalid, validity: validity, DB_count_before: count, DB_count_after: user.activities.count }
           end
-          directory = Rails.root.join("tmp/activity-amount-guidance-ui", ENV.fetch("AMOUNT_GUIDANCE_CAPTURE_LABEL"))
+          directory = Rails.root.join("tmp/activity-amount-guidance-ui", ENV.fetch("AMOUNT_GUIDANCE_CAPTURE_LABEL", "local"))
           File.write(directory.join("#{width}-native-invalid.json"), JSON.pretty_generate(native))
           fill_in "金額（円）", with: value
         end
@@ -146,7 +146,7 @@ RSpec.describe "Mobile activity form", type: :system do
         };
       })()
     JS
-    directory = Rails.root.join("tmp/activity-amount-guidance-ui", ENV.fetch("AMOUNT_GUIDANCE_CAPTURE_LABEL"))
+    directory = Rails.root.join("tmp/activity-amount-guidance-ui", ENV.fetch("AMOUNT_GUIDANCE_CAPTURE_LABEL", "local"))
     FileUtils.mkdir_p(directory)
     image_path = directory.join("#{width}-#{mode}.png")
     screenshot = page.driver.browser.execute_cdp("Page.captureScreenshot", captureBeyondViewport: false)
