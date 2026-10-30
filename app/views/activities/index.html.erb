@@ -41,7 +41,13 @@
   <%= link_to t("ui.actions.clear_filters"), activities_path %>
 <% end %>
 <% if @activities.empty? %>
-  <p>該当する活動記録はありません。</p>
+  <% if @filter_errors.empty? %>
+    <% if @show_first_activity_help %>
+      <p><%= t(session[:graduation_guest_role].present? ? "ui.activity.empty_read_only_history" : "ui.activity.empty_history") %></p>
+    <% else %>
+      <p><%= t("ui.activity.no_results") %></p>
+    <% end %>
+  <% end %>
 <% else %>
   <% @activities.group_by { |activity| activity.occurred_on.strftime("%Y年%-m月") }.each do |month, activities| %>
     <section class="activity-month">
