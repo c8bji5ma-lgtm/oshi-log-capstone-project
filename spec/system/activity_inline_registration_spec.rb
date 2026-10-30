@@ -534,33 +534,74 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
   def hold_delivery(kind = "html")
     page.execute_script(<<~JS, kind)
       window.deliveryFetch=window.fetch;window.deliveryHeld=false;window.deliverySeenHTML=false;
+      window.deliveryStatus=null;window.releaseDelivery=null;
+      document.documentElement.dataset.h04DeliveryHeld="false";
+      window.deliveryProbe={kind:arguments[0],stage:"armed",path:null,status:null,
+        htmlRequested:false,htmlSeen:false,bodyRead:false,error:null};
       const root=document.querySelector('[data-controller~="activity-oshi-panel"]');
       const htmlPath=new URL(root.dataset.activityOshiPanelRegistrationUrlValue,location.href).pathname;
       const ownedPath=new URL(root.dataset.activityOshiPanelOwnedUrlValue,location.href).pathname;
       const kind=arguments[0];
       window.fetch=async(url,options)=>{
-        const response=await window.deliveryFetch(url,options);
         const target=new URL(url,location.href),path=target.pathname;
-        // Hold the original panel/confirmed-search boundary, independently of debounced input candidates.
-        const html=path===htmlPath && target.searchParams.get('suggest')!=='1' && response.headers.get('Content-Type')?.includes('text/html');
-        if(html)window.deliverySeenHTML=true;
-        if(!window.deliveryHeld && ((kind==='html' && html) ||
-            (kind==='check' && window.deliverySeenHTML && path===ownedPath))){
-          await response.clone().text();
-          window.deliveryHeld=true;window.deliveryStatus=response.status;
-          return new Promise(resolve=>{window.releaseDelivery=()=>resolve(response)});
+        const htmlRequest=path===htmlPath && target.searchParams.get('suggest')!=='1';
+        if(htmlRequest)window.deliveryProbe.htmlRequested=true;
+        const expected=kind==='html'?htmlRequest:window.deliverySeenHTML && path===ownedPath;
+        if(!window.deliveryHeld && expected)Object.assign(window.deliveryProbe,{stage:"request_started",path});
+        try{
+          const response=await window.deliveryFetch(url,options);
+          // Observe the original panel/confirmed-search boundary, independently of input candidates.
+          const html=htmlRequest && response.headers.get('Content-Type')?.includes('text/html');
+          if(html){
+            window.deliverySeenHTML=true;window.deliveryProbe.htmlSeen=true;
+            if(kind==='check' && window.deliveryProbe.stage==='armed')window.deliveryProbe.stage="awaiting_check";
+          }
+          if(!window.deliveryHeld && ((kind==='html' && html) ||
+              (kind==='check' && window.deliverySeenHTML && path===ownedPath))){
+            Object.assign(window.deliveryProbe,{stage:"body_pending",path,status:response.status});
+            await response.clone().text();
+            window.deliveryHeld=true;window.deliveryStatus=response.status;
+            Object.assign(window.deliveryProbe,{stage:"held",bodyRead:true});
+            document.documentElement.dataset.h04DeliveryHeld="true";
+            return new Promise(resolve=>{window.releaseDelivery=()=>resolve(response)});
+          }
+          return response;
+        }catch(error){
+          if(expected || htmlRequest)Object.assign(window.deliveryProbe,{stage:"error",error:error.name});
+          throw error;
         }
-        return response;
       };
     JS
   end
 
   def wait_delivery
-    expect(page.evaluate_async_script(<<~JS)).to be(true)
-      const done=arguments[0],end=Date.now()+4000;
-      function poll(){if(window.deliveryHeld)return done(true);if(Date.now()>end)return done(false);setTimeout(poll,10)}poll();
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    expect(page).to have_css("html[data-h04-delivery-held='true']", wait: 4)
+    expect(page.evaluate_script(<<~JS)).to eq("held" => true, "body_read" => true, "status" => 200)
+      ({held:window.deliveryHeld===true,body_read:window.deliveryProbe?.bodyRead===true,status:window.deliveryStatus})
     JS
-    expect(page.evaluate_script("window.deliveryStatus")).to eq(200)
+  rescue RSpec::Expectations::ExpectationNotMetError, Selenium::WebDriver::Error::WebDriverError => error
+    warn JSON.generate(delivery_wait_error: error.class.name,
+      host_elapsed_seconds: (Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).round(3),
+      snapshot: delivery_diagnostics)
+    raise
+  end
+
+  def delivery_diagnostics
+    page.evaluate_script(<<~JS)
+      (() => {
+        const probe=window.deliveryProbe || {},root=document.querySelector('[data-controller~="activity-oshi-panel"]');
+        return {kind:probe.kind || null,stage:probe.stage || null,path:probe.path || null,
+          status:probe.status ?? null,html_requested:probe.htmlRequested===true,html_received:probe.htmlSeen===true,
+          body_read:probe.bodyRead===true,held:window.deliveryHeld===true,error:probe.error || null,
+          visibility:document.visibilityState,root_connected:!!root?.isConnected,
+          search_exists:!!root?.querySelector("input[name='q']"),
+          auth_window_exists:!!window.deliveryAuthTab,auth_window_closed:window.deliveryAuthTab?.closed ?? null,
+          release_ready:typeof window.releaseDelivery==="function"};
+      })()
+    JS
+  rescue Selenium::WebDriver::Error::WebDriverError => error
+    { snapshot_error: error.class.name }
   end
 
   def remember_delivery_state
@@ -575,7 +616,11 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
   end
 
   def release_delivery
-    page.evaluate_async_script("const done=arguments[0];window.releaseDelivery();setTimeout(()=>done(true),0)")
+    page.execute_script(<<~JS)
+      if(!window.deliveryHeld || typeof window.releaseDelivery!=="function")throw new Error("Delivery response is not held");
+      window.deliveryProbe.stage="released";
+      window.releaseDelivery();
+    JS
   end
 
   def expect_delivery_unchanged
@@ -632,7 +677,9 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
   %w[query name selection close reconnect].each_with_index do |intent, index|
     it "discards search HTML when #{intent} changes during the final continuity check", :h04_delivery do
       existing = candidate
+      unchanged_selection = create(:user_oshi, user: user, oshi: create(:oshi, :approved, name: "変更しない別のチェック")) if intent == "selection"
       open_activity(width: index.even? ? 375 : 1280)
+      check unchanged_selection.oshi.name, allow_label_click: true if unchanged_selection
       open_panel
       search("確認待ちでも残す自動名")
       expect(page).to have_field("推し名（必須）", with: "確認待ちでも残す自動名")
@@ -646,7 +693,21 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
       when "name"
         page.execute_script("const x=document.querySelector('input[name=\"oshi[name]\"]');x.value='本人が書いた名前';x.dispatchEvent(new Event('input',{bubbles:true}))")
       when "selection"
-        page.execute_script("const x=document.querySelector('input[name=\"activity[oshi_ids][]\"]');x.checked=false;x.dispatchEvent(new Event('change',{bubbles:true}))")
+        selection_target = find("input[type='checkbox'][name='activity[oshi_ids][]'][value='#{personal.oshi_id}']", visible: :all)
+        expect(selection_target[:id]).to be_present
+        expect(selection_target).to be_checked
+        expect(page).to have_checked_field(unchanged_selection.oshi.name, type: "checkbox", visible: :all)
+        selection_expected = delivery_checkbox_state
+        expect(selection_expected.fetch(selection_target[:id])).to be(true)
+        selection_expected[selection_target[:id]] = false
+        page.execute_script(<<~JS, selection_target[:id])
+          const input=document.getElementById(arguments[0]);
+          if(!input?.matches("input[type='checkbox'][name='activity[oshi_ids][]']") || !input.checked)
+            throw new Error("Expected the checked personal oshi checkbox");
+          input.checked=false;input.dispatchEvent(new Event("change",{bubbles:true}));
+        JS
+        expect(page).to have_unchecked_field(selection_target[:id], type: "checkbox", visible: :all)
+        expect(delivery_checkbox_state).to eq(selection_expected)
       when "close"
         click_button I18n.t("ui.activity_panel.close")
       when "reconnect"
@@ -659,6 +720,11 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
       release_delivery
       expect(page).to have_css("#oshi-search-results:not([aria-busy])", visible: :all)
       expect_delivery_unchanged unless intent == "reconnect"
+      if intent == "selection"
+        expect(delivery_checkbox_state).to eq(selection_expected)
+        expect(page).to have_unchecked_field(selection_target[:id], type: "checkbox", visible: :all)
+        expect(page).to have_checked_field(unchanged_selection.oshi.name, type: "checkbox", visible: :all)
+      end
       if intent == "reconnect"
         expect(fields).to eq(@fields)
         expect(file_info).to eq(@files)
@@ -666,6 +732,13 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
         expect(page.evaluate_script("document.querySelector('#oshi-search-results').innerHTML===window.deliveryResults")).to be(true)
       end
     end
+  end
+
+  def delivery_checkbox_state
+    page.evaluate_script(<<~JS)
+      Object.fromEntries([...document.querySelectorAll("input[type='checkbox'][name='activity[oshi_ids][]']")]
+        .map(input=>[input.id,input.checked]))
+    JS
   end
 
   def capture(mode, width)
