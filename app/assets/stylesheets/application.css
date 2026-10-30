@@ -405,6 +405,147 @@ fieldset {
   font-size: 0.875rem;
 }
 
+.oshi-search-form {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.oshi-search-form > .form-field {
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.oshi-suggestions {
+  position: absolute;
+  z-index: 10;
+  inset-inline: 0;
+  inset-block-start: calc(100% + 0.25rem);
+  margin: 0;
+  padding: 0.25rem;
+  max-block-size: 20rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  border: 1px solid #738395;
+  border-radius: 0.35rem;
+  background: #fff;
+}
+
+.oshi-suggestions[hidden] {
+  display: none;
+}
+
+.oshi-suggestions[data-placement="above"] {
+  inset-block-start: auto;
+  inset-block-end: calc(100% + 0.25rem);
+}
+
+.oshi-suggestion {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 0.75rem;
+  min-block-size: 44px;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.oshi-suggestion:hover,
+.oshi-suggestion[data-active="true"] {
+  background: #edf4fa;
+  outline: 2px solid #245b8a;
+  outline-offset: -2px;
+}
+
+.oshi-suggestion-image {
+  inline-size: 48px;
+  block-size: 48px;
+  object-fit: contain;
+}
+
+.oshi-suggestion-copy {
+  display: grid;
+  gap: 0.25rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.oshi-suggestion-attribution {
+  font-size: 0.875rem;
+}
+
+.oshi-catalog-list {
+  min-inline-size: 0;
+}
+
+.oshi-catalog-track {
+  display: flex;
+  gap: 1rem;
+  max-inline-size: 100%;
+  padding: 0.5rem 0.25rem 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+}
+
+.oshi-catalog-card {
+  flex: 0 0 min(15rem, 85%);
+  min-inline-size: 0;
+  border: 1px solid #738395;
+  border-radius: 0.5rem;
+  background: #fff;
+  scroll-snap-align: start;
+}
+
+.oshi-catalog-card > input {
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  margin: 0.75rem;
+  accent-color: #245b8a;
+}
+
+.oshi-catalog-label {
+  display: grid;
+  gap: 0.5rem;
+  min-block-size: 44px;
+  padding: 0 0.75rem 0.75rem;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.oshi-catalog-label .common-oshi-image {
+  inline-size: 100%;
+  block-size: 8rem;
+}
+
+.oshi-catalog-card:has(input:checked) {
+  border-color: #245b8a;
+  background: #edf4fa;
+}
+
+.oshi-catalog-card:hover {
+  border-color: #245b8a;
+}
+
+.oshi-catalog-track:focus-visible,
+.oshi-catalog-card:focus-within {
+  outline: 3px solid #245b8a;
+  outline-offset: 2px;
+}
+
+.oshi-catalog-registration {
+  font-weight: 700;
+}
+
+.oshi-catalog-attribution {
+  margin: 0 0.75rem 0.75rem;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+}
+
 .common-image-admin-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -546,6 +687,30 @@ fieldset {
 .choice-chip input:focus-visible + span {
   outline: 3px solid #245b8a;
   outline-offset: 3px;
+}
+
+.subscription-oshi-selection summary {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #738395;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+
+.subscription-oshi-selection summary:focus-visible {
+  outline: 3px solid #245b8a;
+  outline-offset: 3px;
+}
+
+.subscription-oshi-selection .choice-chip span {
+  border-radius: 0.35rem;
+}
+
+.subscription-oshi-selection .choice-chips {
+  max-block-size: 18rem;
+  margin-block: 0.75rem;
+  padding: 0.5rem;
+  overflow: auto;
 }
 
 .activity-month {

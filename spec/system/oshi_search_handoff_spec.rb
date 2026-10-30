@@ -35,7 +35,8 @@ RSpec.describe "Oshi search to registration handoff", type: :system do
       document.documentElement.dataset.testSearchQueue = "0";
       window.fetch = (input, options = {}) => {
         const url = new URL(input instanceof Request ? input.url : input.toString(), location.href);
-        if (url.pathname !== path || options.headers?.Accept !== "text/html") {
+        // This legacy queue controls confirmed handoffs; typing candidates have their own adversarial specs.
+        if (url.pathname !== path || options.headers?.Accept !== "text/html" || url.searchParams.get("suggest") === "1") {
           return window.__oshiOriginalFetch(input, options);
         }
         return new Promise((resolve, reject) => {
@@ -224,7 +225,7 @@ RSpec.describe "Oshi search to registration handoff", type: :system do
     expect(find("[data-oshi-registration-target='status']", visible: :all).text(:all)).to eq("")
   end
 
-  it "does not search while typing or confirming IME but accepts a subsequent explicit Enter" do
+  it "defers input candidates during IME and accepts a subsequent explicit Enter for the handoff" do
     open_registration
     search("IME前の補完名")
     expect(page).to have_field("推し名（必須）", with: "IME前の補完名")

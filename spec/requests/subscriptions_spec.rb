@@ -11,6 +11,29 @@ RSpec.describe "Subscription management", type: :request do
     Nokogiri::HTML(response.body)
   end
 
+  def expect_amount_guidance(invalid: false)
+    message = "月額なら1か月分、年額なら1年分の金額を入力してください。"
+    expect(I18n.t("ui.subscription.amount_help", locale: :ja, raise: true)).to eq(message)
+    expect(document.css("#subscription-amount-help").size).to eq(1)
+    expect(document.at_css("#subscription-amount-help").text).to eq(message)
+    amount = document.at_css("#subscription_amount")
+    expect(amount["aria-describedby"].split).to eq([ "subscription-amount-help" ])
+    expect(document.css("[aria-describedby~='subscription-amount-help']").map { |node| node["id"] }).to eq([ "subscription_amount" ])
+    expect(document.css("label[for='subscription_amount']").map(&:text)).to eq([ "金額（円・必須）" ])
+    expect(%w[required min step].map { |key| amount[key] }).to eq([ "required", "0", "1" ])
+    expect(amount["aria-invalid"]).to eq(invalid.to_s)
+    expect(document.at_css("#subscription_oshi_ids")["aria-describedby"]).to eq("subscription-oshi-help")
+    expect(response.body).not_to include("translation_missing")
+  end
+
+  def oshi_choices
+    document.css("#subscription_oshi_ids input[type='checkbox'][name='subscription[oshi_ids][]']")
+  end
+
+  def form_oshi_ids
+    oshi_choices.select { |input| input["checked"] }.map { |input| input["value"].to_i }
+  end
+
   def login
     post user_session_path, params: { user: { email: user.email, password: "password123" } }
   end
@@ -79,28 +102,61 @@ RSpec.describe "Subscription management", type: :request do
       end
     end
 
+
+    it "shows an optional empty chooser without exposing public unregistered or another user's private oshis" do
+      public_only = create(:oshi, :approved, name: "共通カタログだけ")
+      private_only = create(:oshi, name: "他人の非公開の推し", created_by_user: other, status: "pending")
+      create(:user_oshi, user: other, oshi: private_only)
+      get new_subscription_path
+      expect(response).to have_http_status(:ok)
+      expect(oshi_choices).to be_empty
+      expect(document.css("input[type='hidden'][name='subscription[oshi_ids][]']").map { |input| input["value"] }).to eq([ "" ])
+      expect(document.at_css("#subscription_oshi_ids").text).to include("登録済みの推しはありません。指定なしで保存できます。")
+      expect(response.body).not_to include(public_only.name, private_only.name)
+      expect_amount_guidance
+    end
+
+    it "escapes personal choice labels and keeps the checked ID without creating a registration" do
+      named = create(:oshi, :approved, name: "<script data-choice-injection>危険な名前</script>")
+      create(:user_oshi, user: user, oshi: named)
+      record.update!(oshis: [ named ])
+      count = UserOshi.count
+      get edit_subscription_path(record)
+      expect(response).to have_http_status(:ok)
+      expect(form_oshi_ids).to eq([ named.id ])
+      expect(document.at_css("label[for='subscription_oshi_ids_#{named.id}'] span").text).to eq(named.name)
+      expect(document.css("script[data-choice-injection]")).to be_empty
+      expect(UserOshi.count).to eq(count)
+    end
+
     it "shows an empty state" do
       get subscriptions_path
       expect(response.body).to include("固定費はまだ登録されていません。")
     end
 
-    it "provides the ordered accessible form with only registered oshis and enum choices" do
+    it "provides the ordered accessible form with only registered oshis and enum choices", :subscription_amount_guidance do
       oshis = [ owned_oshi, owned_oshi(status: "pending"), owned_oshi(status: "rejected"), owned_oshi(ended: true) ]
       create(:oshi, status: "approved")
       get new_subscription_path
       expect(response).to have_http_status(:ok)
-      expect(document.css("main label").map { |label| label["for"] }).to eq(%w[subscription_name subscription_amount subscription_billing_cycle subscription_oshi_ids subscription_started_on subscription_ended_on])
-      expect(document.css("#subscription_oshi_ids option").map { |option| option["value"].to_i }).to match_array(oshis.map(&:id))
-      expect(document.at_css("#subscription_oshi_ids")["multiple"]).to be_present
-      expect(document.at_css("#subscription_oshi_ids")["required"]).to be_nil
+      scalar_labels = document.css("main label").reject { |label| label["for"].start_with?("subscription_oshi_ids_") }
+      expect(scalar_labels.map { |label| label["for"] }).to eq(%w[subscription_name subscription_amount subscription_billing_cycle subscription_started_on subscription_ended_on])
+      expect(document.at_css("fieldset#subscription_oshi_ids legend").text).to eq("対象の推し（任意）")
+      expect(oshi_choices.map { |input| input["value"].to_i }).to eq(oshis.sort_by { |oshi| [ oshi.name, oshi.id ] }.map(&:id))
+      expect(oshi_choices).to all(satisfy { |input| input["required"].nil? })
+      expect(document.css("input[type='hidden'][name='subscription[oshi_ids][]']").map { |input| input["value"] }).to eq([ "" ])
+      expect(document.at_css("#subscription-oshi-status")["hidden"]).not_to be_nil
+      expect(document.at_css("#subscription-oshi-status").text).to eq("指定なし（0人）")
+      expect(document.at_css("#subscription_oshi_ids details summary").text).to eq("推しを選ぶ")
       expect(%w[required min step].map { |key| document.at_css("#subscription_amount")[key] }).to eq([ "required", "0", "1" ])
       expect(document.css("#subscription_billing_cycle option").map(&:text)).to eq([ "選択してください", "月額", "年額" ])
       expect(document.css("#subscription_started_on[required], #subscription_ended_on[required]")).to be_empty
       expect(response.body).to include("対象の推しは任意です。複数選択できます。")
+      expect_amount_guidance
     end
 
     [ "monthly", "yearly" ].each do |cycle|
-      it "creates #{cycle} with dates and zero yen, ignoring a forged owner" do
+      it "creates #{cycle} with dates and zero yen, ignoring a forged owner", :subscription_amount_guidance do
         expect do
           post subscriptions_path, params: { subscription: attributes.merge(billing_cycle: cycle, amount: "0", user_id: other.id) }
         end.to change(user.subscriptions, :count).by(1)
@@ -163,23 +219,26 @@ RSpec.describe "Subscription management", type: :request do
     end
 
     [ { name: "" }, { amount: "" }, { amount: "-1" }, { amount: "1.5" }, { amount: "invalid" }, { billing_cycle: "weekly" } ].each do |invalid|
-      it "rejects #{invalid.inspect} with form errors and no parent" do
+      it "rejects #{invalid.inspect} with form errors and no parent", :subscription_amount_guidance do
         expect do
           post subscriptions_path, params: { subscription: attributes.merge(invalid) }
         end.not_to change(Subscription, :count)
         expect(response).to have_http_status(:unprocessable_content)
         expect(document.at_css(".validation-errors[role='alert']")).to be_present
         expect(document.css("[aria-invalid='true']")).not_to be_empty
+        expect_amount_guidance(invalid: invalid.key?(:amount))
       end
     end
 
-    it "renders edit and updates all scalar fields and A,B to B,C with a retained join" do
+    it "renders edit and updates all scalar fields and A,B to B,C with a retained join", :subscription_amount_guidance do
       a, b, c = Array.new(3) { owned_oshi }
       record.subscription_oshis.create!(oshi: a)
       retained = record.subscription_oshis.create!(oshi: b).id
       get edit_subscription_path(record)
       expect(response).to have_http_status(:ok)
-      expect(document.css("#subscription_oshi_ids option[selected]").map { |option| option["value"].to_i }).to match_array([ a.id, b.id ])
+      expect_amount_guidance
+      expect(form_oshi_ids).to match_array([ a.id, b.id ])
+      expect(document.at_css("#subscription-oshi-status").text).to eq("2人を選択中")
       expect(document.at_css("input[name='subscription[lock_version]']")["value"]).to eq(record.lock_version.to_s)
       patch subscription_path(record), params: { subscription: versioned(record, attributes.merge(name: "更新契約", amount: "2000", billing_cycle: "yearly", user_id: other.id, oshi_ids: [ b.id.to_s, c.id.to_s ])) }
       expect(response).to have_http_status(:see_other)
@@ -211,7 +270,7 @@ RSpec.describe "Subscription management", type: :request do
       expect(record.subscription_oshis.pluck(:id)).to eq([ join.id ])
     end
 
-    it "retains persisted values and joins but redisplays submitted inputs after invalid update" do
+    it "retains persisted values and joins but redisplays submitted inputs after invalid update", :subscription_amount_guidance do
       join = record.subscription_oshis.create!(oshi: owned_oshi)
       replacement = owned_oshi
       original = record.attributes
@@ -220,7 +279,9 @@ RSpec.describe "Subscription management", type: :request do
       expect(record.reload.attributes).to eq(original)
       expect(record.subscription_oshis.pluck(:id)).to eq([ join.id ])
       expect(document.at_css("#subscription_amount")["value"]).to eq("2000")
-      expect(document.css("#subscription_oshi_ids option[selected]").map { |option| option["value"].to_i }).to eq([ replacement.id ])
+      expect_amount_guidance
+      expect(form_oshi_ids).to eq([ replacement.id ])
+      expect(document.at_css("#subscription-oshi-status").text).to eq("1人を選択中")
       expect(document.at_css("input[name='subscription[lock_version]']")["value"]).to eq(record.lock_version.to_s)
     end
 
@@ -243,7 +304,7 @@ RSpec.describe "Subscription management", type: :request do
       expect([ Subscription.count, SubscriptionOshi.count ]).to eq(counts)
     end
 
-    it "renders the submitted values and latest values with 409 when the edit version is stale" do
+    it "renders the submitted values and latest values with 409 when the edit version is stale", :subscription_amount_guidance do
       first, second = Array.new(2) { owned_oshi }
       record.update!(name: "最初の内容", oshis: [ first ])
       stale_version = record.lock_version
@@ -254,7 +315,10 @@ RSpec.describe "Subscription management", type: :request do
         oshi_ids: [ first.id.to_s ], lock_version: stale_version.to_s) }
 
       expect(response).to have_http_status(:conflict)
+      expect_amount_guidance
       expect(document.at_css("#subscription_name")["value"]).to eq("古い画面の入力")
+      expect(form_oshi_ids).to eq([ first.id ])
+      expect(document.at_css("#subscription_oshi_ids details")["open"]).not_to be_nil
       expect(document.at_css("input[name='subscription[lock_version]']")["value"]).to eq(stale_version.to_s)
       expect(document.at_css(".conflict-summary").text).to include("先に保存した内容", second.name)
       expect(document.at_css(".conflict-summary a")["href"]).to eq(edit_subscription_path(record))

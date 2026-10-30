@@ -1,6 +1,8 @@
 require "rails_helper"
+require_relative "../support/activity_input_context"
 
 RSpec.describe "Activities", type: :request do
+  include ActivityInputContext
   let(:user) { create(:user) }
   let(:other_user) { create(:user) }
   let!(:oshi) { create(:oshi, :approved) }
@@ -19,7 +21,7 @@ RSpec.describe "Activities", type: :request do
   end
 
   def input(**changes)
-    { occurred_on: "2026-10-01", activity_type: "ライブ・イベント", title: "福岡公演", place: "福岡", memo: "感想", amount: "18400", oshi_ids: [ "", oshi.id.to_s ] }.merge(changes)
+    { occurred_on: "2026-10-01", activity_type: "ライブ・イベント", title: "福岡公演", place: "福岡", memo: "感想", amount: "18400", oshi_ids: [ "", oshi.id.to_s ], context_token: (@activity_input_context ||= activity_form_context) }.merge(changes)
   end
 
   def versioned(activity, parameters)
@@ -61,6 +63,17 @@ RSpec.describe "Activities", type: :request do
     expect(field["min"]).to eq("0")
     expect(field["step"]).to eq("1")
     field
+  end
+
+  def expect_activity_preview
+    region = document.at_css("[data-image-upload-target='preview']")
+    expect(region).to be_present
+    expect(region.key?("hidden")).to be(true)
+    expect(region.at_css("h2").text).to eq("今回追加する画像（未保存）")
+    expect(region.css("img")).to be_empty
+    expect(region["aria-live"]).to be_nil
+    expect(document.css("#activity-image-preview-heading").size).to eq(1)
+    expect(document.at_css("#activity-image-status")["role"]).to eq("status")
   end
 
   describe "invalid activity parameter groups" do
@@ -315,6 +328,7 @@ RSpec.describe "Activities", type: :request do
       expect(document.css("select[name='activity[activity_type]'] option").map(&:text)).to include(*Activity::ACTIVITY_TYPES)
       expect(document.at_css("input[name='activity[occurred_on]']")["value"]).to eq(Date.current.iso8601)
       expect_amount_guidance
+      expect_activity_preview
     end
 
     it "preselects only an owned registered oshi from the first-record continuation" do
@@ -519,6 +533,7 @@ RSpec.describe "Activities", type: :request do
       expect(document.css(".image-gallery img").size).to eq(1)
       expect(response.body).to include("新しく選択した画像は既存画像に追加されます")
       expect(document.css("input[type='checkbox'][name='activity[oshi_ids][]']").size).to eq(2)
+      expect_activity_preview
     end
 
     [ :activity_path, :edit_activity_path ].each do |route|

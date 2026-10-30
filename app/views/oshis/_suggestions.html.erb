@@ -1,0 +1,36 @@
+<div id="oshi-search-results" data-oshi-search-mode="suggestions"
+     data-oshi-search-query="<%= params[:q].is_a?(String) ? params[:q] : "" %>"
+     data-oshi-search-count="<%= @oshis.size %>"
+     data-oshi-search-state="<%= params[:q].blank? ? "initial" : (@oshis.any? ? "results" : "empty") %>">
+  <div data-oshi-suggestion-radios>
+    <% @oshis.each do |oshi| %>
+      <% added = @registered_oshi_ids.include?(oshi.id) %>
+      <%= radio_button_tag :oshi_id, oshi.id, false, id: "oshi_id_#{oshi.id}", required: true, hidden: true,
+            data: { suggestion_name: oshi.name,
+                    suggestion_message: t(added ? "ui.oshi.catalog.selected_added" : "ui.oshi.catalog.selected", name: oshi.name),
+                    suggestion_added_message: t("ui.oshi.catalog.selected_added", name: oshi.name) } %>
+    <% end %>
+  </div>
+  <ul data-oshi-suggestion-options>
+    <% @oshis.each do |oshi| %>
+      <% common_image = @common_images[oshi.id] %>
+      <li id="oshi-suggestion-<%= oshi.id %>" role="option" aria-selected="false" class="oshi-suggestion"
+          data-oshi-id="<%= oshi.id %>"
+          data-action="mousedown->oshi-registration#keepQueryFocus click->oshi-registration#chooseSuggestion">
+        <% if common_image %>
+          <%= image_tag common_oshi_image_path(common_image.image.attachment), alt: "", class: "oshi-suggestion-image", loading: "lazy" %>
+        <% else %>
+          <%= image_tag "image_placeholder.svg", alt: "", class: "oshi-suggestion-image" %>
+        <% end %>
+        <span class="oshi-suggestion-copy">
+          <strong><%= oshi.name %></strong>
+          <span><%= oshi.oshi_type %>／<%= oshi.affiliation.presence || t("ui.states.affiliation_not_set") %>／<%= oshi.approved? ? t("ui.states.approved") : t("ui.states.pending") %></span>
+          <span data-suggestion-added><%= @registered_oshi_ids.include?(oshi.id) ? t("ui.oshi.catalog.added") : t("ui.oshi.catalog.not_added") %></span>
+          <% if common_image %>
+            <span class="oshi-suggestion-attribution"><%= t("ui.common_images.attribution_prefix") %><%= common_image.attribution_text %>（<%= common_image.license_name %>）</span>
+          <% end %>
+        </span>
+      </li>
+    <% end %>
+  </ul>
+</div>

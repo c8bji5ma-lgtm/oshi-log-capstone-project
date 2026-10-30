@@ -1,0 +1,37 @@
+<div data-oshi-catalog-count="<%= candidates.size %>">
+<% if candidates.any? %>
+  <fieldset class="oshi-catalog-list" aria-describedby="oshi-catalog-help">
+    <legend><%= t("ui.oshi.catalog.heading") %></legend>
+    <p id="oshi-catalog-help"><%= t("ui.oshi.catalog.help") %></p>
+    <div class="oshi-catalog-track" tabindex="0" role="group" aria-label="<%= t("ui.oshi.catalog.scroll_label") %>">
+      <% candidates.each do |oshi| %>
+        <% common_image = @common_images[oshi.id] %>
+        <% added = @registered_oshi_ids.include?(oshi.id) %>
+        <div class="oshi-catalog-card" data-catalog-oshi-id="<%= oshi.id %>">
+          <%= radio_button_tag :oshi_id, oshi.id, selected_id == oshi.id, id: "oshi_id_#{oshi.id}", required: true,
+                aria: { describedby: ("oshi-catalog-attribution-#{oshi.id}" if common_image) },
+                data: { action: "change->oshi-registration#catalogChanged",
+                        catalog_added_message: t("ui.oshi.catalog.selected_added", name: oshi.name),
+                        catalog_message: t(added ? "ui.oshi.catalog.selected_added" : "ui.oshi.catalog.selected", name: oshi.name) } %>
+          <%= label_tag "oshi_id_#{oshi.id}", class: "oshi-catalog-label" do %>
+            <% if common_image %>
+              <%= image_tag common_oshi_image_path(common_image.image.attachment), alt: "", class: "common-oshi-image", loading: "lazy" %>
+            <% else %>
+              <%= image_tag "image_placeholder.svg", alt: "", class: "common-oshi-image" %>
+            <% end %>
+            <strong><%= oshi.name %></strong>
+            <span><%= oshi.oshi_type %>／<%= oshi.affiliation.presence || t("ui.states.affiliation_not_set") %></span>
+            <span><%= oshi.approved? ? t("ui.states.approved") : t("ui.states.pending") %></span>
+            <span class="oshi-catalog-registration"><%= added ? t("ui.oshi.catalog.added") : t("ui.oshi.catalog.not_added") %></span>
+          <% end %>
+          <% if common_image %>
+            <p id="oshi-catalog-attribution-<%= oshi.id %>" class="oshi-catalog-attribution"><%= t("ui.common_images.attribution_prefix") %><%= common_image.attribution_text %>（<%= common_image.license_name %>）</p>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </fieldset>
+<% else %>
+  <p><%= t("ui.oshi.catalog.empty") %></p>
+<% end %>
+</div>

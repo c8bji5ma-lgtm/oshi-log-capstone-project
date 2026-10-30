@@ -8,6 +8,8 @@ UX-01初版の基点（履歴）: local `945e06a8e60afc3b4b4cf7507726aca5774769d
 
 現在の作業基点: local `1b9cf1af1bf810ba6ee88243c4d6c25860cd6608`。branch `codex/oshi-search-auto-name-clear-20261029`。先行レビュー済みSpec3＋本一覧はlocal checkpoint保全済み。AIカード側21ファイルは指定hashで非編集対象として保持。今回のUX-01旧自動名クリア追補5ファイルは未stage・未commit・未公開。旧項目別packet/patchを保持する。
 
+公開状態の注記（2026-10-30）: 以下の「未stage・未commit・未公開」等は各検証・受領時点の履歴です。Cの独立レビュー受領後、検証済みUXだけの公開工程へ移ります。Git/PR/CIの結果は別名の公開記録で追跡し、旧検証資料は上書きしません。
+
 ## UX-01 検索0件から登録名へ引き継ぐ
 
 - 優先順位: 最優先（利用者の2026-10-29の具体要望）。重要度: P2（手で再入力する回避策はある）。
@@ -58,7 +60,7 @@ UX-01初版の基点（履歴）: local `945e06a8e60afc3b4b4cf7507726aca5774769d
 
 この節が現在の一覧。以降の「検証結果」「レビュー待ち」「仮説」等は、それぞれ記録時点の履歴として残す。今回新たに観測した既存の挙動を、本セッションで導入した回帰とは扱わない。棚卸し自体ではアプリを修正せず、その後のUX-03/04/05の対応は下記の履歴に区別した。
 
-分類別の件数は、観測済み課題5件（初版改善済み2件、実装/関連検証/独立レビュー完了3件）と、利用者具体要望のUX-05（実装・関連検証・独立レビュー完了、local checkpoint保全・未公開）1件。仮説・要仕様確認3件、問題なしと確認した6群、未確認4群。群は整理の単位であり、欠陥数や品質の採点には使わない。UX-01/02や過去QAの結果を今回の新規不具合・新規成功件数に加算しない。 UX-01の旧自動名追補は独立レビュー完了。通知配置のP3追補は同ID内の実装/関連検証/独立再レビュー完了（観測4ケースで解消）で、新しい課題件数へ加算しない。 金額入力案内のUX-06はコード読取起点で採用した改善仮説として別記し、観測済みの欠陥や利用者の混乱の件数には加算しない。
+分類別の件数は、観測済み課題5件（初版改善済み2件、実装/関連検証/独立レビュー完了3件）と、利用者具体要望のUX-05（実装・関連検証・独立レビュー完了、local checkpoint保全・未公開）1件。仮説・要仕様確認2件とH-04の採用改善1件（実装/関連検証/独立再レビュー完了、必須0・任意0）、問題なしと確認した6群、未確認4群。群は整理の単位であり、欠陥数や品質の採点には使わない。UX-01/02や過去QAの結果を今回の新規不具合・新規成功件数に加算しない。 UX-01の旧自動名追補は独立レビュー完了。通知配置のP3追補は同ID内の実装/関連検証/独立再レビュー完了（観測4ケースで解消）で、新しい課題件数へ加算しない。 金額入力案内のUX-06はコード読取起点で採用した改善仮説として別記し、観測済みの欠陥や利用者の混乱の件数には加算しない。
 
 ### 現在の一覧本文
 
@@ -66,14 +68,17 @@ UX-01初版の基点（履歴）: local `945e06a8e60afc3b4b4cf7507726aca5774769d
 |---|---|---|---|---|
 | UX-05 | 利用者具体要望・実装/関連検証/独立レビュー完了、local checkpoint保全・未公開 | 最優先 | 推し始めの文字入力が面倒という申告。3入口で年/月を選べるようにした | 近年の直接選択と全4桁年への互換経路。下記の採用理由・検証記録をレビュー |
 | UX-06 | コード読取起点の改善仮説・採用済み、実装/関連検証/独立レビュー完了 | P3 | 金額欄の近くに任意・空欄と0円の違いを案内。実際の利用者の混乱は未観測 | 保存/集計/validationを変えず、説明を入力へ関連付け。関連Request10件・System2件成功。独立レビュー必須0・任意0、実機等は未確認 |
+| UX-07 | コード/実画面起点の採用改善・実装/関連検証/独立レビュー完了（必須0・任意0） | P3 | 活動の新規/編集で新しく選んだ写真を保存前に確認できない。利用者の迷いは未観測 | 確定FileListだけを端末内表示。既存選択/他入力を保ち、保存済み写真の削除や草稿保存は追加しない |
+| UX-08 | コード読取起点の改善仮説・採用、実装/関連検証/独立レビュー完了（必須0・任意0）、local未stage・未commit・未公開 | P3 | 固定費の金額欄に月額1か月分・年額1年分の静的案内。利用者の混乱や改善効果は未観測 | 2026-10-30の独立レビュー完了受領を参照。実機・利用者効果は未確認 |
+| UX-09 | A/B/C実装・関連検証・独立レビュー完了（必須0・任意0）／公開工程へ継続 | P2 | 開閉選択・検索前カード列・入力中候補の具体要望。実利用者の改善効果は未観測 | A開閉チェック欄、B最大12件カード、C最大8件候補。C独立6画面確認・184distinct/2runs受入済み。2026-10-30の受領と公開前監査を参照 |
 | UX-01 | 観測済み課題・初版改善/独立再レビュー完了、旧自動名の追補は独立レビュー完了、通知配置のP3追補も実装/関連検証/独立再レビュー完了（観測4ケースで解消） | P2・利用者の具体要望を優先 | 0件検索から登録名補完は改善済み。候補あり再検索でも旧自動名が残る挙動に追補し、由来を確認できる未編集自動名だけクリア。実誤登録は未観測 | 新規必須0・任意0。観測4ケースでP3解消。実機IME等の未確認は維持 |
 | UX-02 | 観測済み課題・改善済み。実装・関連検証・独立レビュー完了、local commit保全・未公開 | P2 | 推し0件で活動を先に入力すると、推し登録後は推し一覧へ進み、開き直した活動の文字・写真が空になった（改善前）。初回は推し登録を先行させ、選択済みで活動入力へ戻す | 任意経路の下書き保存は別要件H-04 |
 | UX-03 | 観測済み課題・実装/関連検証/独立レビュー完了、local checkpoint保全・未公開 | P2 | カード保存の通信失敗時に英語の「Failed to fetch」を表示し、進行中の「保存前の確認をしています。」も残る。停止したのか待つのか分かりにくい | 保存失敗時の日本語の再試行案内と進行表示の終了。HTTPエラー・期限・権限・画像確認の既存判定を維持 |
 | UX-04 | 観測済み課題・実装/関連検証/独立レビュー完了、local checkpoint保全・未公開 | P3 | 改善前は空白だけの表示名で「Display nameを入力してください」。属性名だけを「表示名」に翻訳し、両幅の実画面で日本語エラーと入力保持を確認 | 追加実装なし。末尾のレビュー完了記録を参照 |
-| H-01 | 観測済み課題・実装/関連検証/独立レビュー完了、local checkpoint保全・未公開 | P2 | 条件付き一覧→詳細→一覧で条件が解除された。6条件を保持して同条件の先頭ページへ戻るよう対応。ページ位置/スクロール/編集後の継続は含めない | 追加実装なし。末尾のレビュー完了記録を参照 |
+| H-01 | 編集往復・統合System追補の独立再レビュー完了（必須0・任意0、前回任意指摘解消）、local未stage・未commit・未公開 | P2 | 編集・保存／取消／入力エラー後の6条件保持。写真選択と画面内推し追加を組み合わせた保持も両幅で確認 | 2026-10-30の独立再レビュー完了受領を参照。ページ/スクロール復元は対象外 |
 | H-02 | 仮説・要仕様確認、最小仕様案を記録・未実装 | P2・仕様判断待ち | 固定費の開始日2025/12/31・終了日2025/01/01が保存され「無効」になる事実を観測。既存Specは逆転を明示許容し、どの日にも有効でないことを確認している。一方、業務上の許容理由/要件根拠は未確認 | 期間逆転を入力エラーとするか決めてから、案内と前後関係の検証を限定追加 |
 | H-03 | 仮説・要仕様確認、最小仕様案を記録・未実装 | 暫定P2 | 保存済み活動写真1枚/2枚の編集画面に、個別の削除・解除操作がない。現行は追加方式で、画像再選択の案内あり。写真単独削除を必須機能とは断定しない | 写真単独削除の要否を確認。実装するなら所有者・既存写真・同時編集・削除確認を含め別設計 |
-| H-04 | 仮説・要仕様確認、最小仕様案を記録・未実装 | 暫定P2 | 任意の画面移動をまたぐ入力済み活動・写真の下書き保持はUX-02の範囲外。今回、新しい永続保持の要件や保存機構を追加していない | 画面内推し追加か明示的な下書き保存かを別途決める。保存期限・写真・DB設計を含む変更は今回対象外 |
+| H-04 | 実装/関連検証/独立再レビュー完了（必須0・任意0）、local未stage・未commit・未公開 | 暫定P2 | 活動フォームを保った画面内で既存/新規推しを追加・選択する範囲を採用。任意遷移の永続下書きは対象外 | 追加実装なし。末尾の再レビュー完了・未確認範囲を参照 |
 
 ### 観測済み課題の改善前の再現・受入条件
 
@@ -99,7 +104,7 @@ UX-01初版の基点（履歴）: local `945e06a8e60afc3b4b4cf7507726aca5774769d
 - 未確認: 未観測の他モデル/他属性の一括日本語化は対象に加えない。
 - 棚卸し時点の進捗（履歴）: 未実装、第2候補のP3でUX-05を先行した。現在は日本語属性名だけの実装・関連検証・独立レビュー完了。末尾のUX-04記録を参照。
 
-### 仮説・要仕様確認の根拠と判断条件（H-01は実装前の履歴）
+### 仮説・要仕様確認の根拠と判断条件（H-01/H-04は実装前の履歴）
 
 | ID | 再現・観測根拠 | 改善案の受入条件と保留理由 |
 |---|---|---|
@@ -432,3 +437,283 @@ UX-01初版の基点（履歴）: local `945e06a8e60afc3b4b4cf7507726aca5774769d
 - 保全: 新baseline tmp/activity-amount-guidance-20261029-baseline.json（SHA256 55398157e9460a9284ad492e48e8cb4c48c2ca0ddc3cff2f33555b7a7ec91a6d）と新guardで415ファイル中の対象外410、AI21、先行artifact168件を固定。共有ja辞書の先行内容と既存未commit差分・旧guard/state/packet/画像を保持。HEAD 1b9cf1af…/branch/index空は不変。検証で使用する再生成可能fixture以外のデータや秘密値は扱わない。
 - 実行範囲: 事前読取＋Request2回＋System1回の計4回だけapp起動。毎回test/実接続my_app_test/ローカルsocketを既存LocalTestDatabase guardで照合し、同DBの他activity/transaction/待機lockなしと現在ユーザーrepo関連processの限定snapshotを記録。各processだけAIoff/APIkey非継承、永続設定変更なし。DB作成/削除/reset/migration/schema load/seed、AI API/画像外部送信/課金はなし。将来の外部IDEの並行活動を保証する記録ではない。
 - 引渡し/未確認: 今回5ファイルだけの完全patchはtmp/activity-amount-guidance-20261029-reviewed-review.patch、各run/静的失敗/最終hash/画面座標/保全照合は同prefix-reviewed-verification.json。実機IME/iOS/Safari/物理タッチ/読み上げ実聴/実利用者の理解/全suiteは未確認。写真プレビュー案やH-02/H-03/H-04には進まず、独立レビュー完了として編集停止。元review.patch/verification.jsonはレビュー時点の証拠として保持し、今回の記録整合でテスト等は再実行しない。
+
+## 2026-10-29 UX-07 活動写真の保存前プレビュー
+
+- 現在状態: 実装・関連ローカル検証・独立レビュー完了（必須0・任意0）。未stage・未commit・未公開。コード/実画面で確認した表示不足を起点とする採用改善で、実際の利用者の迷い・誤選択は未観測。棚卸し時点の観測済み課題5件へ加算しない。H-03の保存済み写真の個別削除、H-04の草稿保存とは分ける。
+- 独立レビュー記録: 2026-10-29（結果記録2026-10-29T22:12:33.678183+09:00、完了時刻未取得）。reviewer `01a1837e-a715-71d0-98a3-06b47cf5a428` / turn `01a187c3-8f4f-7220-9466-fb326f4e87fb` のcompleted/errorなし/idleを管理側確認。必須0・任意0。6ファイル・対象外700・証拠126件にhash不一致なし。reader自身による画像目視は未実施で、コード/JSON/画像hash/writerの目視記録を照合した。
+- 改善前: 前回調査packet `tmp/activity-photo-preview-investigation-20261029-verification.json`（SHA256 `7af3d8a8c9d9253d69c42f7eec8e11e904b9b0fe73ae5a55ad97d414b10e20ee`）で、新規/編集×375/1280pxの4条件すべてに縮小後の送信候補Fileがあり、新規プレビューは0だった。保存済み画像は別領域に表示されていた。この完了済み調査は再実行していない。
+- 保持baseline: 実装前のcontrollerで、新規/編集×同一DOM切断/再接続・Turbo移動/ブラウザー戻りの4条件を測定。今回のChrome151ではFileListのbytes/順序/枚数、ready=true、タイトル/場所/メモ/金額0/日付/推し選択を保持した。前回設計の「cache前に未保存の写真を消す」は採用しない。この結果を全ブラウザー・任意経路・永続下書きの保証へ広げない。
+- 追加実測と最小対応: 切断前の大画像decodeを保留→同一DOM再接続→別の小画像を確定→旧decode解放で、旧画像が送信候補を上書きした。connectで版番号を再初期化しない修正に限定。また元の生成済みcontrollerを固定した別の1条件では、処理中に切断→選び直さず再接続→旧処理解放後も元画像のままready=false/送信ボタン有効となった。後者ではsource3ファイルは編集済みだが実行JSは変更前asset（SHA256 `40d6a1ff294549c1d3a52e30b645dcb7ac5a468d08056a9a06ed5693e92091d3`）であり、改善後の観測ではない。ready=falseかつ候補が残る再接続だけ、既存change/prepare経路で再確認し、確認中は送信を止める。
+- 実装: 活動フォームだけにoptional preview/previewImages targetと辞書経由の「今回追加する画像（未保存）」を追加。既存の検査・縮小・合計容量確認後、確定input.filesからだけObject URLを作る。再選択/解除/失敗/切断/cache時に表示DOMと所有URLを片付け、cache時にもFileList/ready/status/他入力は消さず、復帰時に残るready FileListから新しいURLで再構築。表示生成失敗は既存statusへ辞書経由で通知し、有効な送信候補を消さない。
+- 変更範囲: 活動共通form、image_upload_controller、ja辞書3キー、既存activities Request Spec、新規activity_image_preview System Spec、本一覧の6ファイル。既存CSSを再利用。画像検査/縮小/画質helper・保存・認可条件は不変。保存済み画像の削除、先行upload、新依存、AI/外部API、永続保存、focus/scroll、重複live領域を追加しない。
+- System結果: 新しい15条件の成功をcapture-run1の4件、edges-run1の成功4件、remaining-run3の成功5件、other-forms-run4の1件、batch-run5の1件で確認。全15条件を単一のclean実行で確認した記録ではない。成功済み条件の不要な反復はせず、失敗後の再実行を別の成功件数に加算しない。複数画像・元のまま/縮小後のbytesと順序/枚数一致、再選択/解除、無効混在時の全体クリア、合計10MiB+1バイト、処理中選び直し/古い完了/切断、選び直さない保留候補の再確認、両フォームのTurbo戻り保持、URL生成/DOM追加/decodeだけの失敗、他の5画像入力instanceでpreview DOM/URLを作らないことを確認。新Systemでは活動保存・画像uploadのHTTPを拒否し、4可視条件のDB件数不変も確認。
+- 既存回帰/Request: 元の `spec/system/image_upload_resize_spec.rb` を変更せず、最終controllerで一度だけ実行し5件成功。JPEG縮小/正常保存、EXIF向き、PNG透過、無効batch/古い選択、合計容量を確認。ここだけ合成プロフィール画像のローカルtest保存を許可し、外部送信は拒否。関連Request11件は失敗0で、初期/編集表示、複数画像作成、容量制限、無効画像/署名blob拒否、既存画像保持と追加、失敗時rollback、他人の活動の404を確認。
+- 確認用処理の失敗: baseline遅延条件の初回は非対応のCapybaraメソッド名で1failとなり、一時処理だけ修正。edges-run1は移動完了前のURL確認で5件中1failとなり、Specに移動先の待機を追加。remaining-run2はCLI検索指定を誤り0件、記録先未作成のexample外エラー1となり、harnessと対象指定を修正。remaining-run3は非表示欄のmake_visibleで6件中1failとなり、実際の候補検索と画面切替へSpecを合わせた。これらのためのアプリ変更はなし。各runのsource/Spec/JSON/log/失敗画像を保持する。
+- 画面/静的: `tmp/activity-photo-preview-ui/run1/` の375/1280px×新規/編集4PNGを目視し、見出しと2画像の可視性・横はみ出しなしを確認。test側の確認scrollであり、アプリの自動scrollではない。RuboCop・差分形式・既存辞書のsemantic不変・画像検査/縮小/品質helperのbyte不変を照合。WSLのPATHにnodeはなく単独構文検査は未実行だが、現在のES moduleを実ブラウザーで読み込み実行した。新規抑制・CSS変更なし。
+- 実行保全: MSI Windows native基盤から正式wsl.exe経由で既存Ubuntu WSL2/Yuki0719/repoだけを使用。生成assetを再生成せず、test専用middlewareが該当JSの既存URLへ現在sourceを同一originで返し配信SHAを記録。他assetは既存を使用。browser記録の外部HTTP/CSP違反0。各app起動でtest/実接続local my_app_test/socketと同DB競合なしをguardで照合し、process-only AIoff/APIkey非継承・直列・人工fixtureを維持。DB作成/削除/reset/migration/schema load/seedや永続設定変更はなし。
+- レビュー前の引渡し（履歴）: 基点HEAD `805d470125aa9bb1fa529d28fe37cfb96df1229c` / tree `4dca511684540c3a096ef2b77b5d86a2c36d7126`、branch/index空は維持。対象外700ファイル（AI21/保護4/README/前回packet・artifactを含む）をhash固定。完全差分は `tmp/activity-photo-preview-20261029-review.patch`、最終hash/各run/配信source/画面/保全は同prefix-verification.json。レビュー待ちで編集を停止し、commit/push/PR/merge/deployは行わない。
+- レビュー後の文書整合: 今回は本一覧だけを最小更新し、レビュー済みの他5ファイルはbyte不変。旧verification.json（SHA256 `55faa413de4567501c63f05e5bba9803a0835d8234e95d143eb07fa6a77df5a3`）と旧review.patch（SHA256 `9ee7a515c65736bf833d09a6bc3658b1627161208f5aa46f34388afda3403e44`）はレビュー時点の記録として保持。完了記録は同prefix-reviewed-verification.json、最終文書込み差分は同prefix-reviewed-review.patch。今回の整合ではapp/DB/RSpec/browser/asset/staticを再実行せず、保全のみ読み取り照合した。未stage・未commit・未公開で編集停止。
+- 未確認: 実機iOS/Safari/IME/物理ファイル選択器/読み上げ実聴/利用者理解/Windows native Ruby・PostgreSQLでの直接実行/全suite。保持改善や下書き保存、写真削除を実装済みとは扱わない。
+
+## 2026-10-30 H-04 活動入力を残した画面内の推し追加（採用範囲）
+
+- 状態: 採用範囲の実装・関連ローカル検証完了、独立レビュー待ち・未stage・未commit・未公開。利用者の新たな混乱やUX-02と重なる欠陥件数には加算しない。任意遷移の永続下書き、写真削除、H-02/03は対象外。
+- 操作: 新規/編集の活動フォームを残して推し追加パネルを開き、既存推しの検索/登録または新規の承認待ち登録後、そのIDを活動で選択する。活動と検索/登録フォームは兄弟とし、既存の所有者scope・UserOshis::Save・期間検証を再利用。重複登録で期間を上書きしない。推し登録は活動保存とは別に完了し、活動をやめても残ることと、写真は後で編集することを送信前に案内。通常の登録と初回UX-02導線は維持。
+- 本人継続の許可: 2026-10-29 22:55 JSTに別アカウントへの誤保存防止を確認し、22:56 JSTの利用者「はい」で許可された活動/パネルだけに限定。既存Rails verifierのpurpose、有効期限2時間、current_userと認証済みWarden session内nonceを照合し、活動create/updateとパネル読み書きで必須とする。別人、再ログイン、欠落、改ざん、期限切れをサーバーでも拒否。一般認証設定/鍵を追加せず、所有者はcurrent_userで決める。GETはheader、POSTはbodyで渡し、既存token filterを使いURLへ含めない。パネル応答/取得はno-store。
+- 保持と限界: 通常のパネル操作で活動DOM・入力・FileList・UX-07のinstance/URLを維持。本人継続が失効したら古い入力の自動保存やcontextの自動更新をせず、明示的に新しい活動入力を開く案内を出す。実際の画面移動後に必要な写真再選択や、ブラウザー/OSによる復元の全条件を保証しない。
+- 通信/送信: 結果不明の登録を自動再POSTしたり同名から成功推定したりせず、登録済み確認か「この推しを追加せず活動を続ける」を選ぶ。切断/再接続/timeout/遅い応答の自動適用を抑える。登録中の活動送信は独立guardで止め、既存画像処理が管理する活動ボタンのdisabledを書き換えない。永続草稿/DB冪等性台帳は追加しない。
+
+| 検証 | 重複を除いた成功条件と実行記録 |
+|---|---|
+| 新Request | 最終no-store後の本人継続47＋閲覧専用guest1＝48件、失敗/保留0・exit0（request-security-final3） |
+| 既存関連Request | 206条件。request-regressions-run2の成功59＋run3の147。5ファイル全体の単一clean実行ではない |
+| 新System | 16条件。capture-run2の成功1＋capture-run3の3＋edges-run1の10＋boundaries-run1の2。最終no-store後の関連4条件は再確認で加算しない |
+| 既存関連System | UX-02/初回活動/UX-01/UX-07の29件が1回で成功。no-store追加前の結果で、追加後は影響する上記4条件を再確認 |
+| 静的確認 | Ruby10ファイルの最終RuboCop指摘0。safe autocorrect -aで初回17件、追加テスト後8件を修正。全件conventionの空白指摘でunsafe -A/新ignoreなし。最終48件実行時Specと整形後Specの非空白Ruby tokenは一致 |
+
+- 失敗履歴: 初回Requestの空activityが400でなく409となり、必須パラメーター検証順序を実装修正。次の60件中1失敗はhelperのGETが検証中responseを置換したため、helper内contextを例ごとに再利用して補正。System初回1失敗は登録formのselector曖昧さをSpec修正、次の2件中編集1失敗はtest harnessがmultipart POST＋_method=patchを拒否したためharness修正。各JSON/log/実行時sourceを残し、期待値を弱めず該当条件の成功を確認した。
+- 画面確認: capture2/new-375とcapture3/{edit-375,new-1280,edit-1280}のpanel/photos計8PNGを今回目視。撮影範囲のラベル/欄と青・緑の2画像を確認。写真bytes・DOM identity・他入力/0円/編集lock保持はSystem測定として区別する。撮影scrollはtest操作。幅内収まりはSpecのscrollWidth検証で確認。
+- 実行条件: 既存WSL2 Ubuntu/Yuki0719/repo、合成fixture、guard済みlocal my_app_testで直列検証。外部HTTP/CSP違反0、AIoff/API key非継承。Node CLI未導入で現在JSをbrowser実行し配信SHAを記録。test専用同一origin source配信を使い、asset再生成/依存追加なし。今回の記録整理ではapp/DB/RSpecを再起動していない。
+- 保全/引渡し: allowlist20。images Request Specを追加対象とし、実際の活動form GETからcontextを取得して既存画像期待値を維持。AI21・対象外827ファイル・先行UX-07旧証拠132件をhash照合。重なるform/辞書/Request/本書4ファイルはH-04開始内容を復元して差分を分離し、UX-07画像region/既存辞書/画像controller/登録serviceを維持。baseline、今回だけのreview.patch、最終verification.jsonはtmp/h04-inline-oshi-20261029 prefix。既存reviewerによる独立レビューを待ち編集停止。commit/push/PR/merge/deploy/外部AI・有料API実行なし。
+- 未確認: 全suite、実機iOS/Safari、実IME/物理ファイル選択器、読み上げ実聴、利用者理解、Windows native Ruby/PostgreSQL直接実行。仮説全体や任意遷移の永続下書きを解決済みとはしない。
+
+## 2026-10-30 H-04 独立レビュー指摘への限定修正（再レビュー待ち）
+
+- 初回独立レビューturn `01a18849-701f-7300-aa03-36242cb2b23d` の必須P2と直接関係する任意P3を対応。実装/関連検証完了、独立再レビュー待ち。初回レビュー前の記録・packet/patch・172証拠は上書きせず保持し、再レビュー済みとは扱わない。
+- P2: Aで生成済みの初期パネル/検索HTMLが、別タブでBへ切替後に届くと反映され得た。活動保存のサーバー拒否が破られた指摘ではない。HTML本文を受信後に元contextの新しいno-store本人継続確認を行い、成功後だけ反映する。確認後にも接続/epoch/query/選択意図を照合し、手入力の名前、Close/再接続/古い応答を優先する。拒否では旧HTML/候補/名前消去/選択を反映せず、写真/他入力/focusを保持する。未編集自動名だけを変更するUX01の条件を維持。
+- P3: パネル対象4操作だけに、既存認証より前の限定チェックを追加。未認証なら既存の本人継続案内をJSONの401＋no-storeで返し、明示restartへつなぐ。通常HTMLのlogin redirectを維持し、新token発行/一般認証方式/権限/CSRF/セッション設定/鍵/networkを変更しない。
+- 実際の配送再現: AのHTTP200応答本文まで受信済みにして、クライアントへの返却だけを保留。フォーカスを奪わない別タブの同一cookieでlogout/B loginを完了し、配送を解放する。初期パネル375px新規と検索1280px編集を対象に、本人切替/logout、同じAの正常反映/登録、確認待ちのquery/名前/選択変更、Close/reconnectを検証した。
+
+| 検証 | 今回の結果 |
+|---|---|
+| 修正前の意図したred | system-delivery-red2の2条件は配送解放後の停止案内の期待に失敗。request-auth-red1の4条件はHTML302またはno-store不足に失敗 |
+| 最終Request | request-green1で52件成功（旧関連48＋追加4）、失敗/保留0。パネルGET/read/writeの401、通常HTML redirect、所有者/別context拒否/guestを確認 |
+| 追加配送System | 11 distinct条件成功。green1の成功1＋green2の残り10で、単一clean11件実行ではない |
+| 関連System回帰 | regressions-green1の実JSONはH04画面4＋通常UX01検索9＝13件。remaining-green1でH04の残りID1:5〜1:16の12件も成功。合わせてH04既存16＋UX01既存9＝25 distinct条件、追加配送11と合わせてSystem36条件成功 |
+| 静的 | 変更Ruby5ファイルのRuboCop指摘0。safe -aも修正0、新ignoreなし。diff check成功。現在JSをbrowserへ配信しSHA記録、Node CLI/依存導入/asset再生成なし |
+
+- 修正後の画面: tmp/h04-inline-oshi-ui/review-fix-regressions1/の375/1280×新規/編集のpanel/photos計8PNGを目視。撮影範囲の欄/案内と青・緑の写真2枚を確認し、DOM/FileList/bytes/focus等の保持はSystem測定として区別する。
+- 意図しない補助失敗: system-delivery-red1の2件は背景タブのrequestAnimationFrame待ちtimeoutで本来の検証へ未到達。製品red成立とは数えず、表示タブと描画に依存しない解放待ちだけを補正した。green1は2件中1成功・1失敗で、既存AJAX logoutが204を返すのに補助が200を期待したため。logout補助を204、loginを200の正確な期待に直し、パネルの安全性期待値は維持して残り10条件を成功させた。各runのsource/Spec/harness/JSON/log/失敗画像を保持し、反復を成功数へ加算しない。
+- 保全: 旧20ファイルの最終hashを今回基点とし、修正対象9ファイルだけのpatchと20ファイル最終hashを別packetに固定。prefixは `tmp/h04-inline-oshi-20261030-review-fix`。AI21/元の保護827、旧H04の172証拠とpacket/patch、先行UX07旧packet/patch/132証拠・画像controller・登録保存serviceは不変。各test起動でlocal my_app_test/socket・競合なしをguard確認し、合成fixture・AIoff/key非継承・外部HTTP/CSP違反0を維持。commit/push/PR/merge/deploy/外部AI・有料APIなし。
+- 未確認/範囲: 全suite、実機iOS/Safari、実IME/物理picker、読み上げ実聴、利用者理解、Windows native Ruby/PostgreSQL直接実行は今回も未確認。2時間context失効後の明示restart/写真再選択と、永続下書き対象外の限界は維持。編集を止め、同じ既存reviewerによる独立再レビューを待つ。
+
+## 2026-10-30 H-04 独立再レビュー完了
+
+- 管理側の正式readにより、同じreviewer `01a1837e-a715-71d0-98a3-06b47cf5a428` の再レビューturn `01a18861-5bc3-7152-9073-26f0e1383c80` はcompleted/errorなし/idle、必須0・任意0と確認された。初回review `01a18849-701f-7300-aa03-36242cb2b23d` のP2遅延HTMLとP3未認証案内はいずれも解消。直前節の「再レビュー待ち」は当時の履歴として残す。
+- 最終コードの保存済み検証はRequest52件成功、System36 distinct条件成功。配送11は初回成功1＋残り10、H04既存16は画面4＋残り12、通常UX01検索9で、画面4＋通常9を一緒に実行した記録は13件。単一の全件clean runや全suite成功とは扱わない。以前のRequest206・既存System29は以前の実行として区別する。
+- 再レビューでは、本文生成後→配送保留→共有cookieの別タブでactor切替/logout→配送の順序をコードと記録で独立確認。通常HTMLのlogin redirect、contextの2時間/current_user/session/purpose/欠落拒否、入力・写真保持の境界を維持していると確認された。
+- reviewerは20source・保護1003件・今回114証拠・失敗画像5枚のhashを再照合し、不一致0。保存済みRuboCop対象5ファイルの指摘0も確認。レビュー中はDB/test/app/browser/assetsの起動やGit変更なし。画像の独立目視は未実施で、writerによる修正後8画像の目視とは区別する。
+- 今回の受領整理は本書だけを更新し、レビュー済みの他19sourceはbyte不変。red再現と補助timeout/204期待誤りを含む各時点の結果を残し、現在の成功で失敗履歴を置換しない。今回もapp/DB/test/browser/assets/RuboCopを再実行していない。
+- 旧H04/fix packet・patch・baselineと全証拠、AI21、元の保護827、先行UX07は保全。最終20source hash・旧patch chain・文書だけの追加差分は `tmp/h04-inline-oshi-20261030-reviewed-verification.json` と同prefix-document.patchに記録。local未stage・未commit・未公開で、commit/push/PR/merge/deploy/API/外部送信なし。今回のローカルH04を閉じ、編集を停止する。
+- 未確認は全suite、本番asset build、実機iOS/Safari、実IME/物理picker、読み上げ実聴、実利用者理解、Windows native Ruby/PostgreSQL直接実行。2時間context失効後の明示restart/写真再選択と、任意遷移の永続下書き対象外という限界を維持する。
+
+## 2026-10-30 UX07/H04後の標準回帰suite（初回実行・Spec前提補正、独立レビュー待ち）
+
+- 基点はH04最終受領manifest（SHA256 `546f60795930b99d731cd8275c99b78352f7e8166106fc528ff922a8269e4768`）。MSI Windows native→正式wsl.exe→Ubuntu26.04 WSL2/Yuki0719/既存repoを実測確認。HEAD `805d470125aa9bb1fa529d28fe37cfb96df1229c`・tree/branch/index空を照合し、既存差分と非一時証拠24,990ファイルを固定して開始した。
+- 標準入口はbundle exec rspec。bin/ci全体のDB create/migrate/seed・外部監査は実行しない。105 Specファイル中、production子processを起動するproduction_https（2条件）と、一時表/索引DDLを行うseeds/emotions（3条件）は未実行。残る103ファイルの収集1,842条件から、実DB同時更新7条件をSpec改変なしの実行時filterで外し、1,835条件を同じコード状態・1process・直列・no-fail-fast・seed20261030で実行した。除外の正確なfile/ID/理由は同prefix-excluded-examples.jsonとscope.jsonに記録する。
+- test専用guard/私有disk/人工行に限定するdevelopment seed13条件は対象に含め成功。DBを使わないファイル/Mutexの並行試験も対象。実DB並行7条件は管理側の明示確認に従い本体開始前に除外し、収集だけのdry-runを製品テスト成功数へ加算しない。開発/本番起動やDB削除/reset/schema load/migration/db:seedは実行していない。
+
+| 検証 | 今回の実際の結果 |
+|---|---|
+| 標準回帰の実行可能範囲・初回 | 103ファイル、1,835件中1,828成功・7失敗、pending0・例外外エラー0・exit1、598.02秒。System162条件も最後まで実行 |
+| 必要範囲の再確認 | 権限5＋demo asset4＋未変更のJS無効1＝10件成功、失敗/pending/例外外エラー0・exit0。初回1,835へ10を加算せず、初回の失敗結果も置換しない |
+| 標準staticの安全な部分 | bundle check成功、RuboCop235ファイル指摘0、既存Brakemanのoffline実行は警告/エラー0、test DB guard付きzeitwerk:check成功。bin/brakemanのensure-latest wrapperと外部Gem/importmap監査は実行しない |
+
+- H04に直接関係するSpec前提5件: authorization Specの正当な活動create/PUTがcontextを渡さず409となり、保存時例外の期待にも到達しなかった。既存ActivityInputContextを使い、実際のnew/edit form GETから取得したcontextを該当5条件へ補った。偽造user_idの無視、他人データ不変、元の例外・status・redirect等の期待値は維持し、未認証/他人の要求にtokenを補っていない。機能コード/一般認証設定は変更なし。
+- 確認補助の不足1件: H04の新JS仮想URLをCapybara側だけで配信していたため、/demoの直接Rack asset GETが404になった。別名harnessで現在source配信をRack Integration Sessionにも適用し、SCRIPT_NAMEを含む4条件を再確認。生成assetやroute、prefix Specを変更して通したものではない。
+- 未判定のbrowser一過性1件: JS無効の登録後、Chrome inspectorが「Node with given id does not belong to the document」で失敗。機能コード/該当Specを変更せず同条件を限定再確認し成功した。文書切替のタイミングに伴う実行環境要因と推定するが、根本原因は未確定として元の失敗を保持する。AI21/既存仕様/外部競合に起因すると判定した失敗はない。
+- 実行保全: 全app/RSpec起動でRAILS_ENV=testと実接続local my_app_test/socket/server_address null/hostaddr空、同DB競合なしをguard確認。開始時はUser/Profile/UserOshi/Activity/Blob/Attachment0・Emotion7。人工fixture、process AIoff/key非継承、fake provider、外部HTTP拒否を維持し、browser外部HTTP/CSP違反0。現在JS/CSSを同一originで配信してSHA記録し、asset再生成/依存導入なし。画面証拠は新prefix配下へ振り分け、旧証拠を上書きしていない。
+- 変更範囲はauthorization Request Specと本書の2ファイル。全体実行後の有限allowlistに明記し、対象外25,157ファイル、AI21、レビュー済みH04の他19source、先行UX07/旧全資料を保全。新prefixは `tmp/usability-full-regression-20261030`。初回/関連JSON・log、実行コマンド、source/harness hashes、未実行理由、分類と差分は同prefix-verification.json/review.patchに固定する。
+- 状態はSpec前提補正・関連検証完了、独立レビュー待ち・local未stage/未commit/未公開。最終Spec状態で全体を再実行した結果ではなく、「全RSpec成功」とは扱わない。全体再確認は管理側の同じ既存reviewerによる必要なレビュー後に行う。今回もcommit/push/PR/merge/deploy/AWS/API/外部送信なし。実DB並行7・production/DDL5、外部監査、本番asset build、実機iOS/Safari/実IME/読み上げ実聴/利用者理解/Windows native Ruby/PostgreSQL直接実行は未確認。
+
+## 2026-10-30 標準回帰の独立レビュー完了と最終確認（未実行12条件あり）
+
+- 管理側の正式readにより、同じreviewerのturn `01a1889c-edeb-79d2-8785-d9b71dc781e7` はcompleted/errorなし/idle、必須0・任意0と確認された。本人の実form GETを使う正当なcreate/PUTの前提補完、元の期待値不変、既知JS/CSSのGETだけを処理して他要求を委譲する一時配信補助と/demo経路が確認された。直前節の「独立レビュー待ち」は当時の履歴として残す。
+- レビュー済み補正状態で、103ファイル・1,835条件を単一RSpec process、seed20261030、no-fail-fastで1回だけ最終実行。1,835成功・失敗0・pending0・例外外エラー0・exit0、594.11秒。System162を含み、実行ID集合は初回と完全一致。対象追加除外でgreenにしたものではない。初回1,835/7fail/exit1、関連10pass/exit0、今回最終runは時点別の結果として保持し、合計成功件数へ加算しない。
+- 初回のJS無効ケース `spec/system/started_period_picker_spec.rb[1:8]` も最終runで成功し、Chrome文書切替エラーは再現せず。根本原因を解消済みとはせず、元の失敗と原因未確定の履歴を残す。
+- 未実行は引き続きproduction child2・一時表/索引DDL3を含む2ファイルと、実DB同時更新7条件の計12条件。DBを使わないMutex/file試験とtest専用development seed13は対象に含む。「安全に実行できた範囲が成功、除外あり」であり、全RSpec/wholeCI完全成功とは扱わない。外部Gem/importmap監査、bin/ci全体、本番asset buildも未実行。
+- Windows native MSI→正式wsl.exe→既存Ubuntu WSL2/Yuki0719/repoのみ。全app起動でtest/実接続local my_app_test/socket/server_address null/hostaddr空・競合なしをguard確認。人工データ、process AIoff/key非継承、fake provider/外部HTTP拒否を維持。browser外部HTTP/CSP違反0、現在配信JS/CSSの16source hash一致。harnessはレビュー済み版の出力先定数だけを別名へ変更し、逆置換でbyte一致を確認した。
+- 同じコードで成功済みのRuboCop235ファイル指摘0、offline Brakeman警告/エラー0、bundle check/guarded zeitwerk成功は保存済み結果を参照し、今回反復していない。今回のsource更新は本書の完了追記だけで、レビュー済みの他440sourceとauthorization Spec、アプリ/AI21/README/他docsは不変。旧manifest/patch/baseline・193証拠と全既存資料を保全する。
+- 最終runは `tmp/usability-full-regression-20261030-final1` prefixに、最終受領manifestと文書追加差分は `tmp/usability-full-regression-20261030-reviewed-verification.json` / `tmp/usability-full-regression-20261030-reviewed-document.patch` に固定。最初の変更2ファイルの最終hash、review ID、実ID集合、16source、guard、未実行、旧差分chainを対応付ける。local未stage・未commit・未公開、HEAD/index/branch不変。commit/push/PR/merge/deploy/AWS/実API/外部画像送信なし。今回のローカル確認を閉じ、編集を停止する。
+- 実機iOS/Safari、実IME/物理picker、読み上げ実聴、実利用者理解、Windows native Ruby/PostgreSQL直接実行は未確認。H04の2時間context失効後の明示restart/写真再選択と、永続下書き対象外という限界を維持する。
+
+## 2026-10-30 H-01 編集往復の検索条件保持・限定追補
+
+- 状態: 管理側の限定実装指示に基づき実装・関連ローカル検証を完了。追補の独立レビューは未実施で管理側から依頼する。旧H-01の一覧↔詳細↔一覧と独立レビュー完了記録は履歴として保持し、今回の追補までレビュー済みとは扱わない。
+- 開始確認: Windows native基盤MSIから正式wsl.exe経由で、Ubuntu 26.04 LTS / WSL2 / Yuki0719（UID1000）/ /home/Yuki0719/workspace/my_appを実測。HEAD 805d470125aa9bb1fa529d28fe37cfb96df1229c、既知dirty48paths、stage空、前回最終receipt tmp/usability-full-regression-20261030-reviewed-verification.json（SHA256 873308a7e05cdf109a23ad4cdc006222ef3c037a79238a14164db088d70e0cb1）、source441件・保護25,185件の一致を確認。開始baselineと対象7ファイルの開始bytesは tmp/h01-edit-context-20261030-baseline.json / tmp/h01-edit-context-20261030-before/。
+- 改善前の実再現: 合成利用者・推し・活動のみを用いた375px/1280pxのSystem2件で、条件付き詳細から編集に進むと条件が消え、保存／「詳細へ戻る」で取消の両方から通常一覧へ戻ることを確認。2pass/0fail/0pending/exit0は改善前の観測に対する成功で、修正後の受入件数には加算しない。query/寸法JSONと復帰PNG4枚は tmp/h01-edit-context-20261030-repro-ui/。
+- 採用範囲と実装: 既存6条件year/month/through/oshi_id/activity_type/qだけを詳細→編集→保存／取消／422再表示／既存400・409回復→詳細→一覧で保持。既存allowlist・String型検証を再利用し、詳細の編集リンク、編集の詳細へ戻るリンク、編集フォーム更新先、更新成功redirect、400/409の再編集リンクに渡す。条件なし/直接URLと新規作成のフォームURL推論は従来どおり。任意URL/Referer/session/localStorage・cursor/direction・元ページ/スクロールは追加しない。
+- 境界: 本人継続確認をcontext解析より先に実行し、所有者scope・認可・保存サービス・編集version・画像検査/容量/処理/削除・schema・既存JSは変更しない。不正な年月、year/month併用、他人の推しID等の文字列は捨てずに既存一覧の400/空結果へ戻す。編集で条件に合わなくなった活動も条件を解除せず、既存の該当0件表示を使う。
+- Request最終: 42件（既存19＋追補23）、0fail/0pending/exit0。年/月別の保存と取消、前後空白付き日本語・+/%2F/&/<を含むq、422修正再送、409競合/400不正versionの入力・version・再編集リンク、直接URL/空context、不正な型/未知キー/外部URL/他人ID、既存year/month排他を確認。初回も42件成功し、静的指摘の空行1つだけを除いた最終Specでも42件成功。再実行分は加算しない。
+- System最終: 4件（既存2＋追補2）、0fail/0pending/exit0。375pxは年、1280pxは月の条件で、実際の取消・422→修正→保存・一覧復帰、戻ってA→Bへ条件変更、同一ログインの別タブの編集A/B分離、直接編集、取消対象の属性不変を確認。入力中のfocusは画面記録前後で同じ。PNG16枚とquery/寸法JSON16件は tmp/h01-edit-context-20261030-system1-artifacts/tmp/h01-ui/edit-system1/。全記録でscrollWidth=innerWidth（375/1280）。両幅の編集中/保存後一覧の4枚を目視し、既存の見た目と文言を保った復帰を確認した。
+- 関連回帰: 8ファイル414件を直列実行し初回412成功・2失敗・保留0・exit1。Request369件、H04 inline System27件、UX07写真プレビュー15件は成功。失敗2件は既存モバイル金額Specの撮影時、実行コマンドのAMOUNT_GUIDANCE_CAPTURE_LABEL指定漏れによるKeyError。アプリや既存Specの期待値は変更せず設定だけを補い、該当ファイル3件を再実行して3pass/0fail/0pending/exit0。活動新規/編集の375/1280でH04入力・FileList・プレビュー保持、本人継続確認、独立submit guardと関連の認可・画像・感情・保存経路を確認した。
+- 件数の境界: Request42、H-01 System4、関連414と3件再確認のIDを統合した選定範囲はユニーク460件（Request411/System49）、各ケースの最終結果は成功。単一460件suite実行ではなく、再実行42/3件を成功件数へ加算したものでもない。既存の全体1835件は今回繰り返していない。
+- 静的確認: 初回RuboCopは追補Spec末尾の余分な空行1件のみ/exit1。空行だけを除去し最終Ruby3ファイル/指摘0/exit0。対象3テンプレートのUI検出は初回/最終とも0件/exit0、抑制追加なし。diffcheck成功。全体Brakeman/zeitwerk再実行、アセット再生成、依存変更は未実施。
+- index停止履歴: 自作guard呼出しでGIT_OPTIONAL_LOCKS=0適用漏れがあり、4実装ファイル適用後・関連Spec書込前の次guardがindex SHA不一致で停止。開始a2d56efe3acb9952b152cf810baf048413d40f391b796a7410f2462c41dd6df8、現在e6a7a82f197943163a16f1cbffa4993e1fe4ff0d8c7612b350d4564e636dd161。393件のmode/blob/stage/pathはHEADと一致しstage空、HEAD/branch・対象外source・保護対象・旧成果物は不変、関連プロセスなし。index更新時刻は自作guardのstatus中・ソース書込直前で、自分のstatusによる管理情報refreshが強く示唆される。開始index bytes未保存のためmetadata差分の完全証明とは扱わない。
+- 再開: 管理側が上記証拠を受領し、確認済みindex管理情報だけの基準更新を明示許可。旧baseline/hash/guardを残し、現在index bytesと全entryを別名保存。guard内subprocessにもGIT_OPTIONAL_LOCKS=0/GIT_NO_LAZY_FETCH=1/GIT_TERMINAL_PROMPT=0を適用し、index SHAと論理entryのHEAD一致を併用した。他の保護条件は緩めず以後全guard成功。index自体の書換え/reset/checkout/stage・既存変更の破棄/stashなし。証跡は tmp/h01-edit-context-20261030-index-refresh-acceptance.json と同prefixのaccepted-index.bin / accepted-index-entries.json。
+- 安全と保全: 各アプリ実行はRAILS_ENV=testを明示、既存guardで実接続my_app_test・/var/run/postgresql・server_address:null・hostaddr空、並行DB試験なしを確認。AI機能off・API key非継承・既存fake provider/ローカル配信補助を使用。開発/本番/実データ、DB削除/seed/migrate、外部HTTP/画像送信、有料API/課金、commit/push/PR/merge/deployは行わない。変更は実装4・Request/System各1・本書の計7ファイル。対象外source434・保護25,179・旧receipt成果物158を照合し、README・保護4ファイル・AI21・未公開UX07/H04と既存資料を保持する。
+- 引渡し: 今回だけの差分 tmp/h01-edit-context-20261030-review.patch、最終manifest tmp/h01-edit-context-20261030-verification.json。各runのJSON/log/コマンド、途中失敗、撮影、DBguard、ネットワーク観測を別名保存して旧資料を保持。引渡し時に編集停止し、管理側の独立レビューを待つ。
+- 未確認/対象外: 追補の独立レビュー、実機iOS/Safari/物理タッチ/実IME/読み上げ実聴/実利用者試用、今回の全体suite。ページ/cursor/スクロール復元、任意遷移の永続草稿、写真単独削除、H-02の期間逆転判断は追加しない。
+
+## 2026-10-30 H-01 任意指摘1件の統合System追補
+
+- レビュー結果: 管理側がreviewer turn 01a188e9-0072-7811-b9f2-7098a203be84のcompleted/error null、必須0・任意1、機能不具合未検出を正式確認・共有した。任意指摘は、条件付き編集とH04画面内推し追加・UX07写真プレビューを同じ操作で確認するSystemの補強。今回の追加分は管理側の同reviewerによる独立再レビュー待ちで、完了済みとは扱わない。
+- 開始照合: Windows nativeの有効cwd C:/Users/81803/Documents/Codex/2026-10-28/taskから公式wsl.exeを経由し、MSI / Ubuntu26.04 LTS / WSL2 / Yuki0719 / /home/Yuki0719/workspace/my_appを実測。前回manifest SHA256 545f223cbf5cfb8b206285174e056df9ab97b4405a5ff3600e13b14fd4f7d4caとpatch SHA256 51064ddc8975c9d55497960548333beeeb273bc5780d84cd3494c330926c2e14、全source441、旧145成果物、保護25,179、先行receipt158に未知差分なし。HEAD/branch/accepted index（e6a7a82f...）、stage空、393entryのHEAD一致、既知status51pathsと関連プロセスなしを確認した。前回のindex refresh理由を無条件に再利用せず、今回は現物が開始基準と一致した。
+- 変更範囲: spec/system/activity_list_context_spec.rbと本書だけ。新しいアプリ機能・認可・保存・編集version・画像処理・schema・依存を変更しない。H04/UX07の人工PNG例とhelper本体を今回のSpec内で再利用し、元のH04/UX07 Specは変更していない。開始baselineと対象2sourceの開始bytesは tmp/h01-edit-context-review-followup-20261030-baseline.json / 同prefixのbefore/ に別名保存。
+- 追加2ケース: 375pxはyear、1280pxはmonthを使い、既存6許可条件のyear/month排他を守ってthrough・oshi_id・activity_type・前後空白付き日本語/+/%2F/&/<のqを併用。一覧→詳細→編集を実際に辿り、新規写真2枚を選択（大きい人工青PNGを2560×1706へ縮小、小さい緑PNGは保持）→端末内プレビューと確定FileListを照合→既存H04パネルで推しを追加→1回更新→詳細→同条件の一覧へ戻る。
+- 保持と保存の検証: 活動フォームDOM、本人continuityのhidden/meta値（比較結果だけを記録）、パネル/画像controller、編集version、日付/金額/タイトル/場所/メモ/感情/元の推し選択、FileListの同一性と画像bytes/SHA256、previewのbytes/寸法/alt/URLをパネル前後で厳密に確認。写真選択/推し追加中のBlob/Attachment数は不変、活動Save呼出し0。更新は既存Saveを実行して1回と確認。元の赤写真bytesを保持し、新規2枚の保存filename/size/type/SHA256が確定FileListと一致、推し2人・感情・所有者・入力が保存内容と一致。詳細/一覧URLは許可条件の厳密一致により任意URLや本人tokenを含めない。
+- 実行履歴: System初回6件は既存4成功・追加2失敗/exit1。新規Specが詳細遷移完了を待たず一覧URLを比較しており、詳細h1の表示待ちを追加し、query一致の期待は維持した。2回目も6件中4成功・2失敗/exit1。写真/パネル保持と1回保存を通過した後、保存メモのLF期待とブラウザーmultipart送信のCRLFが相違。DOMでは入力LFのまま全fields保持を検証し、保存後だけCRLFを含む正確な文字列を期待するよう修正した。実値をstrip/置換して通したものではなく、query/画像bytes/他の期待値は緩めていない。初回/2回目のSpec bytes・JSON/logを別名で保存。
+- 最終結果: System3回目は6件（既存4＋追加2）すべて成功、0fail/0pending/0outside errors/exit0、26.551684701秒。初回/2回目の各6件を加算せず、今回の最終選定範囲は6件。前回の460件成功は前回の記録であり、新しい差分で再実行したとは扱わない。Request411・全suite1835を再実行していない。RuboCopは変更Spec1ファイル/指摘0/exit0、diffcheckもexit0。
+- 実画面: 最終SystemのPNG24枚とquery/寸法JSONは tmp/h01-edit-context-review-followup-20261030-system3-artifacts/tmp/h01-ui/review-followup-system3/。全画面記録でscrollWidth=innerWidth（375/1280）。両幅のパネル後プレビューと保存済み詳細の4枚を目視し、青/緑の新規写真・赤の既存写真と2人の推しを確認。追加のfiles/saved JSONは画像SHA/寸法・安全な入力・query・保存結果を記録し、本人token値は記録しない。全24枚を目視済みとは主張しない。
+- 実行境界: 各アプリ実行はRAILS_ENV=test明示、既存guardで実接続local my_app_test（/var/run/postgresql、server_address:null、hostaddr空）・他試験/待機ロックなしを確認し直列実行。再生成可能な人工データと既存ローカル配信補助を使用。AI機能off/API key非継承を維持し、外部HTTP/AI画像送信/有料呼出し、開発/本番/実データ、DB削除/reset/migrate/seedを行っていない。
+- 中断と仕上げ: 管理側が直前turnのcapacity終了を確認した時点で、System最終6成功と静的成功は保存済みだった。明示再開後はモデル/通常サービス設定や担当を変えず、進行中処理なしと保存結果を読み戻し、テストを繰り返さず本書・追補packetだけを仕上げた。最初の読み取りbatchの末尾rgは対象AGENTSなしでexit1だったが、その前の全照合はPASSで、後続読み取りでも追加の適用ファイルなしを確認。未知差分やWSL拒否ではない。
+- 保全と引渡し: アプリ実装4source・Request・AI21・README/保護4ファイル・既存UX07/H04と対象外source439を保全。旧manifest/patch/145成果物/失敗履歴を上書きせず、今回の対象2sourceだけのpatch・最終hash・3回の結果と実コマンド・両幅画像・保護照合を tmp/h01-edit-context-review-followup-20261030-verification.json / 同prefixのreview.patch に保存。最終読み戻し後に編集停止し、管理側の独立再レビューを待つ。commit/push/PR/merge/deployなし。
+- 未確認: 今回の追加Systemに対する独立再レビュー、実機iOS/Safari/物理タッチ/実IME/読み上げ実聴/実利用者試用。任意遷移の永続draft、写真単独削除、ページ/cursor/スクロール復元など既存の対象外範囲は維持する。
+
+## 2026-10-30 H-01 統合System追補の独立再レビュー完了
+
+- 完了受領: 管理側が継続依頼した同一の独立reviewer／review turn 01a189cb-d052-7813-820d-dced30648ac9はcompleted/error null/idle。管理側の正式wait/readにより「追補差分を受け入れる、前回任意指摘は解消、必須0・任意0、修正残件なし」を受領した。
+- 検証の境界: 保存済みSystem最終6件＝既存4＋新規2成功、0fail/0pending/exit0。初回・2回目の各6件中2失敗と、そのSpec bytes/log/修正理由は保持。前回460件は過去記録で今回再実行していない。独立再レビューはreadonlyで、テスト/アプリ/DB起動なし。
+- 独立の画面確認: reviewerは375/1280それぞれのパネル後プレビューと保存済み詳細の計4枚を目視。全24metadataで横方向overflowなしを照合した。全24枚を目視済みとは扱わない。
+- 保全: 保護25,489・旧145・追補171成果物の不一致0、対象外439sourceとアプリ実装4source不変を確認。今回writerも文書更新前に同じ基準との一致を読み取り確認し、旧manifest/patch/171成果物と失敗履歴を更新しない。
+- 最後の変更: 本受領はreview結果を写す文書整合のみ。現状行とこの短い完了記録だけを更新し、他440source・System Specは不変。文書更新後はファイルの読み戻しのみで、テスト/アプリ/DB・全suite・画像生成・Gitコマンド実行はしない。
+- 最終受領資料: review済みbasisは tmp/h01-edit-context-review-followup-20261030-verification.json（SHA256 cce3c27e1af567bc188c1a05ea45a7666486bca77723b600f9df48b72d82c671）、旧patchは067440e37a7fbccae3a80eda7a2bb4cb1f234502313f3352c9f1a2574e9fa5b9。文書だけの追加差分と最終docSHA・保全結果は同prefixのreviewed-verification.json / reviewed-document.patchへ別名保存し、編集停止する。
+- 残る範囲: 実機iOS/Safari/物理タッチ/実IME/読み上げ実聴/実利用者試用は未確認。local未stage・未commit・未公開を維持し、commit/push/PR/merge/deploy/外部AI/課金なし。
+
+## 2026-10-30 UX-08 固定費の金額入力案内（改善仮説）
+
+- 状態と根拠: 利用者の混乱が未観測の改善仮説として管理側が採用した低リスクの案内追加。バグを実測した、利用者効果を実証したとは扱わない。活動の任意金額・nil/0案内UX-06とは別で、固定費のamountは従来どおり必須の0以上の整数。
+- 既存仕様の確認: Subscriptionのmonthly/yearly enumとamount検証、Subscriptions::Saveのattributes保存、OshiData::Summaryのmonthly_fixed_cost/yearly_fixed_cost（請求周期ごとのamount.sum）、既存Request/ブラウザーSpecを確認。月額1000円は月額1000円、年額2400円は年額2400円として保存・集計され、年額を月額換算する処理はない。同等の金額案内は既存subscriptionフォーム/辞書に存在せず、「月額なら1か月分、年額なら1年分」は既存仕様の説明として正しいと判断した。
+- 開始確認: Windows nativeの既存cwdから公式wsl.exeを経由し、MSI / Ubuntu26.04 LTS / WSL2 / Yuki0719 / /home/Yuki0719/workspace/my_appを実測。H-01完了receipt SHA256 45addbef1a8e96ffcd28d3ef05ca5dd2fe30199c9b376b08de8a6cae5f3b0134、doc e9468860...、System Spec a81850d2...、HEAD805d4701... / index e6a7a82f... / stage空、source441・保護25489・旧145/前回171成果物の一致と関連プロセスなしを確認。今回もGit subprocessへGIT_OPTIONAL_LOCKS=0/GIT_NO_LAZY_FETCH=1/GIT_TERMINAL_PROMPT=0を明示し、index refreshは発生していない。
+- 変更範囲: 共通subscriptionフォーム、ja辞書、既存Request/System各1、本書の計5source。開始bytes/hash/statusと有限allowlistは tmp/subscription-amount-guidance-20261030-baseline.json / 同prefixのbefore/ に保存。既存dirty変更を保持し、stash/discard/checkout/stageしない。
+- 実装: ui.subscription.amount_helpに「月額なら1か月分、年額なら1年分の金額を入力してください。」を追加し、金額の直後に唯一のsubscription-amount-helpを表示。amountのaria-describedbyからその1要素だけを参照し、請求周期へ同じ説明の参照を増やさない。既存label/required/min0/step1/aria-invalid、対象推しの説明とエラーを保持。JS/動的切替/CSS/依存/設定変更はない。
+- 保存/仕様の境界: モデル/Controller/保存service/集計・validation・金額・日付/請求周期・認可は変更しない。H-02の逆転期間、H-03の写真単独削除、AI21、完了UXとREADME/保護4filesは対象外。固定費の日付逆転の許容を変更せず、新しい判断を加えない。
+- Request: 対象metadataで既存12件を選定、12pass/0fail/0pending/exit0。新規/編集、422再表示、409競合で日本語辞書の完全一致・唯一のid・amountだけの関連付け・元label/required/min/step/aria-invalidと対象推し説明の保持を確認。monthly/yearlyの0円作成、通常値の更新、空欄/負数/小数/文字列の拒否と元の所有者/関連保持の期待を変更せず成功した。
+- 既存関連Spec: modelの0/1000保存とnil/負数/小数/非数/空欄拒否の8例、固定費の月額2000/年額6000をそれぞれそのまま集計する既存例1件の計9件を選定し、9pass/0fail/0pending/exit0。元のSpecを変更せず、並行DB/DDLや他機能の範囲は選んでいない。
+- Systemの履歴: 初回3件は既存の月額1000→年額2400保存/集計フロー1件成功、追加375/1280の2件失敗/exit1。撮影前の新規SpecがinnerWidthとscrollWidthの等値を要求したが、垂直スクロールバー分だけ本文幅が375→360、1280→1265となるため停止した。失敗Spec bytesとJSON/logを保存し、横方向overflowの正しい判定としてscrollWidth<=documentElement.clientWidth、および説明の左右境界がclientWidth内であることへ修正。案内/関連付け/入力/保存の期待を緩めたものではなく、アプリ修正はない。
+- System最終: 修正した追加2件だけを再実行し2pass/0fail/0pending/exit0。両幅で新規/編集の案内1件、amountからcycleへのTab移動、静的案内のまま周期変更で金額を保持、422後の金額/周期/推し/日付/version保持、未保存データの不変を確認。初回成功の既存フローと合わせたSystem選定範囲はユニーク3件で各最終結果が成功。Request12＋既存関連9＋System3＝ユニーク24件の各最終結果を記録し、再実行を加算しない。H-01の460件/追補6件/全体1835件は再実行していない。
+- 実画面: tmp/subscription-amount-guidance-20261030-ui/system2/ に375/1280×new/edit×通常/422のPNG8枚と関連付け・入力・computed font/line-height・focus・寸法JSON8件。全件でscrollWidth<=clientWidth、案内の左右も本文内。通常new/editの両幅4枚を目視し、自然な折返しと入力直下の案内を確認。読み上げ実聴や全8枚の目視確認とは扱わない。
+- 静的確認: 最初のRequest/System2ファイルRuboCopは指摘0/exit0、対象フォームのUI検出0/exit0・抑制追加なし、YAML読込と日本語案内完全一致/exit0、diffcheck/exit0。寸法検査修正後のSystem1ファイルRuboCopも指摘0/exit0、diffcheck成功。変更していないRequest/辞書/フォームのチェックを根拠なく繰り返していない。
+- 安全と保全: 各アプリ実行はRAILS_ENV=test、既存guardで実接続local my_app_test（/var/run/postgresql、server_address:null、hostaddr空）と他試験/待機ロックなしを確認して直列実行。合成データだけを使用し、API key非継承・AI機能off・既存現在ソース配信補助を維持。開発/本番/実データ、DB削除/reset/migrate/seed、外部HTTP/画像送信/有料呼出しは行わない。対象外436source、保護25,663、旧145/前回171・H-01完了receiptを照合し保全する。
+- 引渡し: 今回だけの5source差分は tmp/subscription-amount-guidance-20261030-review.patch、最終manifestは tmp/subscription-amount-guidance-20261030-verification.json。各コマンド/件数/exit/途中失敗、仕様根拠と画像/関連付けの証拠を別名保存し、既存packetを更新しない。読み戻して編集停止し、管理側の独立レビューを待つ。local未stage・未commit・未公開で、commit/push/PR/merge/deployなし。
+- 未確認: 独立レビュー、実機iOS/Safari/物理タッチ/実IME/読み上げ実聴/実利用者の理解・効果、今回の全suite。案内追加が実際の迷いを減らしたという評価は行っていない。
+
+## 2026-10-30 UX-08 固定費金額案内の独立レビュー完了
+
+- 完了受領: 管理側の同一独立reviewer／review turn 01a189e7-b40c-7a51-9170-0e0343daf466はcompleted/error null/idle。正式wait/readで5ファイル差分を受け入れる最終結果を受領し、必須0・任意0、修正残件なし。
+- 検証の境界: 保存済みRequest12＋既存金額/集計9＋System3のdistinct24件は各最終成功で、単一24件runではない。初回System3件中2失敗→失敗2件だけ再成功のSpec bytes/log/実コマンドを保持。寸法基準をscrollWidth<=clientWidthへ補正した検証側の修正で、app修正や案内/関連付け/入力/保存の期待の弱体化はない。今回もテスト/アプリ/DBを再実行していない。
+- 独立の画面確認: reviewerは通常作成/編集の375/1280計4枚を目視し、通常/422の8metadataを確認。全8枚を目視済みとは扱わない。
+- 仕様と未確認: 未観測の改善仮説という位置付けを維持し、実機・実読み上げ・実利用者効果・全suiteは未確認。保存/集計/金額/期間/validation/認可・AI21・H-02/H-03の仕様は不変。
+- 最後の文書整合: 本受領は現状行と短い完了記録だけ。更新前に保護25,663・旧145/171・今回68成果物と全sourceの一致を確認し、更新後も他440source、フォーム/ja/Request/System、HEAD/index/stage不変を読み戻す。過去観測/履歴、旧manifest/patch/68成果物とH-01完了receiptは更新しない。
+- 最終資料: review済みbasisは tmp/subscription-amount-guidance-20261030-verification.json（SHA256 a008fdc4d1fe15d21e9e423bf23ce69ba8bf3b43a0bc156a61bf57dfe24b53ef）、旧patchはf55499e26ae81280244d60fa7c49d4076ef1ec2f4f9a9b64d8ee6f2d3aa9d87b。最終docSHAと文書だけの差分は同prefixのreviewed-verification.json / reviewed-document.patchに別名保存し、編集停止する。
+- 未公開の維持: local未stage・未commit・未公開。テスト/アプリ/DB/画像生成/新規機能/Git変更/commit/push/PR/merge/deploy/外部AI/課金なし。reviewerの再起動は行わない。
+
+## 2026-10-30 UX-09 選択UI・検索前カード・入力中候補の限定設計（第一単位Aの実装前記録）
+
+- 利用者の具体要望: 選択肢をハンバーガーのように使いやすく開閉したい、検索前から登録済み推しをカード列で選びたい、既存推しの検索中に予測候補を出したい。特定の誤登録や改善効果を実証したとは扱わず、A/B/Cの3目標を採用範囲として分ける。
+- 実画面と既存構造: 変更前の合成データSystem2件を375/1280で実行し0fail/exit0。活動は既存のチェック式とH04 inlineを備える。一方固定費はnative multiple selectとCtrl/Command案内で、両幅の通常pointer操作A→BはBだけが選択された。検索前の共通候補は0件、確定検索後に承認済みと本人作成の承認待ちを表示し、他人の承認待ちを表示しなかった。本人のUserOshi・活動/固定費件数は画面操作で不変。画面/JSON8組は tmp/oshi-choice-ui-a-20261030-probe-ui/。
+- A（第一単位・この設計を記録してから実装）: 負担が具体的な固定費の対象推し複数選択だけを、native details/summaryと既存のチェックチップへ変更する。請求周期・日付・種別等のnative selectを機械的に変えない。閉じた状態でもJSが選択人数/0人の意味を表示し、開閉はEnter/Space、Escapeは欄を閉じsummaryへ戻す。初期化・開閉だけでチェックを変更しない。
+- Aの確定/取消: チェックはフォーム内の未保存変更で、既存「登録する／更新する」で確定。「固定費一覧へ戻る」は保存せず取消。欄の開閉/Escapeは選択を消さない。0人は従来の「指定なし」。独立した中間保存・自動選択・永続draft・登録処理は追加しない。JSなしでもnative detailsとcheckboxで選択/送信でき、JS用の集計表示はhiddenのままにして古い人数を表示しない。
+- Aのデータ/送信境界: @selectable_oshisは従来どおりcurrent_user.oshisのname/id順。本人に登録済みならpending/rejected/過去の推しも現行仕様どおり選択できる。Checkboxはsubscription[oshi_ids][]と空のhidden値を送り、既存Controller/Subscriptions::Saveの配列/正のID/所有者検証・lock_version・原子的保存をそのまま使う。共通カタログを勝手に混ぜず、写真は扱わない。
+- B（設計済み・次単位で未実装）: 検索前に手動で横スクロールできる候補カードを少数（最初は最大12件、name/id順）表示する案。自動再生/自動選択はしない。Oshi.visible_to(current_user)のapproved＋本人作成pendingの範囲を維持し、本人のUserOshiがある/未追加を明示。候補選択は既存登録フォームのradioへ反映するだけで、明示登録までUserOshiを作らない。活動での選択と個人登録は分ける。
+- Bの画像境界: 既存のactiveなOshiCommonImageとCommonOshiImagesControllerのvisible_to認可で利用可能な共通画像、本人候補なら既存policyで許される本人画像だけ。安全な画像がなければ既存placeholder。他人の個人写真・非公開UserOshiは出さず、外部取得/新upload/画像policy変更なし。第一単位AではB用画像やカタログ処理を一切変えない。
+- C（設計済み・Bの後の別単位、未実装）: 既存GET new_oshi_pathとOshi.visible_to(...).searchのname/alias/affiliation検索を再利用する入力中候補。debounce・abort/世代管理・IME未確定抑制と空/0件/loading/errorの区別を設け、Enter/矢印/Escape/Tabと読み上げ用状態を扱う。候補選択だけでは登録しない。確定検索はfallbackで残し、一時的0件からUX01の新規名補完へ進めない。手編集名・写真・推し始めを保つ。
+- H04/C境界: inlineの検索は既存のcontext header/no-store/readOwned本人再確認、遅延HTMLのepoch/intent検査を通す。別人の候補を混ぜず、context tokenをURLや証跡へ入れない。既存routeとshared registration partialを優先し、AI21のroutes/cards.css等は変更しない。追加の公開条件が必要なら該当部分を切り出して停止し、他の安全な範囲を継続する。
+- Aの最小対象: subscription共通form、新規oshi_selection Stimulus、application.cssのsubscription限定ルール、ja辞書、既存subscription Request/System各1、本書の7source。backend/route/schema/依存/一般認証/画像処理は変更しない。明示AI21の21件はallowlist外、README/保護4/完了UXと旧証拠も保護。開始bytes/hash/statusとallowlistは tmp/oshi-choice-ui-a-20261030-baseline.json。
+- Aの受入条件: 本人の候補だけ、登録0件/選択0件/1件/複数、編集/422/409の選択と送信ID、foreign/不正ID拒否、登録/更新と保存せず取消、native keyboardとEscape/focus、人数表示の同期、Turbo/同一DOM再接続とJSなし、375/1280で44pxの操作領域とoverflowなし。UX08案内・元の保存/集計/期間/versionを保ち、H04/H01/UX07の組合せを関連範囲で確認する。
+- 順序と実行境界: A実装→関連検証→別名packet→編集停止→既存reviewerの独立レビュー。管理側の継続指示後にB、次にCへ進む。RAILS_ENV=test・既存local my_app_test/他試験と待機lockなしguard・直列・合成データ/人工画像・AIoff/key非継承/外部HTTP拒否を維持。全1835/460/24を根拠なく反復せず、commit/push/PR/merge/deploy/課金/外部AIなし。H02/H03は保留。
+
+## 2026-10-30 UX-09 第一単位A 実装・検証完了／独立レビュー待ち
+
+- 実装結果: 固定費の本人登録済み推しの複数選択を、native details/summaryで開閉するcheckbox欄に置き換えた。JSは選択人数/0人の表示とEscapeで閉じてsummaryへ戻す操作のみ。選択と開閉では保存せず、既存の登録/更新で確定し、一覧へ戻れば未保存変更を取り消す。0人は従来の指定なし。フォームの配列名/空hidden・所有者scope・lock_version・期間・金額・保存/集計・画像/認可は維持。
+- 適用範囲: 共通固定費form、新規oshi_selection_controller.js、固定費欄だけのCSS、ja辞書、subscription Request/System、本書の7ファイル。長い名前の目視で既存pillの角丸が文字に重なる見え方を確認したため、固定費欄内のspanだけ0.35remの角丸へ1回調整。他の選択部品やnative selectには適用しない。
+- 最終検証: request3は63件0fail/exit0、system3は14件0fail/exit0。distinct77件を2runで確認し、単一77件runとは扱わない。Systemの内訳は固定費8件（保存/graph・409・UX08の375/1280作成/編集・Aの375/1280・JSなし・本人登録0件）、既存H04連携4件、H01の活動絞り込み/編集/写真/H04連携2件。current-source配信の新JS/CSSのSHAは最終bytesと一致し、network外部接続/CSP違反/外部Ruby HTTPは0。
+- Aの受入確認: Enter/Space開閉、Tab/Spaceの個別選択、通常Escapeの閉鎖/summary focus、IME composing中Escape無効、1/複数/0人、同一DOMの切断/再接続、422の値/ID/version保持、409の入力とID/人数保持、全解除の空配列送信/保存、取消でDB不変、JS無効のnative選択/実送信、本人候補0件を確認。207文字の空白なし名を375/1280で検証し、summary/labelの44px以上、ページと欄内の横overflowなしも確認。foreign/不正ID・他人固定費・private候補・escaped labelはRequestで確認。
+- 静的検査: 最終static2はRuboCop2files/0offenses、UI detector0、ja YAML/既存UX08案内一致、git diff --checkのすべてexit0。ignoreの追加・ルール抑制なし。過去の色等の対象外findingへ範囲を広げていない。
+- 途中の検証と失敗: probe1の変更前観測2件は成功だが修正後受入77件に算入しない。Request初回63件中2件はNokogiriのboolean属性hidden/openが空文字で返るのにbe_presentを使ったSpec判定が原因。属性が存在することをnot nilで確認する形へ直し、アプリの期待を弱めずrequest2/3が成功。System1の8件、追加の長名/409期待を含むsystem2の5件、H04/H01の4/2件は成功し、角丸調整後はsystem3の14件で関連範囲を再確認。各初回log/resultと実コマンドを保持。
+- guardの準備失敗: 最初のstatus比較はGit status先頭空白をglobal stripが除去したため停止した。対象外statusの正規化一致、unknown sourceなし、index/stage不変を読み取り確認してから、baselineは保全したままXY/pathの正規化だけ修正。元guardと原因記録は別名保存。保護対象を許容範囲へ追加して失敗を通していない。
+- 画面確認の境界: 変更前の目視は4枚。実装後の主確認は6枚（A長名375/1280、375の422/JSなし、UX08通常作成375/1280）、角丸調整後の確認は4枚（A長名375/1280、375の422/JSなし）。全生成画像を目視済みとは扱わない。最終AのPNG/JSONは tmp/oshi-choice-ui-a-20261030-ui/system3/、UX08は同prefixのux08-ui/system3/。
+- 実行境界: 毎runでRAILS_ENV=test、ローカル専用my_app_test/socket、他の稼働DB試験/待機lockなしを既存guardで確認し直列実行。合成データと人工画像のみ。AIoff/API key非継承、HTTP遮断/current-source配信/証跡の秘密値除外を既存harnessのまま使用。schema/migration/seed/依存/開発本番DB/外部AI/画像送信/課金は扱わない。
+- 報告訂正: 再開直後の「ファイル変更なし」は環境確認操作だけについての記述で、compaction前から続くA実装の7ファイル差分を含む作業全体では変更がある。本記録と今回packetに、継続中の変更・実行済み/未実行・初回失敗を含む正しい状態を残す。
+- 残件と停止: Aは実装/関連検証済みで独立レビュー待ち。実機iOS・実際の読み上げ・実利用者の改善効果・全suiteは未検証。Bの検索前カード列とCの入力中候補は上記設計のみで未実装。管理側のA独立レビュー後の継続指示を待ち、H02/H03/AI21を保護してソース編集を停止する。未stage/未commit/未公開。既存の受領記録/manifest/patchは上書きしない。
+- レビュー資料: tmp/oshi-choice-ui-a-20261030-verification.json、同prefixのreview.patch/final-cases.json/commands/。7ファイルの開始/最終SHA、最終runと失敗履歴、配信元SHA、画像一覧、保護対象照合、Git状態をこの別名packetへ記録する。
+
+## 2026-10-30 UX-09 第一単位A 独立レビュー受領
+
+- 管理側から、既存reviewer turn 01a18a4c-7a2e-76b3-b348-bc24e27e0e3a がcompleted/error null/idle、必須0・任意0でAの7ファイル差分を受け入れた結果を受領した。Aは実装/最終Request63＋System14/独立レビュー完了。
+- 旧verification.json（aeaba1a1c0879ebe609058f57f74f6151382da67797f649adacb83e50f5d5273）、review.patch（69c20f75cbd126bbfecee63df7212a0149517d96be8b0b8f8592ff5bf8001ef4）、全288証跡とbaselineを保全。本受領ではAテストを再実行せず、現状行とこの追記だけを更新した。
+- Bの検索前カード列、Cの入力中候補はこの受領時点では未実装。管理側から同じwriterへBの限定実装・検証を継続する指示を受領。CはB独立レビュー後の別単位。Aの実機iOS/実読み上げ/利用者効果/全suite未確認の境界は維持。
+- 文書だけの差分と最終docSHAは別名reviewed-receipt.json / reviewed-document.patchへ保存。未stage/未commit/未公開。
+
+## 2026-10-30 UX-09 第二単位B 限定設計（アプリ実装前記録）
+
+- 開始条件: Aは管理側が受領した既存reviewer turn 01a18a4c-7a2e-76b3-b348-bc24e27e0e3aで必須0/任意0。受領行と短い追記のみを先に記録し、旧A packet288件・manifest/patch/baselineを保全。その後をB baselineとした。tmp外リポジトリ420件、対象外411件、既存absolute画像22件を分け、混合した件数をソース件数と呼ばない。
+- Bの採用範囲: 共通registration部分の既存検索欄の下へ、検索しなくても閲覧・選択できる手動横スクロールのカード列を表示する。初期GETはOshi.visible_to(current_user)のapproved＋本人作成pendingだけ、name/idの安定順・最大12件。これは全件一覧ではなく、ほかの推しは従来の名前/別名/所属/作品の検索で探せる説明を置く。自動再生/自動選択/自動登録はしない。
+- 選択と保存: カードは既存formのoshi_id radioそのものとし、チェック済みは1件だけ。本人のUserOshiだけを候補IDで絞って追加済み/未追加を表示する。選択の読み上げ用状態を更新し、推し始めや画像を確認して既存submitで登録する。追加済みへのsubmitは既存の重複処理を維持し、新しい個人登録を作らない。JSなしでもnative radioと既存POSTを使える。
+- 初期/検索の区別: 検索前の空カード列はinitialとして表示し、検索成功0件のemptyと区別する。従来の明示検索はそのまま残す。空文字の明示検索では、サーバーが最大12件だけを用意したカード部分のJSON snapshotへ戻す。snapshotはcardだけでtoken/hidden/formを含めず、H04では既存verify-contextをawaitしserial/接続/入力の継続を確認してから適用する。空欄だけで検索HTTPを増やさない既存UX01の境界を保ち、initialを0件検索の新規名補完へ流さない。入力中候補・debounce等のCは実装しない。
+- 画像と取得量: activeかつattachedな既存共通画像マップと認可済みcommon_oshi_image経路、なければplaceholderを使う。他人の個人登録画像・非公開UserOshiは取得/表示しない。検索候補50件と初期12件はいずれも上限を持たせ、共通画像/attachment/blobを一括preloadし、既存のmetadata SELECT上限3件の期待を維持する。
+- 保持と認可: H04のcontext header/no-store/verify-context/epochを維持し、活動フォームDOM/日付/金額/推し/version/FileList/UX07プレビューを置換しない。UX01の確定検索0件時の名補完・未編集自動名だけのclear・手入力保護と推し始め年月選択を保護。UserOshis::Save/visible_to/共通画像認可/routes/schema/依存を変更しない。
+- 対象12ファイル: OshisController、UserOshisController、共通候補asset用concern（新規）、registrationとcatalog_cards partial（後者新規）、既存oshi_registration Stimulus、共有CSS/ja、oshi/user_oshi Request各1、新規B System、本書。B allowlist以外とAの確定form/JS/Spec、AI21/README/旧UX/旧packetを固定。共有CSS/ja/文書のA追加部分はBで書き換えない。
+- 受入と停止: 375/1280のfull-page/H04 inline、横スクロール/native keyboard/focus/状態、未選択/単一選択/長名/空候補、共通画像/placeholder/非公開除外、追加済み/取消/明示POST/422、H04入力と人工写真保持、UX01の関連回帰を確認。RAILS_ENV=test/local my_app_test/他試験lockなしguard・合成データ・直列・秘密値非記録・外部AI/課金なしを維持。最終packet後に編集停止し、Bの独立レビューは管理側へ渡す。C/H02/H03は未着手。
+
+## 2026-10-30 UX-09 第二単位B 実装・関連検証完了／独立レビュー待ち
+
+- 実装結果: 検索前と空欄の明示操作では、Oshi.visible_to(current_user)の承認済み＋本人作成pendingをname/id順に最大12件、手動で横スクロールできるカード列で表示する。上限/全候補は従来検索で探せること/選ぶだけでは追加しないことを説明。本人の追加済み/未追加を明示し、radioは1件だけ。選択したカードが全体まで見えるよう列の横位置だけを合わせ、native keyboard/focus/読み上げ用状態を保つ。自動再生・自動登録・入力中候補はない。
+- 画像と取得量: activeかつattachedな既存共通画像＋帰属/ライセンス、なければplaceholderのみ。他人の個人画像や非公開登録を参照しない。候補は初期12/検索50、共通画像/attachment/blobをまとめてpreloadし、既存のmetadata SELECT上限3を維持。UserOshis::Save・visible_to・画像認可・routes/schema/依存は変更しない。
+- 初期状態の保持: 空欄だけでは検索HTTPを発生させない従来挙動を保ち、サーバーが生成した最大12件のcardだけを安全なJSON snapshotとして保持する。snapshotにform/hidden/actor tokenは入れない。H04で復元する前には既存verify-context/readOwnedの本人継続確認をawaitし、serial/入力/接続/intentが変われば適用しない。初期カード0件を明示検索0件のemptyへ流さず、新規名の自動補完を発動させない。
+- H04と保存: 選択だけでは保存せず、full-pageの既存追加submit、inlineの既存「登録してこの活動で選択」で確定する。登録成功後に増える既存本人checkboxを監視してカードの追加済み表示だけを同期し、活動DOM自体や認可判定は変えない。チェック中radioのchangeは既存H04へ渡してperiod/buttonを追加済みの状態に合わせる。再選択で重複登録しない。observerはdisconnectで解除。活動DOM/日付/金額/推し/version/FileList/UX07プレビュー、推し始め、UX01の自動名clear/手編集保護を維持。
+- 最終検証: request2は102件0fail/exit0。system4は33件0fail/exit0（B7、UX01 14、H04 capture/delivery/intent10、H01連携2）、lifecycle1は既存H04再接続/不確定POSTの1件0fail/exit0。distinct136件を3runで確認し、単一136件runとは扱わない。各Systemで配信したoshi_registration JS/CSSは最終bytesのSHAと一致し、外部ブラウザー接続/CSP違反/外部Ruby HTTPは0。Aの77件の再実行や全suite反復はしていない。
+- B受入: 375/1280のfull-pageとH04 inline（新規375・編集1280）で、未選択/単一選択、keyboard、203文字の空白なし名、選択card全体の可視、ページ横overflowなし/label44px以上、安全な画像/placeholder/非公開除外、追加済み、取消、明示POST、再選択の非重複、入力/写真保持を確認。JS無効のnative radio実送信、初期0件と明示検索0件の区別、別アカウントへ切替後のcached card復元拒否も確認。Requestでは12件上限/安定順、共通画像認可、snapshotのtoken/hidden除外とscript escape、422で初期12件外の選択ID保持も確認。
+- 途中の結果と失敗: Request初回102件は成功。System1の7件中2失敗は、Specがfull-pageのsubmit名をinlineにも指定したためで、既存H04のregister_selectラベルへ修正。追って選択案内を両モードで正しい表現へ直し、成功後の追加済み表示同期を実装した。System2の7件中1失敗は別windowでのfixture logout完了前にloginへ進む準備競合で、ログアウト先path/email欄を待つSpecへ直し、失敗1件だけsystem3で成功。actor/保存/写真の期待を弱めていない。
+- 画面確認: 既存Aの対象部分を375/1280の2枚で参照（registrationのソースはAで不変、CSSのA追加は固定費限定）。実装後の主確認6枚で、native focusが選択cardを端に残す点を見つけ、列の横位置だけを1回補正。最終確認はsystem4のfull-page/H04 375/1280の4枚。全生成画像を目視済みとは扱わない。最終B PNG/JSON7組は tmp/oshi-catalog-cards-b-20261030-ui/system4/。初回失敗画像・各log/result/実コマンドも別名で保全。
+- 静的/保全: 最終static2は6RubyファイルRuboCop/0offenses、共有CSS/registration/catalog partialのUI detector/0、ja YAMLと既存UX08案内一致、diff形式のすべてexit0。ignore/例外は追加しない。Bの12ファイル以外411件と既存absolute画像22件を固定し、A292成果物（旧288＋manifest/sha＋受領JSON/文書差分）、AI21/README/旧UX/旧packetを保護する。Aのform/選択JS/Specと、共有CSS/jaのA追加部分は書き換えない。
+- 残件/停止: Bは実装・関連検証済みで独立レビュー待ち。実機iOS/実読み上げ/実利用者効果/全suiteは未確認。Cの入力中候補は設計のみで、B独立レビュー後の管理側継続指示を待つ。H02/H03/AI21への機能変更なし。未stage/未commit/未公開でソース編集を止め、reviewerへは管理側が引き渡す。
+- 最終資料: tmp/oshi-catalog-cards-b-20261030-verification.json、同prefixのreview.patch/final-cases.json/commands/へ、12対象の開始/最終SHA、各runの実コマンド・成功/失敗/未実行、source配信/画像/秘密値非記録、保護照合/Git状態を記録する。A旧資料を上書きしない。
+
+## 2026-10-30 UX-09 第二単位B 独立レビュー受領
+
+- 管理側から、既存reviewer turn 01a18a81-159a-7780-b027-356ab2149ede がcompleted/error null/idle、必須0・任意0でB12ファイルを受け入れた結果を受領した。保存済み4画面の独立目視、最終Request102＋System34＝136distinct/3runs、初回失敗と期待、保護対象/Git状態の不変を確認済み。
+- reviewerの読み取り補助で旧baselineキーを参照したエラーは、正しいrepo専用mapで再照合済み。コード不具合やDB試験失敗として扱わない。
+- B verification.json（4378ec2591e27d772a306eadbab33dd069e357cd08f9716b7f31d88540dcec8c）、review.patch（3b99570557c9a92b4c6ff605af4356c24ed0d1fa71f84ef51d4e85453aa3dd8e）、baselineと全240証跡は保全。本受領は現状行と短い追記だけで、A/Bテストは再実行しない。最終docSHAと文書差分は別名reviewed-receipt.json / reviewed-document.patchへ保存する。
+- A/Bは独立レビューまで完了。Cの入力中候補は本受領時点では未実装で、同じ単一writerが管理側の指示に従い最後の単位として継続する。実機iOS/実読み上げ/利用者効果/全suite未確認の境界は維持。未stage/未commit/未公開。
+
+## 2026-10-30 UX-09 第三単位C 限定設計（アプリ実装前記録）
+
+- 開始条件: A/Bは管理側が受領した独立レビューで必須0・任意0。B reviewer turn 01a18a81-159a-7780-b027-356ab2149ede の受領を現状行/短い追記/別名receiptへ記録してからC baselineを作成した。B旧240証跡＋manifest/sha＋受領JSON/差分の244件、A292件、AI21/README/旧UX/既存画像22件を保全。tmp外repo423件、C既存対象10件以外413件を固定し、HEAD/index/stage/status61を基準とする。
+- Cの最小方式: 既存GET new_oshiへqとsuggest=1を送り、既存visible_to/name・alias・affiliation検索をname/id順・最大8件に制限した候補部分HTMLを返す。新route/公開範囲/認証方式/依存は作らない。既存active common image/placeholder/帰属と本人追加済みflagを使い、予測レスポンスにactor token・CSRF・formは含めない。登録は従来UserOshis::Saveの明示POSTだけ。
+- UI/ARIA: JS時に検索欄をcomboboxへ拡張し、常設のhidden listboxをaria-controls/expanded/autocomplete/activedescendantで関連付ける。選択肢はrole optionで中に別の操作部品を入れない。選んだIDだけ既存追加formのoshi_id radioへ反映。JSなしは通常の検索入力＋検索ボタン/既存radioを残す。候補popupは検索ボタンを覆わず、上下の空きと上限を使い、375/1280でページ横overflowを作らない。
+- 入力と確定の分離: 300msのdebounceで候補だけ更新する。typing0件では名前補完/新規欄への移動なし、typing結果ありでも過去の自動名を消さない。従来の検索ボタンと未選択Enterは確定検索fallbackとし、その経路だけUX01の0件引継ぎ/未編集自動名clearを維持。手入力・意図的空欄・同値手編集・再接続後の由来不明名と、両登録formの他欄/開始年月/写真を保つ。
+- キーボードと保存: 矢印で候補のactive位置、Enter/クリックで1件選択してpopupを閉じる。Tabは選ばず閉じ、Escapeは候補/予約中検索を閉じて中断する。popupが開いているEscapeはH04全体を閉じる操作へ伝播させない。IME composition中と確定Enter直後は誤検索/選択を抑止。選択してもPOSTせず、本人が登録内容を確認して既存submitを使う。
+- 中断/最新性: timerとfetchをepoch+abortでまとめて取り消し、本文読了後にもquery/接続/serialを確認。連続入力/逆順/同じqueryの連打/離脱/非表示/閉鎖/Stimulus再接続/BackForwardで古い応答やtimerを適用しない。background更新はfocusとページ縦位置を動かさず、矢印のrevealはpopup内の縦scrollだけ。B選択のrevealは既存rail.scrollLeftだけを維持する。
+- H04境界: typing応答も既存context header/no-store/verify-context→readOwnedのpromiseと最終epoch/intentを通す。別人・失効では候補を挿入しない。追加済み表示の同期はBと同じ本人の登録済みcheckbox全件を使い、checked状態を所有の根拠にしない。活動DOM/version/日付/金額/選択/FileList/UX07 controller/previewは置換しない。POST結果不明の再送抑止と画像処理disabled状態を保つ。
+- B/Aの保全: Bの12件カード/name-id順/手動scroll/0件区別/guard付き空欄snapshot復元/追加済み同期を維持し、空入力では検索HTTPなしでBへ戻る。A固定費のform/選択JS/Specは非対象。共有CSS/辞書はC専用追加だけ、A/B旧packetは現在コードへ合わせて上書きしない。
+- 対象12ファイル: OshisController、registrationと新規suggestions partial、既存oshi_registration JS、共有CSS/ja、oshiとH04 Request、C新規System、UX01/H04既存Systemの意味を保つ適応、本書。旧Specの入力中検索なし前提は新要望へ合わせ、既存のIME/確定検索/旧応答/名前保護を弱めず、typing専用の新規検証を追加する。
+- 受入範囲: full-page/H04の375/1280、debounce/IME/初期・空白・loading・0・通信失敗・不正HTML、本文/本人確認を遅らせた逆順/中断/復帰/連打、keyboard/focus/読み上げ状態、非公開/画像除外、名前/開始年月/写真/活動値保持。A/B/UX01/H01/H04の共有部分を最終コードで必要な統合範囲へ絞って確認する。
+- 実行と最終資料: 既存local my_app_test実接続/他試験と待機lockなしguard、RAILS_ENV=test、人工画像と再生成可能データで直列、秘密値非記録・外部HTTP遮断/AIoff/key非継承。C差分/各phase参照とA7・B12・C実変更のunion最終hashを別名packetへ記録する。旧差分/AI21を取り込まず、commit/stash/checkout/push/PR/merge/deploy/DB設計/依存/外部AI/課金なし。最後は編集停止し管理側のC独立レビューへ渡す。実機iOS/Safari/実IME/読み上げ実聴/実利用者効果は未確認とする。
+
+## 2026-10-30 UX-09 第三単位C 実装・関連検証完了／独立レビュー待ち
+
+- 実装結果: 入力が300ms落ち着いたら、既存のvisible_to/name・alias・affiliation検索からname/id順・最大8件の候補を表示する。承認済み＋本人作成pending、本人の追加済み表示、active共通画像/placeholder/帰属・ライセンスだけを使用する。suggest=1の部分HTMLはno-storeで、form/CSRF/actor tokenを含まない。新route/公開範囲/保存service/認可/依存は変更しない。
+- 選択と確定検索: combobox/listboxの関連付け、矢印/Enter/クリックで1件選択、Tab/Escapeで選ばず閉じる。選択は既存formのoshi_id radioへ反映し、登録は本人の既存submitだけ。候補popupは上下の空きへ配置し、検索ボタンを覆わない。typing0件でも新規名を補完せず、typing結果ありでも過去の自動名を消さない。従来の検索ボタン/未選択Enterの確定検索だけがUX01の補完・未編集自動名clearを行い、同値手編集・意図的空欄・由来不明名を保護する。
+- 中断とH04: timer/fetch/本文読了後のserial・query・接続を確認し、IME中/連打/逆順/blur/Tab/Escape/非表示/閉鎖/再接続/Backで古い結果を破棄する。H04では候補本文後にも既存verify-context→readOwnedをawaitし、別人/ログアウトと、確認中のquery/name/checkbox/閉鎖/再接続による新しい意図を優先する。中断時は古いloading表示を残さず、復帰だけで候補を再取得しない。
+- 入力保持: full-page両登録formの名前/種別/所属/推し始め/選択写真と、H04活動のDOM/日付/金額/選択/version/FileList/画像controller/previewを保持する。登録後の追加済み同期はチェック状態ではなく本人の登録済みcheckbox全件から行う。選択だけでOshi/UserOshi/Activityや画像を保存せず、既存POST結果不明の再送抑止・画像処理中disabledを維持する。Bの最大12件カード/手動横scroll/空欄のguard付きsnapshot復元、A固定費の開閉チェック欄は保護する。
+- Requestの結果: request1は118件0fail/0pending/exit0。oshi33、UserOshi22、共通画像3、H04 Request60。最大8件/安定順/alias・所属/LIKE文字とHTML escape/追加済み/安全な画像/metadata SELECT上限3、空欄と0件の区別、H04のsuggestionsを含む本人継続・失効・匿名の境界、既存B/422/重複/画像認可を確認。その後の変更はJSの中断表示とSystem検証の追加・修正で、このRequest対象のserver/Request bytesは変わっていないため同じ118件を再実行していない。
+- 最終Systemの実数: system9は66件0fail/0pending/exit0。JSONの実選択はC19、UX01 9、H04 27、B7、A開閉選択2、H01写真/context連携2。事前の想定件数ではなくこの実数を採用する。Request118＋System66＝distinct184件を2runで確認し、単一184件runとは扱わない。A77/B136全体や全suiteの機械的再実行は行っていない。
+- 途中の検証履歴: system1は8件中2失敗。IME例は合成イベントにEnter keyupがなく、抑止が解除されなかったためkeyupを追加しsystem3で成功。system2は診断helperのdef欠落によるSyntaxErrorで0examples/0fail/1error outside/exit1、Spec修正後Syntax OK。375pxの未送信はsystem3/4/5でも再現し、単なる位置補正だけでは解決しなかった記録を保全する。
+- 375pxの原因と解決: pointerdownは有効なsubmitでpreventDefaultなし、form/native validity/画像readyは正常だったが、フルページCDP撮影後のblurで本文幅が375→360に戻り、buttonが25.59375px動いてpointerup/clickが別DIVへ届いていた。viewport撮影へ変更し、前後の幅/scroll/focus不変をassertしたsystem6で通常click・実保存ID・画像1件まで成功。診断listener/人工的な位置補正は除去し、最終system9でも成功した。form.submit/novalidate/保存・画像guardの回避は行っていない。
+- 追加11例: system7は10pass/1fail。失敗は同名のRails hidden欄を操作してcheckboxを変えなかった検証側の対象指定で、type=checkboxへ修正した1件だけsystem8で成功。古い結果不適用/実際の未チェック/入力/写真の期待を維持し、最終system9の全19例でも成功。各初回Spec bytes、失敗JSON/log/画像、途中仮説と原因確定の記録は別名で保全する。
+- 画面確認: system9のPNG/JSON9組では横overflowなし、検索ボタン非被覆、ARIA参照の存在、選択ID最大1件/既存FormDataとの一致、候補44px以上、撮影前後の位置不変を確認。主目視は6枚（full-page候補375/1280、H04候補375/1280、長名選択375、typing0件375）で、Cの見た目の追加修正は不要と判断。全9枚の目視や実読み上げとは扱わない。先の失敗画像1枚は保存不具合を切り分けるための診断目視として区別する。
+- 静的・配信: static2は対象6RubyファイルRuboCop/0offenses、共有CSS/registration/suggestions partialのUI detector/0、YAML読込/既存UX08案内の完全一致、diffcheckのすべてexit0。抑制/例外追加なし。system9の実配信JS/CSSは最終bytesのSHAと一致し、既存current-source補助を保持する。外部Ruby HTTP/ブラウザー接続/CSP違反は0、asset rebuild/依存downloadなし。
+- 再開時の読み取り照合: HEAD?エラーはPowerShellから渡した最後の引数末尾のCRで再現し、正しいHEAD引数では既存branch/HEADを取得した。HEAD805d470125aa9bb1fa529d28fe37cfb96df1229c、index e6a7a82f197943163a16f1cbffa4993e1fe4ff0d8c7612b350d4564e636dd161、stage空と保護26,272/A292/B244/AI21/旧画像22を読み取り照合して不一致0・関連処理なしを確認してからC検証を再開した。Git初期化/修復/checkout等は不要で実施していない。環境確認のみの返答はその読み取り操作に限るもので、C全体の実装完了・独立レビュー完了を意味しない。
+- 安全と範囲: 全runでRAILS_ENV=test、実接続local my_app_test/socketと他試験/待機lockなしを既存guardで確認して直列実行。合成データ/人工画像、AIoff/key非継承、秘密値非記録。C対象12以外のrepo413件、旧absolute画像22、A292/B244資料、AI21/README/旧UXを固定する。新規partial/Systemの2件によりrepo423→425件。schema/migration/seed/DB削除、実データ/開発本番DB、設定/認可/依存、外部AI/課金の操作なし。
+- 引渡しと停止: C開始bytesからの12ファイル差分は tmp/oshi-typeahead-c-20261030-review.patch、最終manifestは同prefixのverification.json。A7/B12/C12の重複を除いた最終21ファイルは同prefixのabc-union.json / abc-union.patchで、最初に変更したphaseの開始bytes・phase別差分参照・最終SHAを記録する。A/Bの旧manifest/patch/baseline/受領receiptを最新共有ファイルへ合わせて上書きしない。ソース編集を止め、管理側が既存reviewerへCの独立レビューを引き渡す。未stage/未commit/未公開でcommit/push/PR/merge/deployなし。
+- 未確認: C独立レビュー、実機iOS/Safari/物理タッチ/実IME/読み上げ実聴/実利用者の改善効果、全suite。実際の利用者効果を実証したとは扱わず、A/B独立レビュー完了とCレビュー待ちを区別する。
+
+## 2026-10-30 UX-09 第三単位C 独立レビュー受領・公開前監査
+
+- 管理側の正式wait/readにより、既存reviewer 01a1837e-a715-71d0-98a3-06b47cf5a428／turn 01a18aea-9016-7721-9c35-615059d9a5c3はcompleted/error null/idle、必須0・任意0でCの12ファイルを受入済み。独立6PNG目視・9metadata照合、最終Request118＋System66＝distinct184/2runsの成功と途中の失敗記録を確認した結果を受領した。
+- A/B/Cは実装・関連検証・独立レビューまで完了。本受領でアプリ/Specを変更せず、現状行・公開状態の注記・この短い記録だけを更新した。既存C255証拠とmanifest/patch/ABC union、A/B packet/receiptは当時の基準のまま保全する。文書だけの差分と最終docSHAは別名reviewed-document.patch / reviewed-receipt.jsonへ記録する。
+- 公開前監査では、先行UX01通知/UX07写真/H04画面内登録/回帰前提/H01編集往復・写真連携/UX08固定費案内/A/B/Cの未commit39ファイルを各受入済みsource mapと照合し、不一致0。既存push済UXは別の31ファイル差分として確認した。AI21、README、補助設定等の25dirtyとtmp証拠は公開対象に含めず、コードをreview時点のまま維持する。
+- 今回のユーザー指示「検証後pushマージも進めてください」を根拠に、既存PR126と後続UXの関係を監査して公開工程へ移る。main push時の既存CI・コミット固定タグによるGHCR image公開は通常工程として扱う。workflow/credentialを変更せず、AWS/稼働環境への配備・本番操作は行わない。公開結果は別名の公開記録で追跡する。
+- この受領で成功済みテストを再実行しない。実機iOS/Safari/物理タッチ/実IME/読み上げ実聴/実利用者の改善効果・新しい全suiteは未確認。全体デザインの見直しはpush/merge確認後の別工程であり、この受領では着手していない。

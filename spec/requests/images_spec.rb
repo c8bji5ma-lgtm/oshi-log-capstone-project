@@ -1,7 +1,9 @@
 require "rails_helper"
+require_relative "../support/activity_input_context"
 require_relative "../support/image_attachments"
 
 RSpec.describe "Protected images", type: :request do
+  include ActivityInputContext
   include ImageAttachments
 
   let(:user) { create(:user) }
@@ -210,7 +212,7 @@ RSpec.describe "Protected images", type: :request do
     own = attach_image(:activity, user)
     login
     expect do
-      patch activity_path(own.record), params: { activity: { oshi_ids: own.record.oshi_ids.map(&:to_s),
+      patch activity_path(own.record), params: { activity: { context_token: activity_form_context(edit_activity_path(own.record)), oshi_ids: own.record.oshi_ids.map(&:to_s),
         images: [ foreign.blob.signed_id ], lock_version: own.record.lock_version.to_s } }
     end.not_to change(ActiveStorage::Attachment, :count)
     expect(response).to have_http_status(:unprocessable_content)
@@ -238,14 +240,14 @@ RSpec.describe "Protected images", type: :request do
     personal_oshi = create(:user_oshi, user: user)
     login
     post activities_path, params: { activity: {
-      occurred_on: "2026-10-01", title: "画像付き活動", activity_type: Activity::ACTIVITY_TYPES.first,
+      context_token: activity_form_context, occurred_on: "2026-10-01", title: "画像付き活動", activity_type: Activity::ACTIVITY_TYPES.first,
       oshi_ids: [ personal_oshi.oshi_id.to_s ],
       images: [ Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/image.png"), "image/png") ]
     } }
     expect(response).to redirect_to(activities_path)
     activity = user.activities.last!
     patch activity_path(activity), params: { activity: {
-      oshi_ids: [ personal_oshi.oshi_id.to_s ],
+      context_token: activity_form_context(edit_activity_path(activity)), oshi_ids: [ personal_oshi.oshi_id.to_s ],
       lock_version: activity.lock_version.to_s,
       images: [ Rack::Test::UploadedFile.new(Rails.root.join("spec/fixtures/files/image.jpg"), "image/jpeg") ]
     } }

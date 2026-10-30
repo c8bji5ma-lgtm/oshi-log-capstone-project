@@ -1,6 +1,8 @@
 require "rails_helper"
+require_relative "../support/activity_input_context"
 
 RSpec.describe "Activity emotion tags", type: :request do
+  include ActivityInputContext
   include_context "emotion master data"
 
   let(:user) { create(:user) }
@@ -15,7 +17,7 @@ RSpec.describe "Activity emotion tags", type: :request do
   end
 
   def input(**changes)
-    { occurred_on: "2026-10-01", title: "感情を記録", activity_type: "ライブ・イベント", oshi_ids: [ oshi.id.to_s ] }.merge(changes)
+    { occurred_on: "2026-10-01", title: "感情を記録", activity_type: "ライブ・イベント", oshi_ids: [ oshi.id.to_s ], context_token: (@activity_input_context ||= activity_form_context) }.merge(changes)
   end
 
   def activity_for(owner = user, emotions: [])

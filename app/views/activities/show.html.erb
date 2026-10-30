@@ -22,7 +22,7 @@
     </div>
   <% end %>
   <div class="actions">
-    <%= link_to "編集", edit_activity_path(@activity) %>
+    <%= link_to "編集", edit_activity_path(@activity, list_context: @list_context.presence) %>
     <%= button_to "削除", activity_path(@activity), method: :delete, class: "destructive-button", form: { data: { turbo_confirm: "この活動記録を削除しますか？" } } %>
   </div>
 </section>
