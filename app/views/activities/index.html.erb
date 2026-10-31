@@ -1,44 +1,50 @@
 <% content_for :title, t("ui.activity.index_page_title") %>
 <h1><%= t("ui.navigation.activities") %></h1>
 <p><%= link_to t("ui.actions.record"), new_activity_path, class: "button" %></p>
-<% if @filters["year"].present? || @filters["month"].present? || @filters["oshi_id"].present? || @filters["activity_type"].present? || @filters["q"].present? %>
-  <section class="card" aria-labelledby="activity-filter-summary">
-    <h2 id="activity-filter-summary">適用中の条件</h2>
+<% if @filters["year"].present? || @filters["month"].present? || @filters["oshi_id"].present? || @filters["activity_type"].present? || @filters["q"].present? || @filters["through"].present? %>
+  <section class="card activity-filter-status" aria-labelledby="activity-filter-summary">
+    <h2 id="activity-filter-summary"><%= @filter_errors.any? ? "指定した条件" : "適用中の条件" %></h2>
     <ul>
       <li>期間: <%= @filters["month"].presence || (@filters["year"].present? ? "#{@filters['year']}年" : t("ui.states.all")) %></li>
+      <% if @filters["through"].present? %><li>対象日の上限: <%= @filters["through"] %>（当日を含む）</li><% end %>
       <% if @filters["oshi_id"].present? %><li>推し: <%= @selectable_oshis.find { |oshi| oshi.id.to_s == @filters["oshi_id"] }&.name || "確認できない推し" %></li><% end %>
       <% if @filters["activity_type"].present? %><li>カテゴリ: <%= @filters["activity_type"] %></li><% end %>
       <% if @filters["q"].present? %><li>キーワード: <%= @filters["q"] %></li><% end %>
     </ul>
-    <p><%= link_to "条件を解除する", activities_path %> / <%= link_to "推し活データへ戻る", oshi_data_path(year: @filters["year"].presence || @filters["month"].to_s.first(4), oshi_id: @filters["oshi_id"].presence) %></p>
+    <p class="activity-filter-links"><%= link_to "条件を解除する", activities_path %> <%= link_to "推し活データへ戻る", oshi_data_path(year: @filters["year"].presence || @filters["month"].to_s.first(4), oshi_id: @filters["oshi_id"].presence) %></p>
   </section>
 <% end %>
 
 <% if @filter_errors.any? %>
   <div id="activity-filter-errors" class="validation-errors" role="alert"><%= @filter_errors.uniq.join(" ") %></div>
 <% end %>
-<%= form_with url: activities_path, method: :get, class: "activity-filter" do |f| %>
-  <div class="form-field">
-    <%= f.label :month, t("ui.labels.month") %>
-    <%= f.month_field :month, value: @filters["month"], aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
-    <%= f.hidden_field :year, value: @filters["year"] if @filters["year"].present? %>
-    <%= f.hidden_field :through, value: @filters["through"] if @filters["through"].present? %>
-  </div>
-  <div class="form-field">
-    <%= f.label :oshi_id, t("ui.labels.oshi") %>
-    <%= f.select :oshi_id, options_from_collection_for_select(@selectable_oshis, :id, :name, @filters["oshi_id"]), { include_blank: t("ui.states.all") }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
-  </div>
-  <div class="form-field">
-    <%= f.label :activity_type, t("ui.labels.category") %>
-    <%= f.select :activity_type, options_for_select(Activity::ACTIVITY_TYPES, @filters["activity_type"]), { include_blank: t("ui.states.all") }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
-  </div>
-  <div class="form-field">
-    <%= f.label :q, t("ui.labels.keyword") %>
-    <%= f.search_field :q, placeholder: t("ui.placeholders.activity_search"), value: @filters["q"], aria: { describedby: [ "activity-keyword-help", ("activity-filter-errors" if @filter_errors.any?) ].compact.join(" ") } %>
-    <p id="activity-keyword-help"><%= t("ui.activity.keyword_help") %></p>
-  </div>
-  <%= f.submit t("ui.actions.filter"), class: "button" %>
-  <%= link_to t("ui.actions.clear_filters"), activities_path %>
+<%= tag.details class: "activity-filter-panel", open: @filter_errors.any? do %>
+  <%= tag.summary "絞り込み条件を変更", aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
+  <%= form_with url: activities_path, method: :get, class: "activity-filter" do |f| %>
+    <div class="form-field">
+      <%= f.label :month, t("ui.labels.month") %>
+      <%= f.month_field :month, value: @filters["month"], aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
+      <%= f.hidden_field :year, value: @filters["year"] if @filters["year"].present? %>
+      <%= f.hidden_field :through, value: @filters["through"] if @filters["through"].present? %>
+    </div>
+    <div class="form-field">
+      <%= f.label :oshi_id, t("ui.labels.oshi") %>
+      <%= f.select :oshi_id, options_from_collection_for_select(@selectable_oshis, :id, :name, @filters["oshi_id"]), { include_blank: t("ui.states.all") }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
+    </div>
+    <div class="form-field">
+      <%= f.label :activity_type, t("ui.labels.category") %>
+      <%= f.select :activity_type, options_for_select(Activity::ACTIVITY_TYPES, @filters["activity_type"]), { include_blank: t("ui.states.all") }, aria: { describedby: ("activity-filter-errors" if @filter_errors.any?) } %>
+    </div>
+    <div class="form-field">
+      <%= f.label :q, t("ui.labels.keyword") %>
+      <%= f.search_field :q, placeholder: t("ui.placeholders.activity_search"), value: @filters["q"], aria: { describedby: [ "activity-keyword-help", ("activity-filter-errors" if @filter_errors.any?) ].compact.join(" ") } %>
+      <p id="activity-keyword-help"><%= t("ui.activity.keyword_help") %></p>
+    </div>
+    <div class="activity-filter-actions">
+      <%= f.submit t("ui.actions.filter"), class: "button" %>
+      <%= link_to t("ui.actions.clear_filters"), activities_path %>
+    </div>
+  <% end %>
 <% end %>
 <% if @activities.empty? %>
   <% if @filter_errors.empty? %>

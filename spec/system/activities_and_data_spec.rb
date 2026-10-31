@@ -32,6 +32,15 @@ RSpec.describe "Activity records and visualization in the browser", type: :syste
     expect(page).to have_css("main h1", text: "活動記録一覧", exact_text: true)
   end
 
+  def open_activity_filters
+    expect(page).to have_current_path(activities_path, ignore_query: true)
+    expect(page).to have_css("main h1", text: "活動記録一覧", exact_text: true)
+    expect(page).to have_no_css("html[data-turbo-preview], html[aria-busy='true']")
+    panel = find(".activity-filter-panel")
+    panel.find("summary").click unless panel.matches_css?("[open]", wait: 0)
+    expect(page).to have_css("form.activity-filter")
+  end
+
   def open_data
     within("nav[aria-label='グローバルナビゲーション']") { click_link "マイページ" }
     click_link "推し活データを見る"
@@ -64,6 +73,7 @@ RSpec.describe "Activity records and visualization in the browser", type: :syste
       activity = recorded_activity(oshi: oshi, title: "一覧に戻る記録")
       open_activity_list
 
+      open_activity_filters
       within("form.activity-filter") do
         fill_in "キーワード", with: "一致しない条件"
         click_button "絞り込む"
@@ -74,6 +84,7 @@ RSpec.describe "Activity records and visualization in the browser", type: :syste
       expect(page).not_to have_link(activity.title)
       expect(page.evaluate_script("document.documentElement.scrollWidth - window.innerWidth")).to be <= 1
 
+      open_activity_filters
       within("form.activity-filter") { click_link "条件をクリア", exact: true }
 
       expect(page).to have_link(activity.title)
@@ -101,6 +112,7 @@ RSpec.describe "Activity records and visualization in the browser", type: :syste
     expect(page).to have_link("福岡ライブの思い出")
     expect(page).to have_link(previous.title)
 
+    open_activity_filters
     within("form.activity-filter") do
       select oshi.name, from: "推し"
       select "ライブ・イベント", from: "カテゴリ"
