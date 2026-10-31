@@ -7,9 +7,9 @@
   <div class="cards">
     <% @user_oshis.each do |user_oshi| %>
       <section class="card oshi-list-card">
+        <h2 class="oshi-list-name"><%= user_oshi.oshi.name %></h2>
         <%= attachment_image_tag user_oshi.representative_image.attachment, alt: "#{user_oshi.oshi.name}の代表画像", class: "oshi-list-image", width: 120, height: 120 %>
         <div class="oshi-list-info">
-          <h2><%= user_oshi.oshi.name %></h2>
           <p>推し始め：<%= user_oshi.started_period.presence || "未設定" %></p>
           <div class="actions">
             <%= link_to "詳細", user_oshi_path(user_oshi), aria: { label: "#{user_oshi.oshi.name}の詳細" } %>
