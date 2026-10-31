@@ -18,9 +18,14 @@ RSpec.describe "Oshi search to registration handoff", type: :system do
     expect(page).to have_css("[data-oshi-registration-target='status'][role='status'][aria-atomic='true']", count: 1, visible: :all)
   end
 
-  def search(query)
+  def search(query, pointer: false)
     fill_in "推しを検索", with: query
-    click_button "検索", exact: true
+    if pointer
+      button = find_button("検索", exact: true)
+      page.driver.browser.action.move_to(button.native).click.perform
+    else
+      click_button "検索", exact: true
+    end
   end
 
   def draft_form
@@ -277,7 +282,7 @@ RSpec.describe "Oshi search to registration handoff", type: :system do
     settle(2)
     expect(page).to have_field("推し名（必須）", with: "最新の0件")
     expect(page).not_to have_field(candidate.name, type: "radio", exact: false)
-    search("変更される0件")
+    search("変更される0件", pointer: true)
     queued(5)
     fill_in "推しを検索", with: "まだ確定していない入力"
     settle(4)
