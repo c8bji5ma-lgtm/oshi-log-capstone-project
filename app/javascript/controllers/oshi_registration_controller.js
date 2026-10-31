@@ -497,7 +497,7 @@ export default class extends Controller {
       }
       this.setStatus(canCopy ? this.copiedValue : this.keptValue)
       if (this.focusEpoch === focusEpoch && this.searchFormTarget.contains(document.activeElement) &&
-          document.hasFocus() && document.visibilityState === "visible") this.moveTo("registration")
+          document.hasFocus() && document.visibilityState === "visible") this.moveTo("registration", { animate: false })
     } catch (error) {
       if (suggestions && this.current(serial, query) && (error.contextRejected || error.name === "AbortError")) {
         this.resultsTarget.dataset.oshiSearchState = "paused"
@@ -534,13 +534,13 @@ export default class extends Controller {
     this.moveTo("registration")
   }
 
-  moveTo(stage) {
+  moveTo(stage, { animate = true } = {}) {
     this.setCurrent(stage)
     const panel = stage === "registration" ? this.registrationPanelTarget : this.existingPanelTarget
     const input = stage === "registration" ? this.nameTarget : this.queryTarget
     input.focus({ preventScroll: true })
     panel.scrollIntoView({
-      block: "start", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+      block: "start", behavior: animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "auto"
     })
   }
 

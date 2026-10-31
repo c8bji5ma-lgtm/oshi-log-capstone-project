@@ -132,10 +132,15 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
     expect(page).to have_no_css("#activity-oshi-panel input[type='file']", visible: :all)
   end
 
-  def search(query)
+  def search(query, pointer: false)
     within("#activity-oshi-panel") do
       fill_in "推しを検索", with: query
-      click_button "検索", exact: true
+      if pointer
+        button = find_button("検索", exact: true)
+        page.driver.browser.action.move_to(button.native).click.perform
+      else
+        click_button "検索", exact: true
+      end
     end
   end
 
@@ -684,7 +689,7 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
       search("確認待ちでも残す自動名")
       expect(page).to have_field("推し名（必須）", with: "確認待ちでも残す自動名")
       hold_delivery("check")
-      search(existing.name)
+      search(existing.name, pointer: true)
       wait_delivery
       case intent
       when "query"
