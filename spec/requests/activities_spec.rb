@@ -104,6 +104,23 @@ RSpec.describe "Activities", type: :request do
       expect(response).to redirect_to(new_user_session_path)
     end
 
+    it "keeps a through-only bound and the clear action visible while preserving inclusive filtering" do
+      included = activity_for(title: "上限日当日の記録", occurred_on: "2026-10-01")
+      later = activity_for(title: "上限日より後の記録", occurred_on: "2026-10-02")
+      get activities_path, params: { through: "2026-10-01" }
+
+      expect(response).to have_http_status(:ok)
+      expect(titles).to eq([ included.title ])
+      panel = document.at_css("details.activity-filter-panel")
+      expect(panel.key?("open")).to be(false)
+      expect(panel.at_css("form")["method"]).to eq("get")
+      expect(document.at_css("#activity-filter-summary").parent.text).to include("対象日の上限: 2026-10-01（当日を含む）")
+      clear = document.at_css(".activity-filter-status a[href='#{activities_path}']")
+      expect(clear.text).to eq("条件を解除する")
+      get clear["href"]
+      expect(titles).to contain_exactly(included.title, later.title)
+    end
+
     describe "empty states" do
       let(:first_activity_help) { "活動記録はまだありません。上の「記録する」から、最初の活動を残してみましょう。" }
       let(:no_results_help) { "条件に一致する活動記録はありません。検索条件を見直すか、「条件をクリア」で一覧に戻ってください。" }
@@ -294,6 +311,8 @@ RSpec.describe "Activities", type: :request do
         get activities_path, params: filters
         expect(response).to have_http_status(:bad_request)
         expect(document.at_css("#activity-filter-errors[role='alert']")).to be_present
+        expect(document.at_css("details.activity-filter-panel").key?("open")).to be(true)
+        expect(document.at_css("details.activity-filter-panel #activity-filter-errors")).to be_nil
         expect(document.css("form.activity-filter [aria-describedby~='activity-filter-errors']").size).to eq(4)
         expect(document.at_css("input[name='q']")["aria-describedby"].split).to contain_exactly("activity-keyword-help", "activity-filter-errors")
         expect(titles).to be_empty

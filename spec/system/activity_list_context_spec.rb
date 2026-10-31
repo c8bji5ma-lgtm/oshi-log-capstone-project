@@ -32,6 +32,7 @@ RSpec.describe "Activity list return navigation", type: :system do
       first_detail_url = page.current_url
       capture_context(width, "detail")
       find_link("活動記録一覧へ戻る").send_keys(:enter)
+      open_activity_filters
       expect(page).to have_field("q", with: keyword)
       expect(page).to have_select("oshi_id", selected: oshi.name)
       expect(page).to have_field("month", with: "2025-05")
@@ -51,18 +52,21 @@ RSpec.describe "Activity list return navigation", type: :system do
         visit first_detail_url
         expect(page).to have_css("main h2", exact_text: "観測対象A")
         click_link "活動記録一覧へ戻る"
+        open_activity_filters
         expect(page).to have_field("q", with: keyword)
         expect(page).to have_link("観測対象A")
         expect(page).not_to have_link("観測対象B")
       end
       second_window.close
       click_link "活動記録一覧へ戻る"
+      open_activity_filters
       expect(page).to have_field("q", with: "変更後 B")
       expect(page).to have_link("観測対象B")
       expect(page).not_to have_link("観測対象A")
 
       visit activity_path(first)
       click_link "活動記録一覧へ戻る"
+      open_activity_filters
       expect(page).to have_field("q", with: "")
       expect(page).to have_link("観測対象A")
       expect(page).to have_link("観測対象B")
@@ -102,6 +106,7 @@ RSpec.describe "Activity list return navigation", type: :system do
       click_link I18n.t("ui.activity.back_to_detail")
       expect(page).to have_css("main h2", exact_text: "編集対象A")
       click_link "活動記録一覧へ戻る"
+      open_activity_filters
       expect(page).to have_field("q", with: keyword)
       expect(returned_filter_query).to eq(filters.stringify_keys)
       expect(first.reload.attributes).to eq(original_first)
@@ -139,6 +144,7 @@ RSpec.describe "Activity list return navigation", type: :system do
       expect(Rack::Utils.parse_nested_query(URI.parse(page.current_url).query)).to eq("list_context" => second_filters.stringify_keys)
       capture_context(width, "edit-saved-detail")
       click_link "活動記録一覧へ戻る"
+      open_activity_filters
       expect(page).to have_field("q", with: "変更後 B")
       expect(returned_filter_query).to eq(second_filters.stringify_keys)
       expect(page).to have_link("編集対象B 更新後")
@@ -149,6 +155,7 @@ RSpec.describe "Activity list return navigation", type: :system do
         click_link I18n.t("ui.activity.back_to_detail")
         expect(page).to have_css("main h2", exact_text: "編集対象A")
         click_link "活動記録一覧へ戻る"
+        open_activity_filters
         expect(page).to have_field("q", with: keyword)
         expect(returned_filter_query).to eq(filters.stringify_keys)
         expect(page).to have_link("編集対象A")
@@ -156,6 +163,7 @@ RSpec.describe "Activity list return navigation", type: :system do
         capture_context(width, "edit-other-tab-returned")
       end
       second_window.close
+      open_activity_filters
       expect(page).to have_field("q", with: "変更後 B")
       expect(first.reload.attributes).to eq(original_first)
       expect(second.reload).to have_attributes(title: "編集対象B 更新後", memo: "変更後 B", user_id: user.id)
@@ -165,6 +173,7 @@ RSpec.describe "Activity list return navigation", type: :system do
       expect(edit_filter_query).to eq({})
       click_link I18n.t("ui.activity.back_to_detail")
       click_link "活動記録一覧へ戻る"
+      open_activity_filters
       expect(page).to have_field("q", with: "")
       expect(page).to have_link("編集対象A")
       expect(page).to have_link("編集対象B 更新後")
@@ -456,6 +465,7 @@ RSpec.describe "Activity list return navigation", type: :system do
         expect(actual_files).to match_array(selected.map { |file| file.slice("name", "bytes", "type", "sha256") })
         capture_context(width, "integrated-saved-detail")
         click_link "活動記録一覧へ戻る"
+        open_activity_filters
         expect(page).to have_field("q", with: keyword)
         expect(returned_filter_query).to eq(filters.stringify_keys)
         expect(page).to have_select("oshi_id", selected: personal.oshi.name)
@@ -467,6 +477,15 @@ RSpec.describe "Activity list return navigation", type: :system do
           original_photo_bytes_preserved: true, query: returned_filter_query))
       end
     end
+  end
+
+  def open_activity_filters
+    expect(page).to have_current_path(activities_path, ignore_query: true)
+    expect(page).to have_css("main h1", text: "活動記録一覧", exact_text: true)
+    expect(page).to have_no_css("html[data-turbo-preview], html[aria-busy='true']")
+    panel = find(".activity-filter-panel")
+    panel.find("summary").click unless panel.matches_css?("[open]", wait: 0)
+    expect(page).to have_css("form.activity-filter")
   end
 
   def edit_filter_query
