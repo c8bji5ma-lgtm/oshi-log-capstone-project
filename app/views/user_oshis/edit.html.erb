@@ -12,10 +12,7 @@
   <%= render "shared/validation_errors", resource: @user_oshi %>
   <%= form_with model: @user_oshi do |f| %>
     <p id="edit-period-help"><%= t("ui.oshi.edit_period_help") %></p>
-    <div class="form-field">
-      <%= f.label :started_period, t("ui.labels.started_period") %>
-      <%= f.text_field :started_period, aria: { invalid: @user_oshi.errors[:started_period].any?, describedby: "edit-period-help" } %>
-    </div>
+    <%= render "user_oshis/started_period", f: f, help_id: "edit-started-period-help" %>
     <div class="form-field">
       <%= f.label :ended_period, t("ui.labels.ended_period") %>
       <%= f.text_field :ended_period, aria: { invalid: @user_oshi.errors[:ended_period].any?, describedby: "edit-period-help" } %>

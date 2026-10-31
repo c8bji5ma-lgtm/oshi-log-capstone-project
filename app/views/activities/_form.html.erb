@@ -1,5 +1,11 @@
+<div data-controller="activity-oshi-panel"
+     data-activity-oshi-panel-registration-url-value="<%= new_oshi_path(activity_panel: "1") %>"
+     data-activity-oshi-panel-owned-url-value="<%= oshis_path %>"
+     data-activity-oshi-panel-labels-value="<%= t("ui.activity_panel").to_json %>"
+     data-action="focusin@document->activity-oshi-panel#trackFocus keydown->activity-oshi-panel#keydown change->activity-oshi-panel#selectionChanged oshi-registration:verify-context->activity-oshi-panel#verifySearch oshi-registration:failed->activity-oshi-panel#searchFailed turbo:before-cache@document->activity-oshi-panel#beforeCache turbo:submit-end->activity-oshi-panel#activityFinished">
 <% if @selectable_oshis.empty? %>
-  <p><%= t("ui.activity.register_oshi_first") %><%= link_to t("ui.actions.register_oshi"), new_oshi_path %></p>
+  <% registration_path = @activity.persisted? ? new_oshi_path : new_oshi_path(continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION) %>
+  <p><%= t("ui.activity.register_oshi_first") %><%= link_to t("ui.actions.register_oshi"), registration_path %></p>
 <% end %>
 <%= render "shared/validation_errors", resource: @activity %>
 <% if @latest_activity %>
@@ -17,11 +23,12 @@
       <dt><%= t("ui.labels.memo") %></dt><dd><%= @latest_activity.memo.presence || "—" %></dd>
       <dt><%= t("ui.labels.images") %></dt><dd><%= @latest_activity.images.size %>件</dd>
     </dl>
-    <p><%= link_to t("ui.actions.reload_edit"), edit_activity_path(@latest_activity), class: "button" %></p>
+    <p><%= link_to t("ui.actions.reload_edit"), edit_activity_path(@latest_activity, list_context: @list_context.presence), class: "button" %></p>
     <p><%= t("ui.conflict.image_help") %></p>
   </section>
 <% end %>
-<%= form_with model: @activity do |f| %>
+<%= form_with model: @activity, url: (@activity.persisted? ? activity_path(@activity, list_context: @list_context.presence) : nil), data: { activity_oshi_panel_target: "activityForm" } do |f| %>
+  <%= hidden_field_tag "activity[context_token]", activity_context_token, id: "activity_context_token", data: { activity_oshi_panel_target: "context" } %>
   <% if @activity.persisted? %>
     <%= f.hidden_field :lock_version, value: @submitted_lock_version || @activity.lock_version %>
   <% end %>
@@ -29,7 +36,10 @@
     <fieldset class="form-field choice-field" aria-describedby="oshi-selection-help" aria-invalid="<%= @activity.errors[:activity_oshis].any? || @activity.errors[:base].any? %>">
       <legend><%= t("ui.activity.oshis_label") %></legend>
       <p id="oshi-selection-help"><%= t("ui.activity.selection_help") %></p>
-      <div class="choice-chips">
+      <% if activity_panel_writable? %>
+        <button type="button" hidden class="button button-secondary" data-activity-oshi-panel-target="openButton" data-action="activity-oshi-panel#open" aria-controls="activity-oshi-panel" aria-expanded="false"><%= t("ui.activity_panel.open") %></button>
+      <% end %>
+      <div class="choice-chips" data-activity-oshi-panel-target="choices">
         <%= f.collection_check_boxes :oshi_ids, @selectable_oshis, :id, :name, checked: @selected_oshi_ids do |choice| %>
           <%= choice.label(class: "choice-chip") { choice.check_box + tag.span(choice.text) } %>
         <% end %>
@@ -53,7 +63,8 @@
     </div>
     <div class="form-field">
       <%= f.label :amount, t("ui.activity.amount_label") %>
-      <%= f.number_field :amount, min: 0, step: 1, aria: { invalid: @activity.errors[:amount].any? } %>
+      <%= f.number_field :amount, min: 0, step: 1, aria: { invalid: @activity.errors[:amount].any?, describedby: "activity-amount-help" } %>
+      <p id="activity-amount-help"><%= t("ui.activity.amount_help") %></p>
     </div>
   </div>
   <fieldset class="form-field choice-field" aria-describedby="emotion-selection-help" aria-invalid="<%= @activity.errors[:emotion_ids].any? %>">
@@ -79,11 +90,33 @@
       </div>
     </section>
   <% end %>
-  <div class="form-field" data-controller="image-upload">
+  <div class="form-field" data-controller="image-upload" data-image-upload-preview-alt-value="<%= t("ui.activity.preview_alt") %>" data-image-upload-preview-error-value="<%= t("ui.activity.preview_error") %>">
     <%= f.label :images, t("ui.activity.images_label") %>
     <%= f.file_field :images, multiple: true, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { describedby: "activity-image-help activity-image-status", invalid: @activity.errors[:images].any? } %>
     <p id="activity-image-help"><%= t("ui.activity.image_help") %></p>
     <p id="activity-image-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
+    <section data-image-upload-target="preview" aria-labelledby="activity-image-preview-heading" hidden>
+      <h2 id="activity-image-preview-heading"><%= t("ui.activity.preview_heading") %></h2>
+      <div class="image-gallery" data-image-upload-target="previewImages"></div>
+    </section>
   </div>
   <%= f.submit(@activity.persisted? ? t("ui.actions.update") : t("ui.actions.record"), class: "button") %>
 <% end %>
+  <p data-activity-oshi-panel-target="status" role="status" aria-live="polite"></p>
+  <p data-activity-oshi-panel-target="restart" hidden><%= link_to t("ui.activity_panel.restart"), new_activity_path %></p>
+  <ul data-activity-oshi-panel-target="errors" hidden></ul>
+  <% if activity_panel_writable? %>
+    <div data-activity-oshi-panel-target="unknownActions" hidden class="actions">
+      <button type="button" data-action="activity-oshi-panel#confirm"><%= t("ui.activity_panel.confirm") %></button>
+      <button type="button" data-action="activity-oshi-panel#continueWithout"><%= t("ui.activity_panel.continue_without") %></button>
+    </div>
+    <section id="activity-oshi-panel" hidden class="card oshi-form" data-activity-oshi-panel-target="panel" aria-labelledby="activity-oshi-panel-heading">
+      <h2 id="activity-oshi-panel-heading" tabindex="-1"><%= t("ui.activity_panel.heading") %></h2>
+      <p><%= t("ui.activity_panel.separate_save") %></p>
+      <p><%= t("ui.activity_panel.photos_later") %></p>
+      <button type="button" data-action="activity-oshi-panel#close"><%= t("ui.activity_panel.close") %></button>
+      <div data-activity-oshi-panel-target="registration"></div>
+      <div data-activity-oshi-panel-target="registeredResults"></div>
+    </section>
+  <% end %>
+</div>

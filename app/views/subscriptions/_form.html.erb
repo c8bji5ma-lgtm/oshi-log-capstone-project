@@ -24,17 +24,33 @@
   </div>
   <div class="form-field">
     <%= f.label :amount, t("ui.subscription.amount_label") %>
-    <%= f.number_field :amount, required: true, min: 0, step: 1, aria: { invalid: @subscription.errors[:amount].any? } %>
+    <%= f.number_field :amount, required: true, min: 0, step: 1, aria: { invalid: @subscription.errors[:amount].any?, describedby: "subscription-amount-help" } %>
+    <p id="subscription-amount-help"><%= t("ui.subscription.amount_help") %></p>
   </div>
   <div class="form-field">
     <%= f.label :billing_cycle, t("ui.subscription.cycle_label") %>
     <%= f.select :billing_cycle, Subscription.billing_cycles.keys.map { |cycle| [billing_cycle_label(cycle), cycle] }, { include_blank: t("ui.states.select_prompt") }, required: true, aria: { invalid: @subscription.errors[:billing_cycle].any? } %>
   </div>
-  <div class="form-field">
-    <%= f.label :oshi_ids, t("ui.subscription.oshis_label") %>
-    <%= f.select :oshi_ids, options_from_collection_for_select(@selectable_oshis, :id, :name, @selected_oshi_ids), {}, multiple: true, size: 5, aria: { describedby: "subscription-oshi-help", invalid: @subscription.errors[:base].any? } %>
+  <fieldset id="subscription_oshi_ids" class="form-field choice-field subscription-oshi-selection"
+            aria-describedby="subscription-oshi-help" aria-invalid="<%= @subscription.errors[:base].any? %>"
+            data-controller="oshi-selection" data-oshi-selection-labels-value="<%= t("ui.subscription.selection").to_json %>"
+            data-action="change->oshi-selection#refresh keydown->oshi-selection#keydown">
+    <legend><%= t("ui.subscription.oshis_label") %></legend>
     <p id="subscription-oshi-help"><%= t("ui.subscription.oshi_help") %></p>
-  </div>
+    <% selected_oshi_count = @selectable_oshis.count { |oshi| @selected_oshi_ids.include?(oshi.id) } %>
+    <p id="subscription-oshi-status" hidden role="status" aria-atomic="true" data-oshi-selection-target="status"><%= selected_oshi_count.zero? ? t("ui.subscription.selection.none") : t("ui.subscription.selection.selected", count: selected_oshi_count) %></p>
+    <details data-oshi-selection-target="panel" <%= "open" if @subscription.errors[:base].any? %>>
+      <summary data-oshi-selection-target="summary"><%= t("ui.subscription.selection.toggle") %></summary>
+      <div class="choice-chips">
+        <%= f.collection_check_boxes :oshi_ids, @selectable_oshis, :id, :name, checked: @selected_oshi_ids do |choice| %>
+          <%= choice.label(class: "choice-chip") { choice.check_box(data: { oshi_selection_target: "checkbox" }) + tag.span(choice.text) } %>
+        <% end %>
+      </div>
+      <% if @selectable_oshis.empty? %>
+        <p><%= t("ui.subscription.selection.empty") %></p>
+      <% end %>
+    </details>
+  </fieldset>
   <div class="form-field">
     <%= f.label :started_on, t("ui.subscription.started_on_label") %>
     <%= f.date_field :started_on, aria: { invalid: @subscription.errors[:started_on].any? } %>

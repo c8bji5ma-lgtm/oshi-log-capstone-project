@@ -16,13 +16,12 @@ RSpec.describe "First activity onboarding", type: :system do
       click_button "検索"
     end
     expect(page).to have_text("該当する推しが見つかりませんでした。")
-    query = Rack::Utils.parse_nested_query(URI.parse(page.current_url).query)
-    expect(query).to include("q" => "見つからない候補",
-      "continue" => ApplicationController::FIRST_ACTIVITY_CONTINUATION)
+    expect(page).to have_field("推し名（必須）", with: "見つからない候補")
     expect(page).to have_field("continue", type: :hidden,
       with: ApplicationController::FIRST_ACTIVITY_CONTINUATION)
-    page.go_back
-    expect(page).to have_current_path(new_oshi_path(continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION))
+    click_link "既存の推しを検索し直す"
+    expect(page).to have_field("推しを検索", with: "見つからない候補")
+    expect(page).to have_field("推し名（必須）", with: "見つからない候補")
 
     within("section", text: "新しい推しを登録") do
       fill_in "推し名（必須）", with: "初回導線の推し"

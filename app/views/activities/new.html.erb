@@ -1,5 +1,18 @@
 <% content_for :title, t("ui.activity.new_page_title") %>
+<% content_for :head do %>
+  <%= tag.meta name: "activity-context-token", content: activity_context_token %>
+<% end %>
 <h1><%= t("ui.activity.new_title") %></h1>
-<p><%= t("ui.activity.minimum_help") %></p>
-<%= render "form" %>
+<% if @selectable_oshis.empty? && @activity.errors.empty? %>
+  <% if session[:graduation_guest_role].present? %>
+    <p><%= t("ui.activity.first_oshi_read_only_help") %></p>
+  <% else %>
+    <p><%= t("ui.activity.register_oshi_first") %></p>
+    <p><%= t("ui.activity.first_oshi_help") %></p>
+    <p><%= link_to t("ui.actions.register_oshi"), new_oshi_path(continue: ApplicationController::FIRST_ACTIVITY_CONTINUATION), class: "button" %></p>
+  <% end %>
+<% else %>
+  <p><%= t("ui.activity.minimum_help") %></p>
+  <%= render "form" %>
+<% end %>
 <p><%= link_to t("ui.activity.back_to_index"), activities_path %></p>

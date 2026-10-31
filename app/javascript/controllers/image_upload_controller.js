@@ -9,19 +9,32 @@ const MAX_PIXELS = 5_000_000
 const LOSSY_QUALITIES = [0.9, 0.82, 0.74, 0.66]
 
 export default class extends Controller {
-  static targets = ["input", "status"]
+  static targets = ["input", "status", "preview", "previewImages"]
+  static values = { previewAlt: String, previewError: String }
 
   connect() {
-    this.version = 0
+    this.version ??= 0
     this.queue = Promise.resolve()
     this.form = this.element.closest("form")
     this.submitHandler = event => this.guardSubmit(event)
     this.form?.addEventListener("submit", this.submitHandler)
+    this.previewSuspended = false
+    if (this.hasPreviewTarget) {
+      this.cacheHandler = () => {
+        this.previewSuspended = true
+        this.clearPreview()
+      }
+      document.addEventListener("turbo:before-cache", this.cacheHandler)
+      this.renderPreview()
+    }
+    if (this.inputTarget.dataset.imageUploadReady === "false" && this.inputTarget.files.length > 0) this.change()
   }
 
   disconnect() {
     this.version += 1
     this.form?.removeEventListener("submit", this.submitHandler)
+    document.removeEventListener("turbo:before-cache", this.cacheHandler)
+    this.clearPreview()
     this.setBusy(false)
   }
 
@@ -29,6 +42,7 @@ export default class extends Controller {
     const version = ++this.version
     const files = Array.from(this.inputTarget.files || [])
     this.inputTarget.dataset.imageUploadReady = "false"
+    this.clearPreview()
 
     if (files.length === 0) {
       this.setStatus("")
@@ -76,13 +90,73 @@ export default class extends Controller {
         unchanged > 0 ? `${unchanged}枚は元のファイルを使用します` : null
       ].filter(Boolean).join("。")
       this.setStatus(`${details}。送信できます。`)
+      this.renderPreview()
     } catch (error) {
       if (!this.current(version)) return
       this.inputTarget.value = ""
       this.inputTarget.dataset.imageUploadReady = "false"
+      this.clearPreview()
       this.setStatus(error instanceof Error ? error.message : "画像を処理できませんでした。画像を選び直してください。", true)
     } finally {
       if (this.current(version)) this.setBusy(false)
+    }
+  }
+
+  renderPreview() {
+    this.clearPreview()
+    const generation = this.previewGeneration
+
+    try {
+      if (!this.hasPreviewTarget || !this.hasPreviewImagesTarget || this.previewSuspended) return
+      if (this.inputTarget.dataset.imageUploadReady !== "true" || this.inputTarget.files.length === 0) return
+
+      const fragment = document.createDocumentFragment()
+      Array.from(this.inputTarget.files).forEach((file, index) => {
+        const url = URL.createObjectURL(file)
+        this.previewURLs.push(url)
+        const image = document.createElement("img")
+        image.alt = this.previewAltValue
+          .replace("%{index}", () => String(index + 1))
+          .replace("%{filename}", () => file.name)
+        image.onerror = () => this.failPreview(generation)
+        image.src = url
+        fragment.append(image)
+      })
+      this.previewImagesTarget.append(fragment)
+      this.previewTarget.hidden = false
+    } catch {
+      this.failPreview(generation)
+    }
+  }
+
+  clearPreview() {
+    this.previewGeneration = (this.previewGeneration ?? 0) + 1
+    const urls = this.previewURLs || []
+    this.previewURLs = []
+
+    try {
+      if (this.hasPreviewTarget) this.previewTarget.hidden = true
+      if (this.hasPreviewImagesTarget) this.previewImagesTarget.replaceChildren()
+    } catch {
+      // A display failure must not clear a valid FileList.
+    }
+    urls.forEach(url => {
+      try {
+        URL.revokeObjectURL(url)
+      } catch {
+        // Continue releasing the other URLs if the browser rejects one.
+      }
+    })
+  }
+
+  failPreview(generation) {
+    if (generation !== this.previewGeneration || this.previewSuspended || !this.element.isConnected) return
+
+    this.clearPreview()
+    try {
+      this.setStatus(this.previewErrorValue, true)
+    } catch {
+      // A disconnected status target must not fail the image preparation.
     }
   }
 

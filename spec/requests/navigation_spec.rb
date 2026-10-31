@@ -127,6 +127,7 @@ RSpec.describe "Global navigation and feature destinations", type: :request do
 
     { "/activities" => "活動記録一覧", "/activities/new" => "活動記録を登録" }.each do |path, title|
       it "renders the implemented activity page at #{path}" do
+        create(:user_oshi, user: user, oshi: create(:oshi, :approved)) if path == new_activity_path
         get path
 
         expect(response).to have_http_status(:ok)

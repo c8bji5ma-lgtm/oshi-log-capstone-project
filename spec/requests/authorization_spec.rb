@@ -1,8 +1,10 @@
 require "rails_helper"
 require_relative "../support/image_attachments"
+require_relative "../support/activity_input_context"
 
 RSpec.describe "Authorization and user data isolation", type: :request do
   include ImageAttachments
+  include ActivityInputContext
 
   let(:user) { create(:user) }
   let(:other_user) { create(:user) }
@@ -204,12 +206,13 @@ RSpec.describe "Authorization and user data isolation", type: :request do
           oshi = create(:oshi, :approved)
           create(:user_oshi, user: user, oshi: oshi)
           login
+          context_token = activity_form_context
           original = data_snapshot
           allow(Activities::Save).to receive(:call).and_raise(RuntimeError, "unexpected persistence failure")
           expect do
             request_with_format(:post, activities_path, format, params: { activity: {
               occurred_on: "2026-10-01", activity_type: Activity::ACTIVITY_TYPES.first,
-              title: "本人の活動", oshi_ids: [ oshi.id.to_s ]
+              title: "本人の活動", oshi_ids: [ oshi.id.to_s ], context_token: context_token
             } })
           end.to raise_error(RuntimeError, "unexpected persistence failure")
           expect(data_snapshot).to eq(original)
@@ -224,10 +227,11 @@ RSpec.describe "Authorization and user data isolation", type: :request do
           create(:user_oshi, user: user, oshi: oshi)
           own = create(:activity, user: user)
           foreign = create(:activity, user: other_user)
+          context_token = activity_form_context(edit_activity_path(own))
           original = foreign.attributes
           request_with_format(:put, activity_path(own), format,
             params: { activity: { title: "本人の更新", user_id: other_user.id, oshi_ids: [ oshi.id.to_s ],
-              lock_version: own.lock_version.to_s } })
+              lock_version: own.lock_version.to_s, context_token: context_token } })
           expect(response).to have_http_status(:see_other)
           expect(response).to redirect_to(activity_path(own))
           expect(own.reload).to have_attributes(title: "本人の更新", user_id: user.id)

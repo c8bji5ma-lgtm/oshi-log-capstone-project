@@ -2,6 +2,8 @@ class ActivitiesController < ApplicationController
   before_action :set_activity, only: [ :show, :edit, :update, :destroy ]
   before_action :set_selectable_oshis, only: [ :index, :new, :create, :edit, :update ]
   before_action :set_selectable_emotions, only: [ :new, :create, :edit, :update ]
+  before_action :verify_activity_form_context, only: [ :create, :update ]
+  before_action :set_list_context, only: [ :show, :edit, :update ]
 
   def index
     @filters = {}
@@ -114,7 +116,7 @@ class ActivitiesController < ApplicationController
   def update
     result = save_activity
     if result == true
-      redirect_to activity_path(@activity), notice: t("notices.activities.updated"), status: :see_other
+      redirect_to activity_path(@activity, list_context: @list_context.presence), notice: t("notices.activities.updated"), status: :see_other
     elsif result == :conflict
       render :edit, formats: [ :html ], status: :conflict
     elsif result == :bad_request
@@ -132,6 +134,26 @@ class ActivitiesController < ApplicationController
   end
 
   private
+
+    def verify_activity_form_context
+      input = params.require(:activity)
+      raise ActionController::BadRequest unless input.is_a?(ActionController::Parameters)
+
+      require_activity_context!(input[:context_token])
+    end
+
+    def set_list_context
+      @list_context = {}
+      context = params[:list_context]
+      return if context.nil?
+
+      filters = context.slice(*%w[year month through oshi_id activity_type q]) if context.is_a?(ActionController::Parameters)
+      unless filters && filters.values.all? { |value| value.is_a?(String) }
+        return render file: Rails.public_path.join("400.html"), layout: false, status: :bad_request
+      end
+
+      @list_context = filters.to_unsafe_h
+    end
 
     def set_activity
       @activity = current_user.activities.with_attached_images.find(params[:id])

@@ -1,0 +1,37 @@
+<% field_id = f.field_id(:started_period) %>
+<% invalid = f.object.errors[:started_period].any? %>
+<div class="form-field" data-controller="oshi-period"
+     data-oshi-period-current-year-value="<%= Date.current.year %>"
+     data-oshi-period-unset-value="<%= t("ui.period_picker.unset") %>"
+     data-oshi-period-summary-label-value="<%= t("ui.period_picker.summary") %>">
+  <div data-oshi-period-target="fallback">
+    <%= f.label :started_period, t("ui.labels.started_period") %>
+    <%= f.text_field :started_period, data: { oshi_period_target: "source" }, aria: { invalid: invalid, describedby: help_id } %>
+    <p id="<%= help_id %>"><%= t("ui.oshi.period_help") %></p>
+  </div>
+  <div hidden data-oshi-period-target="recover">
+    <button type="button" class="button button-secondary" data-action="oshi-period#clear"><%= t("ui.period_picker.recover") %></button>
+  </div>
+  <fieldset hidden data-oshi-period-target="picker" aria-invalid="<%= invalid %>" aria-describedby="<%= field_id %>_picker_help <%= field_id %>_range_help">
+    <legend><%= t("ui.labels.started_period") %></legend>
+    <p id="<%= field_id %>_picker_help"><%= t("ui.period_picker.help") %></p>
+    <details>
+      <summary><%= t("ui.period_picker.other_years") %></summary>
+      <div class="form-field">
+      <%= label_tag "#{field_id}_range", t("ui.period_picker.range") %>
+      <%= select_tag "#{field_id}_range", "", name: nil, disabled: true, data: { oshi_period_target: "range", action: "change->oshi-period#browseRange" }, aria: { describedby: "#{field_id}_range_help" } %>
+      <p id="<%= field_id %>_range_help"><%= t("ui.period_picker.range_help") %></p>
+      </div>
+    </details>
+    <div class="form-field">
+      <%= label_tag "#{field_id}_year", t("ui.period_picker.year") %>
+      <%= select_tag "#{field_id}_year", "", name: nil, disabled: true, data: { oshi_period_target: "year", action: "change->oshi-period#change" }, aria: { invalid: invalid } %>
+    </div>
+    <div class="form-field">
+      <%= label_tag "#{field_id}_month", t("ui.period_picker.month") %>
+      <%= select_tag "#{field_id}_month", options_for_select([[t("ui.period_picker.unset"), ""]] + (1..12).map { |month| ["#{month}月", format("%02d", month)] }), name: nil, disabled: true, data: { oshi_period_target: "month", action: "change->oshi-period#change" }, aria: { invalid: invalid } %>
+    </div>
+    <p role="status" aria-live="polite" aria-atomic="true" data-oshi-period-target="summary"></p>
+    <button type="button" class="button button-secondary" data-action="oshi-period#clear"><%= t("ui.period_picker.clear") %></button>
+  </fieldset>
+</div>

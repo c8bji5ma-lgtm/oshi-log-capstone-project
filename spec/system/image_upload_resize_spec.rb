@@ -72,7 +72,7 @@ RSpec.describe "Client image resizing", type: :system do
     JS
   end
 
-  it "attaches the shared processor to all four upload entry points" do
+  it "attaches the shared processor to all upload entry points" do
     personal = create(:user_oshi, user: user, oshi: create(:oshi, :approved))
     sign_in
 
@@ -86,7 +86,9 @@ RSpec.describe "Client image resizing", type: :system do
     expect(page).to have_css("[data-controller~='image-upload'] input[name='activity[images][]']", count: 1)
 
     visit new_oshi_path
-    expect(page).to have_css("[data-controller~='image-upload'] input[name='user_oshi[library_images][]']", count: 1)
+    expect(page).to have_css("[data-controller~='image-upload'] input[name='user_oshi[library_images][]']", count: 2)
+    expect(page).to have_css("#oshi-registration [data-controller~='image-upload'] input[name='user_oshi[library_images][]']", count: 1)
+    expect(page).to have_css("#oshi-existing [data-controller~='image-upload'] input[name='user_oshi[library_images][]']", count: 1)
   end
 
   it "keeps a compliant file unchanged and resizes a large JPEG copy before saving" do

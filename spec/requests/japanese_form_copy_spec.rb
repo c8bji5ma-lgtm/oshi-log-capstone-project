@@ -32,6 +32,7 @@ RSpec.describe "Japanese form copy and input examples", type: :request do
     before { sign_in user }
 
     it "adds examples to the activity text fields without replacing values or date constraints" do
+      create(:user_oshi, user: user, oshi: create(:oshi, :approved))
       get new_activity_path
 
       expect_field "activity[title]", label: "タイトル（必須）", example: "例：春のライブツアー"

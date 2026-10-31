@@ -230,5 +230,20 @@ RSpec.describe "Managing personal oshis", type: :request do
       expect(response).to redirect_to(oshis_path)
       expect(record.reload.representative_image.blob.id).to eq(original_id)
     end
+
+    it "retains a selected catalog candidate outside the first twelve after a failed explicit submission" do
+      candidates = 14.times.map { |index| create(:oshi, :approved, name: format("カード候補%02d", index)) }
+      selected = candidates.last
+      count = UserOshi.count
+      add_oshi(selected, started_period: "2023/13")
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(UserOshi.count).to eq(count)
+      expect(document.css("#oshi-search-results input[type='radio'][checked]").map { |input| input["value"] }).to eq([ selected.id.to_s ])
+      expect(document.at_css("#oshi-search-results .oshi-catalog-card").text).to include(selected.name, "未追加")
+      expect(document.at_css("input[name='user_oshi[started_period]']")["value"]).to eq("2023/13")
+      snapshot = Nokogiri::HTML(JSON.parse(document.at_css("[data-oshi-registration-target='catalogSnapshot']").text))
+      expect(snapshot.css("input[name='oshi_id']").size).to eq(12)
+      expect(snapshot.css("input[checked]")).to be_empty
+    end
   end
 end
