@@ -47,7 +47,7 @@ RSpec.describe "Top and home pages", type: :request do
       expect(document.at_css("title").text).to eq("ホーム | OshiLog")
       expect(document.at_css("main h1").text).to eq("ホーム")
       expect(document.css("main h2").map(&:text)).to eq(
-        [ "今月の推し活", "登録している推し", "最近の記録", "推し活の積み重ね", "今日の気づき" ]
+        [ "最近の記録", "今月の推し活", "登録している推し", "推し活の積み重ね", "今日の気づき" ]
       )
       expect(document.at_css(".home-summary-card").text).to include("活動回数", "0回", "活動支出", "記録なし")
       expect(document.at_css(".home-recent-card").text).to include("記録はまだありません")
@@ -59,7 +59,7 @@ RSpec.describe "Top and home pages", type: :request do
       expect(document.at_css("main").text).not_to include("準備中")
       expect(document.at_css("main").text).not_to include("18,400", "CANDY TUNE", "活動 5回")
       expect(document.css("nav a").map(&:text)).to eq(%w[トップ 推し一覧 活動記録一覧 マイページ])
-      expect(document.at_css("nav button").text).to eq("ログアウト")
+      expect(document.at_css("header .header-session button").text).to eq("ログアウト")
       expect(document.at_css("nav a[href='#{new_user_session_path}']")).to be_nil
       expect(document.at_css("nav a[href='#{new_user_registration_path}']")).to be_nil
     end

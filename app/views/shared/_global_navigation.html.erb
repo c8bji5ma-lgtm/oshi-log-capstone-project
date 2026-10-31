@@ -1,14 +1,16 @@
 <nav aria-label="<%= t("ui.navigation.label") %>">
   <ul class="nav-items">
     <% if user_signed_in? %>
-      <li><%= link_to t("ui.navigation.top"), root_path, aria: { current: ("page" if current_page?(root_path) || current_page?(home_path)) } %></li>
-      <li><%= link_to t("ui.navigation.oshis"), oshis_path, aria: { current: ("page" if current_page?(oshis_path)) } %></li>
-      <li><%= link_to t("ui.navigation.activities"), activities_path, aria: { current: ("page" if current_page?(activities_path)) } %></li>
-      <li><%= link_to t("ui.navigation.my_page"), my_page_path, aria: { current: ("page" if current_page?(my_page_path)) } %></li>
-      <li><%= button_to t("ui.actions.sign_out"), destroy_user_session_path, method: :delete, class: "nav-logout" %></li>
+      <li><%= link_to t("ui.navigation.top"), root_path, aria: { current: global_navigation_current(:home) } %></li>
+      <li><%= link_to t("ui.navigation.oshis"), oshis_path, aria: { current: global_navigation_current(:oshis) } %></li>
+      <li><%= link_to t("ui.navigation.activities"), activities_path, aria: { current: global_navigation_current(:activities) } %></li>
+      <li><%= link_to t("ui.navigation.my_page"), my_page_path, aria: { current: global_navigation_current(:my_page) } %></li>
     <% else %>
       <li><%= link_to t("ui.actions.sign_in"), new_user_session_path, aria: { current: ("page" if current_page?(new_user_session_path)) } %></li>
       <li><%= link_to t("ui.actions.sign_up"), new_user_registration_path, aria: { current: ("page" if current_page?(new_user_registration_path)) } %></li>
     <% end %>
   </ul>
 </nav>
+<% if user_signed_in? %>
+  <%= button_to t("ui.actions.sign_out"), destroy_user_session_path, method: :delete, class: "nav-logout", form: { class: "header-session" } %>
+<% end %>
