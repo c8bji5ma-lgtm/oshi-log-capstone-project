@@ -47,7 +47,7 @@ RSpec.describe "Japanese calendar boundaries", type: :request do
 
         expect(Date.current).to eq(japanese_date)
         get home_path
-        expect(document.at_css(".home-eyebrow").text).to include(japanese_date.strftime("%Y年%-m月"))
+        expect(document.at_css(".home-period").text).to include(japanese_date.strftime("%Y年%-m月"))
         expect(document.at_css(".home-summary-card").text).to include("活動回数", "1回")
 
         get statistics_card_path

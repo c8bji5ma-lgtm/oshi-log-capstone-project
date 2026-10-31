@@ -24,6 +24,7 @@
   </head>
 
   <body>
+    <a class="skip-link" href="#main-content" data-turbo="false">本文へ移動</a>
     <header class="site-header">
       <div class="page-width header-content">
         <%= link_to "OshiLog", root_path, class: "site-brand" %>
@@ -31,7 +32,7 @@
       </div>
     </header>
     <%= render "shared/flash" %>
-    <main class="page-width">
+    <main class="page-width" id="main-content" tabindex="-1">
       <%= yield %>
     </main>
     <footer class="site-footer">

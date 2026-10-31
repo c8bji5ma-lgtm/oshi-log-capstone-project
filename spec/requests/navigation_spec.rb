@@ -95,12 +95,42 @@ RSpec.describe "Global navigation and feature destinations", type: :request do
             [ "活動記録一覧", activities_path ], [ "マイページ", my_page_path ] ]
         )
         expect(document.css("nav a[aria-current='page']").map { |link| link["href"] }).to eq([ current_path ])
-        form = document.at_css("nav form")
+        form = document.at_css("header form")
         expect(form["action"]).to eq(destroy_user_session_path)
         expect(form["method"]).to eq("post")
         expect(form.at_css("input[name='_method']")["value"]).to eq("delete")
         expect(form.at_css("button").text).to eq("ログアウト")
       end
+    end
+
+    it "keeps the parent section current on creation and personal tools pages" do
+      create(:user_oshi, user: user)
+      create(:profile, user: user)
+      {
+        new_oshi_path => oshis_path, new_activity_path => activities_path,
+        oshi_data_path => my_page_path, edit_profile_path => my_page_path,
+        subscriptions_path => my_page_path, new_card_path => my_page_path
+      }.each do |path, parent|
+        get path
+        expect(response).to have_http_status(:ok)
+        expect(document.css("nav a[aria-current='location']").map { |link| link["href"] }).to eq([ parent ])
+        expect(document.css("nav a[aria-current='page']")).to be_empty
+      end
+    end
+
+    it "keeps the activity section current through detail, edit and filtering" do
+      activity = create(:activity, user: user)
+      [ activity_path(activity), edit_activity_path(activity) ].each do |path|
+        get path
+        expect(response).to have_http_status(:ok)
+        expect(document.css("nav a[aria-current='location']").map { |link| link["href"] }).to eq([ activities_path ])
+        expect(document.css("nav a[aria-current='page']")).to be_empty
+      end
+
+      get activities_path, params: { q: "長い日本語の検索語" }
+      expect(response).to have_http_status(:ok)
+      expect(document.css("nav a[aria-current='page']").map { |link| link["href"] }).to eq([ activities_path ])
+      expect(document.css("nav a[aria-current='location']")).to be_empty
     end
 
     it "links my page to the implemented protected profile editor" do

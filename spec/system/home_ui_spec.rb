@@ -30,6 +30,21 @@ RSpec.describe "Home and activity history presentation", type: :system do
     page.current_window.resize_to(375, 812)
     expect(page.evaluate_script("document.documentElement.scrollWidth <= window.innerWidth")).to be(true)
     expect(page).to have_link("推し活を記録する")
+    geometry = page.evaluate_script(<<~JS)
+      (() => ({
+        headerHeight: document.querySelector("body > header").getBoundingClientRect().height,
+        firstRecordTop: document.querySelector(".home-recent-list li").getBoundingClientRect().top,
+        summaryTop: document.querySelector(".home-summary-card").getBoundingClientRect().top,
+        viewportHeight: innerHeight,
+        dateRows: [...document.querySelectorAll(".home-recent-list time strong")].map(e => e.getBoundingClientRect().height / parseFloat(getComputedStyle(e).lineHeight)),
+        targetHeights: [...document.querySelectorAll("header nav a, .nav-logout")].map(e => e.getBoundingClientRect().height)
+      }))()
+    JS
+    expect(geometry["headerHeight"]).to be <= 116
+    expect(geometry["firstRecordTop"]).to be < geometry["viewportHeight"]
+    expect(geometry["firstRecordTop"]).to be < geometry["summaryTop"]
+    expect(geometry["targetHeights"]).to all(be >= 44)
+    expect(geometry["dateRows"]).to all(be <= 1.1)
     page.save_screenshot(directory.join("home-375.png"))
     page.execute_script("arguments[0].scrollIntoView({block: 'start', behavior: 'instant'})", find(".home-recent-card"))
     page.save_screenshot(directory.join("home-content-375.png"))
@@ -43,10 +58,40 @@ RSpec.describe "Home and activity history presentation", type: :system do
     page.current_window.resize_to(1280, 1024)
   end
 
-  it "exposes keyboard focus while moving through the global navigation" do
+  it "reflows the header at 320px and with enlarged text without splitting the wordmark" do
+    [ [ 320, "100%" ], [ 375, "200%" ] ].each do |width, scale|
+      page.current_window.resize_to(width, 900)
+      visit root_path
+      page.execute_script("document.documentElement.style.fontSize = arguments[0]", scale)
+      geometry = page.evaluate_script(<<~JS)
+        (() => {
+          const brand = document.querySelector(".site-brand"), style = getComputedStyle(brand);
+          return {
+            overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+            brandLines: brand.getBoundingClientRect().height / parseFloat(style.lineHeight)
+          };
+        })()
+      JS
+      expect(geometry["overflow"]).to be(false)
+      expect(geometry["brandLines"]).to be <= 1.2
+      expect(page).to have_css("header nav a", count: 4)
+      expect(page).to have_button("ログアウト")
+    end
+  ensure
+    page.execute_script("document.documentElement.style.fontSize = ''")
+    page.current_window.resize_to(1280, 1024)
+  end
+
+  it "skips repeated navigation and keeps visible keyboard focus on the main action" do
+    visit root_path
     page.find("body").send_keys(:tab)
-    focused = page.evaluate_script("document.activeElement && document.activeElement.textContent.trim()")
-    expect(focused).to be_present
+    expect(page).to have_css(".skip-link:focus", text: "本文へ移動")
+    expect(page.evaluate_script("getComputedStyle(document.activeElement).outlineStyle")).not_to eq("none")
+
+    page.driver.browser.switch_to.active_element.send_keys(:enter)
+    expect(page).to have_css("#main-content:focus")
+    page.driver.browser.switch_to.active_element.send_keys(:tab)
+    expect(page.evaluate_script("document.activeElement.textContent.trim()")).to eq("推し活を記録する")
     expect(page.evaluate_script("getComputedStyle(document.activeElement).outlineStyle")).not_to eq("none")
   end
 end

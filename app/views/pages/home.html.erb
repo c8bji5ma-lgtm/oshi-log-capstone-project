@@ -3,37 +3,15 @@
 
 <header class="home-hero">
   <div>
-    <p class="home-eyebrow"><%= Date.current.strftime("%Y年%-m月") %>の推し活</p>
     <h1>ホーム</h1>
     <p class="home-lead">今日の「好き」を残して、これまでの推し活を振り返りましょう。</p>
   </div>
   <%= link_to(@home_user_oshis.empty? ? "最初の推しを登録" : "推し活を記録する", first_record_path, class: "button home-primary-action") %>
 </header>
 
-<div class="home-grid">
-  <section class="card home-card home-summary-card" aria-labelledby="home-month-heading">
-    <div class="home-card-heading"><h2 id="home-month-heading">今月の推し活</h2><span aria-hidden="true">01</span></div>
-    <dl class="home-metrics">
-      <div><dt>活動回数</dt><dd><strong><%= number_with_delimiter(@month_activity_count) %></strong><span>回</span></dd></div>
-      <div><dt>活動支出</dt><dd><%= @month_amount_recorded ? "#{number_with_delimiter(@month_activity_amount)}円" : "記録なし" %></dd></div>
-    </dl>
-    <% if @month_activity_count.zero? %><p class="home-empty">今月の記録はまだありません。心に残った瞬間から始められます。</p><% end %>
-    <%= link_to "詳しいデータを見る", oshi_data_path, class: "home-text-link" %>
-  </section>
-
-  <section class="card home-card" aria-labelledby="home-oshi-heading">
-    <div class="home-card-heading"><h2 id="home-oshi-heading">登録している推し</h2><span aria-hidden="true">02</span></div>
-    <% if @home_user_oshis.empty? %>
-      <p class="home-empty">推しを登録すると、記録やデータを推しごとに振り返れます。</p>
-      <%= link_to "推しを登録する", new_oshi_path, class: "button button-secondary" %>
-    <% else %>
-      <ul class="home-oshi-list"><% @home_user_oshis.each do |record| %><li><%= attachment_image_tag record.representative_image, alt: "", width: 48, height: 48 %><span><%= record.oshi.name %></span></li><% end %></ul>
-      <%= link_to "推し一覧を見る", oshis_path, class: "home-text-link" %>
-    <% end %>
-  </section>
-
-  <section class="card home-card home-recent-card" aria-labelledby="home-recent-heading">
-    <div class="home-card-heading"><h2 id="home-recent-heading">最近の記録</h2><span aria-hidden="true">03</span></div>
+<div class="home-grid<%= " home-grid-empty" if @recent_activities.empty? %>">
+  <section class="home-card home-recent-card" aria-labelledby="home-recent-heading">
+    <div class="home-card-heading"><h2 id="home-recent-heading">最近の記録</h2></div>
     <% if @recent_activities.empty? %>
       <p class="home-empty">記録はまだありません。最初の思い出を残してみましょう。</p>
       <%= link_to "最初の記録をつくる", first_record_path, class: "button button-secondary" %>
@@ -41,8 +19,8 @@
       <ol class="home-recent-list">
         <% @recent_activities.each do |activity| %>
           <li>
-            <time datetime="<%= activity.occurred_on.iso8601 %>"><strong><%= activity.occurred_on.strftime("%-d") %></strong><span><%= activity.occurred_on.strftime("%-m月") %></span></time>
-            <%= attachment_image_tag activity.images.first, alt: "", class: "home-recent-image", width: 72, height: 72 %>
+            <time datetime="<%= activity.occurred_on.iso8601 %>" aria-label="<%= activity.occurred_on.strftime("%Y年%-m月%-d日") %>"><span><%= activity.occurred_on.strftime("%-m月") %></span><strong><%= activity.occurred_on.strftime("%-d") %></strong></time>
+            <%= attachment_image_tag activity.images.first, alt: "", class: "home-recent-image", width: 64, height: 64 %>
             <div><span class="home-category"><%= activity.activity_type %></span><%= link_to activity.title, activity_path(activity) %><p><%= activity.oshis.map(&:name).join("、") %></p></div>
           </li>
         <% end %>
@@ -51,15 +29,41 @@
     <% end %>
   </section>
 
-  <section class="card home-card home-history-card" aria-labelledby="home-history-heading">
-    <div class="home-card-heading"><h2 id="home-history-heading">推し活の積み重ね</h2><span aria-hidden="true">04</span></div>
-    <p class="home-history-value"><strong><%= number_with_delimiter(@home_summary.activity_count) %></strong><span>回</span></p>
-    <p><%= Date.current.year %>年に残した記録です。月や推し、カテゴリから思い出を探せます。</p>
-    <%= link_to "思い出を振り返る", activities_path, class: "button button-secondary" %>
+  <section class="home-card home-summary-card" aria-labelledby="home-month-heading">
+    <div class="home-card-heading"><h2 id="home-month-heading">今月の推し活</h2></div>
+    <p class="home-period"><%= Date.current.strftime("%Y年%-m月") %></p>
+    <dl class="home-metrics">
+      <div><dt>活動回数</dt><dd><strong><%= number_with_delimiter(@month_activity_count) %></strong><span>回</span></dd></div>
+      <div><dt>活動支出</dt><dd><%= @month_amount_recorded ? "#{number_with_delimiter(@month_activity_amount)}円" : "記録なし" %></dd></div>
+    </dl>
+    <% if @month_activity_count.zero? %><p class="home-empty">今月の記録はまだありません。心に残った瞬間から始められます。</p><% end %>
+    <%= link_to "詳しいデータを見る", oshi_data_path, class: "home-text-link" %>
   </section>
 
-  <section class="card home-card home-insight-card" aria-labelledby="home-insight-heading">
-    <div class="home-card-heading"><h2 id="home-insight-heading">今日の気づき</h2><span aria-hidden="true">05</span></div>
+  <section class="home-card home-oshi-card" aria-labelledby="home-oshi-heading">
+    <div class="home-card-heading"><h2 id="home-oshi-heading">登録している推し</h2></div>
+    <% if @home_user_oshis.empty? %>
+      <p class="home-empty">推しを登録すると、記録やデータを推しごとに振り返れます。</p>
+      <%= link_to "推しを登録する", new_oshi_path, class: "button button-secondary" %>
+    <% else %>
+      <ul class="home-oshi-list">
+        <% @home_user_oshis.each do |record| %>
+          <li><%= attachment_image_tag record.representative_image, alt: "", width: 40, height: 40 %><span><%= record.oshi.name %></span></li>
+        <% end %>
+      </ul>
+      <%= link_to "推し一覧を見る", oshis_path, class: "home-text-link" %>
+    <% end %>
+  </section>
+
+  <section class="home-card home-history-card" aria-labelledby="home-history-heading">
+    <div class="home-card-heading"><h2 id="home-history-heading">推し活の積み重ね</h2></div>
+    <p class="home-history-value"><strong><%= number_with_delimiter(@home_summary.activity_count) %></strong><span>回</span></p>
+    <p><%= Date.current.year %>年に残した記録です。月や推し、カテゴリから思い出を探せます。</p>
+    <%= link_to "思い出を振り返る", activities_path, class: "home-text-link" %>
+  </section>
+
+  <section class="home-card home-insight-card" aria-labelledby="home-insight-heading">
+    <div class="home-card-heading"><h2 id="home-insight-heading">今日の気づき</h2></div>
     <% if @home_summary.highlight %><p class="home-insight"><%= @home_summary.highlight %></p><p>記録を重ねるほど、自分らしい変化が見えてきます。</p><% else %><p class="home-empty">比較できる記録が増えると、最近の活動傾向をここでお知らせします。</p><% end %>
     <%= link_to "ハイライトを詳しく見る", oshi_data_path, class: "home-text-link" %>
   </section>
