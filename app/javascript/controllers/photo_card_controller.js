@@ -40,7 +40,7 @@ export default class extends Controller {
     if (this.template === "memories" && !this.memories) this.loadMemories()
     if (this.template === "data" && !this.dataSettings) this.loadStatistics()
     this.errorTarget.textContent = ""
-    this.statusTarget.textContent = "テンプレートを切り替えました。プレビューを作成してください。"
+    this.statusTarget.textContent = "テンプレートを切り替えました。"
   }
 
   renderPanels() {
