@@ -34,14 +34,16 @@
           <p class="data-note">複数推しの共通支出は推し別支出に含みません。</p>
         <% end %>
       </section>
-      <section class="card">
-        <h2>推し歴</h2>
-        <p id="oshi-history"><%= @summary.history %></p>
-        <% if @user_oshis.empty? %>
-          <%= link_to "推しを登録する", new_oshi_path, class: "button button-secondary" %>
-        <% end %>
-      </section>
     </div>
+
+    <section class="card data-section" aria-labelledby="oshi-history-heading" aria-describedby="oshi-history-scope">
+      <h2 id="oshi-history-heading">推し歴</h2>
+      <p id="oshi-history"><%= @summary.history %></p>
+      <% if @user_oshis.empty? %>
+        <%= link_to "推しを登録する", new_oshi_path, class: "button button-secondary" %>
+      <% end %>
+      <p id="oshi-history-scope" class="data-note">選択した年で区切らず、登録した開始・終了時期を表示します。</p>
+    </section>
 
     <section class="card data-section" aria-labelledby="monthly-heading">
       <h2 id="monthly-heading">月別活動</h2>
