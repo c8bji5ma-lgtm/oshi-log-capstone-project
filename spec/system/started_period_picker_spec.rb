@@ -201,6 +201,7 @@ RSpec.describe "Started period selection in the browser", type: :system do
       fill_in "推し始め", with: "1750"
       click_button "新しい推しを登録", exact: true
     end
+    expect(page).to have_current_path(oshis_path)
     expect(page).to have_css("[role='status']", text: "推しを登録しました")
     expect(user.user_oshis.sole.started_period).to eq("1750")
   ensure
