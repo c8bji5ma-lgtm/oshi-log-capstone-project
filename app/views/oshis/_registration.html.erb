@@ -91,7 +91,7 @@
 </section>
 <section id="oshi-registration" class="card oshi-form" aria-labelledby="oshi-registration-heading" data-oshi-registration-target="registrationPanel">
   <h2 id="oshi-registration-heading"><%= t("ui.oshi.new_heading") %></h2>
-  <p><%= link_to t("ui.oshi.back_to_search"), "#oshi-existing", data: { action: "click->oshi-registration#returnToSearch" } %></p>
+  <p><%= link_to t("ui.oshi.back_to_search"), "#oshi-existing", class: "oshi-registration-return", data: { action: "click->oshi-registration#returnToSearch" } %></p>
   <%= render "shared/validation_errors", resource: @oshi %>
   <%= render "shared/validation_errors", resource: @user_oshi %>
   <%= form_with model: @oshi, html: { multipart: true }, data: (inline ? { action: "submit->activity-oshi-panel#submitRegistration", turbo: false } : {}) do |f| %>
@@ -130,6 +130,6 @@
   <% end %>
 </section>
 <% unless inline %>
-  <p><%= link_to t("ui.actions.back_to_oshis"), oshis_path %></p>
+  <p><%= link_to t("ui.actions.back_to_oshis"), oshis_path, class: "oshi-registration-return" %></p>
 <% end %>
 </div>

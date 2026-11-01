@@ -319,4 +319,30 @@ RSpec.describe "Browsing registered catalog cards before search", type: :system 
   ensure
     other_window&.close
   end
+
+  it "reveals complete long names and affiliations by keyboard without selecting or saving" do
+    long_name = "03_" + ("LongName" * 25)
+    affiliation = "作品" + ("所属" * 70)
+    candidate = create(:oshi, :approved, name: long_name, affiliation: affiliation)
+    page.current_window.resize_to(375, 900)
+    login
+    visit new_oshi_path
+    expect(page).to have_css(".oshi-catalog-card", count: 1)
+    counts = [ Oshi.count, UserOshi.count ]
+    within("[data-catalog-oshi-id='#{candidate.id}']") do
+      radio = find("input[type=radio]")
+      radio.send_keys(:tab)
+      expect(page).to have_css("summary:focus")
+      find("summary").send_keys(:enter)
+      expect(page).to have_css("details[open]")
+      expect(page).to have_css("dd", exact_text: long_name)
+      expect(page).to have_css("dd", exact_text: affiliation)
+      expect(page).to have_no_css("input:checked")
+      find("summary").send_keys(:space)
+      expect(page).to have_no_css("details[open]")
+      choose long_name, exact: false
+      expect(page).to have_checked_field(long_name, exact: false)
+    end
+    expect([ Oshi.count, UserOshi.count ]).to eq(counts)
+  end
 end
