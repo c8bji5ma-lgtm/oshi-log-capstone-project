@@ -1408,3 +1408,56 @@ body > main { flex: 1 0 auto; }
 .site-footer .page-width { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .5rem 1rem; }
 .site-footer p { margin: 0; }
 .site-footer a { color: #245b8a; font-weight: 700; }
+
+/* Profile editing follows the input order, with the current image beside its change control. */
+.profile-editor {
+  max-inline-size: 44rem;
+}
+
+.profile-editor-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.profile-editor-details {
+  display: grid;
+  gap: 1rem;
+}
+
+.profile-editor .form-field {
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.profile-editor-image-select {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-editor-image-select .representative-image {
+  inline-size: 6rem;
+  block-size: 6rem;
+}
+
+.profile-editor-image-select input {
+  min-inline-size: 0;
+}
+
+.profile-editor-form > .button {
+  justify-self: start;
+}
+
+.profile-editor-back a {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+}
+
+@media (max-width: 640px) {
+  .profile-editor-image-select {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+}
