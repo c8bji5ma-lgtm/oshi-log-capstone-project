@@ -24,6 +24,9 @@ RSpec.describe "卒業課題のゲストログイン", type: :request do
     document = Nokogiri::HTML(response.body)
     expect(document.at_css("form[action='#{guest_session_path(role: "viewer")}']")).to be_present
     expect(document.at_css("form[action='#{guest_session_path(role: "admin")}']")).to be_present
+    expect(document.at_css("main a[href='#public-top-guests']").text).to eq("ゲストで画面を見る")
+    expect(document.at_css("main a[href='#{new_user_registration_path}']")).to be_nil
+    expect(document.at_css("main").text).to include("新しいアカウントを登録できません", "通常版で記録を始める手順")
   end
 
   it "allows the viewer guest to browse but not access administrator actions" do
@@ -82,6 +85,11 @@ RSpec.describe "卒業課題のゲストログイン", type: :request do
     expect(response).to have_http_status(:not_found)
     get new_user_registration_path
     expect(response).to have_http_status(:forbidden)
+    get root_path
+    document = Nokogiri::HTML(response.body)
+    expect(document.css("main form[action*='/guest/']")).to be_empty
+    expect(document.at_css("main a[href='#{new_user_registration_path}']")).to be_nil
+    expect(document.at_css("main").text).to include("現在、ゲストの利用を停止しています。")
   end
 
   it "does not expose either guest login when the sandbox flag is absent" do

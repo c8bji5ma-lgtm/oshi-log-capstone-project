@@ -90,7 +90,7 @@ RSpec.describe "User authentication", type: :request do
     expect(response).to redirect_to(new_user_session_path)
     get root_path
     expect(response).to have_http_status(:ok)
-    expect(Nokogiri::HTML(response.body).at_css("main h1").text).to eq("OshiLog")
+    expect(Nokogiri::HTML(response.body).at_css("main h1").text).to eq("推し活の記録を、振り返る楽しみに。")
   end
 
   it "redirects unauthenticated visitors to sign-in" do
