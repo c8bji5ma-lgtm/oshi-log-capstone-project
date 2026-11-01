@@ -1,26 +1,30 @@
 <% content_for :title, t("ui.profile.page_title") %>
 <h1><%= t("ui.profile.title") %></h1>
-<section class="card">
+<section class="card profile-editor">
   <h2><%= t("ui.profile.heading") %></h2>
-  <%= attachment_image_tag @profile_image, alt: t("ui.profile.current_image"), class: "representative-image" %>
   <%= render "shared/validation_errors", resource: @profile %>
-  <%= form_with model: @profile, url: profile_path, method: :patch do |f| %>
-    <div class="form-field">
-      <%= f.label :display_name, t("ui.profile.name_label") %>
-      <%= f.text_field :display_name, placeholder: t("ui.placeholders.display_name"), required: true, maxlength: 50, aria: { invalid: @profile.errors[:display_name].any?, describedby: "display-name-help" } %>
-      <p id="display-name-help"><%= t("ui.profile.name_help") %></p>
-    </div>
-    <div class="form-field">
-      <%= f.label :introduction, t("ui.profile.introduction_label") %>
-      <%= f.text_area :introduction, placeholder: t("ui.placeholders.introduction"), rows: 5, aria: { invalid: @profile.errors[:introduction].any? } %>
+  <%= form_with model: @profile, url: profile_path, method: :patch, class: "profile-editor-form" do |f| %>
+    <div class="profile-editor-details">
+      <div class="form-field">
+        <%= f.label :display_name, t("ui.profile.name_label") %>
+        <%= f.text_field :display_name, placeholder: t("ui.placeholders.display_name"), required: true, maxlength: 50, aria: { invalid: @profile.errors[:display_name].any?, describedby: "display-name-help" } %>
+        <p id="display-name-help"><%= t("ui.profile.name_help") %></p>
+      </div>
+      <div class="form-field">
+        <%= f.label :introduction, t("ui.profile.introduction_label") %>
+        <%= f.text_area :introduction, placeholder: t("ui.placeholders.introduction"), rows: 5, aria: { invalid: @profile.errors[:introduction].any? } %>
+      </div>
     </div>
     <div class="form-field" data-controller="image-upload">
       <%= f.label :profile_image, t("ui.profile.image_label") %>
-      <%= f.file_field :profile_image, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { invalid: @profile.errors[:profile_image].any?, describedby: "profile-image-help profile-image-status" } %>
+      <div class="profile-editor-image-select">
+        <%= attachment_image_tag @profile_image, alt: t("ui.profile.current_image"), class: "representative-image" %>
+        <%= f.file_field :profile_image, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { invalid: @profile.errors[:profile_image].any?, describedby: "profile-image-help profile-image-status" } %>
+      </div>
       <p id="profile-image-help"><%= t("ui.profile.image_help") %></p>
       <p id="profile-image-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
     </div>
     <%= f.submit t("ui.actions.save_profile"), class: "button" %>
   <% end %>
 </section>
-<p><%= link_to t("ui.actions.back_to_my_page"), my_page_path %></p>
+<p class="profile-editor-back"><%= link_to t("ui.actions.back_to_my_page"), my_page_path %></p>
