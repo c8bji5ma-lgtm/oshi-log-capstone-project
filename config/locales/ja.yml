@@ -15,6 +15,8 @@ ja:
         password_confirmation: "パスワード（確認用）"
       profile:
         display_name: "表示名"
+      user_oshi:
+        started_period: "推し始め"
   devise:
     failure:
       already_authenticated: "すでにログインしています。"
@@ -220,6 +222,7 @@ ja:
         heading: "登録されている推しから選ぶ"
         help: "名前順に最大12件を表示しています。横にスクロールして選べます。ほかの推しも上の検索で探せます。選ぶだけでは追加されません。"
         scroll_label: "登録されている推し。横にスクロールできます"
+        full_details: "名前・所属の全文"
         empty: "表示できる推しはまだありません。名前で検索するか、新しく登録できます。"
         added: "追加済み"
         not_added: "未追加"

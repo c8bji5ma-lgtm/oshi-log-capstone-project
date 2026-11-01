@@ -582,6 +582,7 @@ fieldset {
 
 .oshi-catalog-track {
   display: flex;
+  align-items: flex-start;
   gap: 1rem;
   max-inline-size: 100%;
   padding: 0.5rem 0.25rem 0.75rem;
@@ -631,6 +632,62 @@ fieldset {
 
 .oshi-catalog-track:focus-visible,
 .oshi-catalog-card:focus-within {
+  outline: 3px solid #245b8a;
+  outline-offset: 2px;
+}
+
+.oshi-catalog-name,
+.oshi-catalog-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  min-block-size: 3.2em;
+  line-height: 1.6;
+}
+
+.oshi-catalog-states {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.oshi-catalog-details {
+  margin: 0 0.75rem 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.oshi-catalog-details summary {
+  box-sizing: border-box;
+  min-block-size: 44px;
+  padding-block: 0.5rem;
+  color: #245b8a;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.oshi-catalog-details dl {
+  margin: 0.5rem 0 0;
+}
+
+.oshi-catalog-details dt {
+  font-weight: 700;
+}
+
+.oshi-catalog-details dd {
+  margin: 0 0 0.5rem;
+}
+
+.oshi-registration-return {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 44px;
+  padding-inline: 0.25rem;
+}
+
+.oshi-catalog-details summary:focus-visible,
+.oshi-registration-return:focus-visible {
   outline: 3px solid #245b8a;
   outline-offset: 2px;
 }

@@ -115,6 +115,8 @@ RSpec.describe "Managing personal oshis", type: :request do
       expect(document.at_css("input[type='radio'][checked]")["value"]).to eq(oshi.id.to_s)
       expect(document.at_css("input[name='user_oshi[started_period]']")["value"]).to eq("2023/13")
       expect(document.css(".validation-errors[role='alert']")).not_to be_empty
+      expect(document.at_css(".validation-errors").text).to include("推し始めは正しい形式で入力してください")
+      expect(document.at_css(".validation-errors").text).not_to include("Started period")
     end
 
     it "reports duplicate addition without changing the existing ended record" do

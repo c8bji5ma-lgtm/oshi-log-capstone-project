@@ -19,11 +19,22 @@
             <% else %>
               <%= image_tag "image_placeholder.svg", alt: "", class: "common-oshi-image" %>
             <% end %>
-            <strong><%= oshi.name %></strong>
-            <span><%= oshi.oshi_type %>／<%= oshi.affiliation.presence || t("ui.states.affiliation_not_set") %></span>
-            <span><%= oshi.approved? ? t("ui.states.approved") : t("ui.states.pending") %></span>
-            <span class="oshi-catalog-registration"><%= added ? t("ui.oshi.catalog.added") : t("ui.oshi.catalog.not_added") %></span>
+            <strong class="oshi-catalog-name"><%= oshi.name %></strong>
+            <span class="oshi-catalog-description"><%= oshi.oshi_type %>／<%= oshi.affiliation.presence || t("ui.states.affiliation_not_set") %></span>
+            <span class="oshi-catalog-states">
+              <span><%= oshi.approved? ? t("ui.states.approved") : t("ui.states.pending") %></span>
+              <span class="oshi-catalog-registration"><%= added ? t("ui.oshi.catalog.added") : t("ui.oshi.catalog.not_added") %></span>
+            </span>
           <% end %>
+          <details class="oshi-catalog-details">
+            <summary><%= t("ui.oshi.catalog.full_details") %></summary>
+            <dl>
+              <dt><%= t("ui.labels.oshi_name") %></dt>
+              <dd><%= oshi.name %></dd>
+              <dt><%= t("ui.labels.affiliation") %></dt>
+              <dd><%= oshi.affiliation.presence || t("ui.states.affiliation_not_set") %></dd>
+            </dl>
+          </details>
           <% if common_image %>
             <p id="oshi-catalog-attribution-<%= oshi.id %>" class="oshi-catalog-attribution"><%= t("ui.common_images.attribution_prefix") %><%= common_image.attribution_text %>（<%= common_image.license_name %>）</p>
           <% end %>
