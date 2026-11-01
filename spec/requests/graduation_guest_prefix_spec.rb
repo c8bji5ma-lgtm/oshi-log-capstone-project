@@ -103,6 +103,12 @@ RSpec.describe "デモのサブパス", type: :request do
           [ [ "ログイン", "/demo/users/sign_in" ], [ "ゲストの案内", "/demo/" ] ]
         )
         expect(document.css("nav a[href*='#']")).to be_empty
+        if path == "/demo/users/sign_in"
+          expect(document.css("main .authentication-links a").map { |link| [ link.text, link["href"] ] }).to eq(
+            [ [ "ゲストの案内", "/demo/" ] ]
+          )
+          expect(document.at_css("main a[href='/demo/users/sign_up']")).to be_nil
+        end
       end
 
       client.get "/demo/"
