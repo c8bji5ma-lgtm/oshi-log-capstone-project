@@ -106,9 +106,11 @@
   <p data-activity-oshi-panel-target="restart" hidden><%= link_to t("ui.activity_panel.restart"), new_activity_path %></p>
   <ul data-activity-oshi-panel-target="errors" hidden></ul>
   <% if activity_panel_writable? %>
-    <div data-activity-oshi-panel-target="unknownActions" hidden class="actions">
-      <button type="button" data-action="activity-oshi-panel#confirm"><%= t("ui.activity_panel.confirm") %></button>
-      <button type="button" data-action="activity-oshi-panel#continueWithout"><%= t("ui.activity_panel.continue_without") %></button>
+    <div data-activity-oshi-panel-target="unknownActions" hidden>
+      <div class="actions">
+        <button type="button" class="button" data-action="activity-oshi-panel#confirm"><%= t("ui.activity_panel.confirm") %></button>
+        <button type="button" class="button button-secondary" data-action="activity-oshi-panel#continueWithout"><%= t("ui.activity_panel.continue_without") %></button>
+      </div>
     </div>
     <section id="activity-oshi-panel" hidden class="card oshi-form" data-activity-oshi-panel-target="panel" aria-labelledby="activity-oshi-panel-heading">
       <h2 id="activity-oshi-panel-heading" tabindex="-1"><%= t("ui.activity_panel.heading") %></h2>

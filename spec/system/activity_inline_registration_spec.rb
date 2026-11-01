@@ -59,6 +59,8 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
     page.current_window.resize_to(width, 900)
     login
     visit(mode == "new" ? new_activity_path : edit_activity_path(@activity))
+    expect(page).to have_no_button(I18n.t("ui.activity_panel.confirm"))
+    expect(page).to have_no_button(I18n.t("ui.activity_panel.continue_without"))
     fill_in "activity_title", with: "残す活動タイトル"
     fill_in "activity_place", with: "残す場所"
     fill_in "activity_memo", with: "残すメモ\n2行目"
@@ -151,6 +153,8 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
       find("input[type='submit']").click
     end
     expect(page).to have_checked_field(record.name, type: "checkbox", visible: :all)
+    expect(page).to have_no_button(I18n.t("ui.activity_panel.confirm"))
+    expect(page).to have_no_button(I18n.t("ui.activity_panel.continue_without"))
   end
 
   def register_new(name, affiliation: "合成作品", period: nil)
@@ -184,6 +188,8 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
         existing = candidate
         open_panel
         expect(page).to have_text(I18n.t("ui.activity_panel.separate_save"))
+        expect(page).to have_no_button(I18n.t("ui.activity_panel.confirm"))
+        expect(page).to have_no_button(I18n.t("ui.activity_panel.continue_without"))
         add_existing(existing)
         expect_preserved
         name = "パネル新規#{mode}#{width}"
@@ -192,6 +198,8 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
         created = user.user_oshis.joins(:oshi).find_by!(oshis: { name: name })
         expect(created.oshi).to be_pending
         expect(created.started_period).to eq("2020/05")
+        expect(page).to have_no_button(I18n.t("ui.activity_panel.confirm"))
+        expect(page).to have_no_button(I18n.t("ui.activity_panel.continue_without"))
         expect_preserved
         expect(page).to have_checked_field(personal.oshi.name, type: "checkbox", visible: :all)
         capture(mode, width)
@@ -487,6 +495,12 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
     wait_status("unknown")
     expect(user.user_oshis.count).to eq(1)
     expect(page).to have_css("[data-activity-oshi-panel-target='panel'][aria-busy='false']")
+    [ 375, 1280 ].each do |width|
+      page.current_window.resize_to(width, 900)
+      [ I18n.t("ui.activity_panel.confirm"), I18n.t("ui.activity_panel.continue_without") ].each do |label|
+        expect(find_button(label).native.rect.height).to be >= 44
+      end
+    end
     page.execute_script("document.querySelector('#oshi-registration form').requestSubmit()")
     expect(page.evaluate_script("window.timeoutPosts")).to eq(1)
     click_button I18n.t("ui.activity_panel.confirm")
@@ -495,6 +509,8 @@ RSpec.describe "Inline oshi registration during activity input", type: :system d
     expect_preserved
     click_button I18n.t("ui.activity_panel.continue_without")
     wait_status("continued")
+    expect(page).to have_no_button(I18n.t("ui.activity_panel.confirm"))
+    expect(page).to have_no_button(I18n.t("ui.activity_panel.continue_without"))
     page.execute_script("window.fetch=window.timeoutFetch;window.setTimeout=window.timeoutTimer")
     click_button I18n.t("ui.activity_panel.close")
     save_activity("new")

@@ -287,6 +287,7 @@ RSpec.describe "Browsing registered catalog cards before search", type: :system 
       within("#oshi-search-results") { choose @candidate.name, exact: false }
       capture_cards(375, "no-js", no_js: true)
       within("form[action='#{user_oshis_path}']") { click_button "選んだ推しを追加" }
+      expect(page).to have_current_path(oshis_path)
       expect(page).to have_css("main h1", exact_text: "推し一覧")
       expect(user.user_oshis.find_by!(oshi: @candidate).started_period).to be_nil
     ensure
