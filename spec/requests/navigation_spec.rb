@@ -183,4 +183,42 @@ RSpec.describe "Global navigation and feature destinations", type: :request do
       expect(document.css("main script")).to be_empty
     end
   end
+
+  context "when the demo registration gate is enabled" do
+    around do |example|
+      previous = ENV["OSHI_GUEST_SANDBOX"]
+      ENV["OSHI_GUEST_SANDBOX"] = "isolated"
+      example.run
+    ensure
+      previous.nil? ? ENV.delete("OSHI_GUEST_SANDBOX") : ENV["OSHI_GUEST_SANDBOX"] = previous
+    end
+
+    before do
+      GraduationGuestSandbox::RESERVED_EMAILS.each do |email|
+        create(:user, email: email, admin: email == GraduationGuestSandbox::ACCOUNTS.fetch("admin"))
+      end
+    end
+
+    [ true, false ].each do |ready|
+      it "offers a valid guest guide while guest access is #{ready ? "ready" : "stopped"}" do
+        create(:user) unless ready
+        expect(GraduationGuestSandbox.ready?).to eq(ready)
+
+        [ root_path, new_user_session_path ].each do |path|
+          get path
+
+          expect(response).to have_http_status(:ok)
+          expect(document.css("nav a").map { |link| [ link.text, link["href"] ] }).to eq(
+            [ [ "ログイン", new_user_session_path ], [ "ゲストの案内", root_path ] ]
+          )
+          expect(document.css("nav a[href*='#']")).to be_empty
+          expect(document.css("nav a[aria-current='page']").map { |link| link["href"] }).to eq([ path ])
+        end
+
+        get new_user_registration_path
+        expect(response).to have_http_status(:forbidden)
+        expect(response.body).to eq("デモ環境では新しいアカウントを登録できません。")
+      end
+    end
+  end
 end
