@@ -39,7 +39,7 @@ RSpec.describe "Shared header and footer layout", type: :system do
     [ 375, 1280 ].each do |width|
       page.current_window.resize_to(width, 900)
       visit root_path
-      expect(page).to have_css("main h1", text: "OshiLog", exact_text: true)
+      expect(page).to have_css("main h1", text: "推し活の記録を、振り返る楽しみに。", exact_text: true)
       check_layout("top", width)
       visit new_user_session_path
       expect(page).to have_button("ログイン")

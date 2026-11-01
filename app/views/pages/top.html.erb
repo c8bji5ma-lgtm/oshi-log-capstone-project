@@ -1,14 +1,81 @@
 <% content_for :title, "トップ | OshiLog" %>
+<% demo = GraduationGuestSandbox.enabled? %>
+<% guest_ready = GraduationGuestSandbox.ready? %>
 
-<section class="top-intro">
-  <h1>OshiLog</h1>
-  <p>推し活を「記録する・振り返る・可視化する」サービスです。</p>
-  <div class="actions">
-    <%= link_to "ログイン", new_user_session_path, class: "button" %>
-    <%= link_to "新規登録", new_user_registration_path, class: "button button-secondary" %>
-  </div>
-  <% if GraduationGuestSandbox.ready? %>
-    <section aria-labelledby="guest-login-title">
+<div class="public-top">
+  <header class="public-top-hero">
+    <div>
+      <h1>推し活の記録を、振り返る楽しみに。</h1>
+      <p class="public-top-lead">ライブや配信、グッズを買った日のこと。活動と写真、使った金額をまとめて残し、推しごとに見返せます。</p>
+      <% if demo %>
+        <p>デモ環境では新しいアカウントを登録できません。ゲストは閲覧専用です。</p>
+        <% if guest_ready %>
+          <%= link_to "ゲストで画面を見る", "#public-top-guests", class: "button" %>
+        <% else %>
+          <p>現在、ゲストの利用を停止しています。</p>
+          <%= link_to "ログイン", new_user_session_path, class: "button button-secondary" %>
+        <% end %>
+      <% else %>
+        <div class="actions">
+          <%= link_to "新規登録して始める", new_user_registration_path, class: "button public-top-primary" %>
+          <%= link_to "ログイン", new_user_session_path, class: "button button-secondary" %>
+        </div>
+        <p class="public-top-note">登録後はホームから、最初の推しを登録して始めます。</p>
+      <% end %>
+    </div>
+
+    <section class="public-top-record" aria-labelledby="public-top-record-title">
+      <h2 id="public-top-record-title">残せるもの</h2>
+      <dl>
+        <div>
+          <dt>活動</dt>
+          <dd>日付・カテゴリ・タイトルが基本です。場所やメモ、感情タグも添えられます。</dd>
+        </div>
+        <div>
+          <dt>写真</dt>
+          <dd>その日の記録と一緒に見返せます。写真は必要なときだけ追加できます。</dd>
+        </div>
+        <div>
+          <dt>支出</dt>
+          <dd>使った金額を活動と一緒に記録。金額を入れずに残すこともできます。</dd>
+        </div>
+      </dl>
+    </section>
+  </header>
+
+  <section class="public-top-review" aria-labelledby="public-top-review-title">
+    <h2 id="public-top-review-title">振り返れること</h2>
+    <p>活動記録は月・推し・カテゴリ・キーワードから探せます。推し活データでは、選んだ年の活動回数と支出、月別の活動回数を確認できます。</p>
+  </section>
+
+  <section class="public-top-start" aria-labelledby="public-top-start-title">
+    <h2 id="public-top-start-title">最初の記録まで</h2>
+    <% if demo %>
+      <p>以下は通常版で記録を始める手順です。ゲストでは登録・編集・削除はできません。</p>
+    <% end %>
+    <ol class="public-top-steps">
+      <li>
+        <h3>アカウントを作る</h3>
+        <p>新規登録するとホームへ進みます。アカウントをお持ちの方はログインします。</p>
+      </li>
+      <li>
+        <h3>ホームから推しを登録</h3>
+        <p>「最初の推しを登録」から、既存の候補を選ぶか新しく登録します。</p>
+      </li>
+      <li>
+        <h3>活動を記録する</h3>
+        <p>この手順で推しを登録すると、活動の入力画面へ進みます。日付・カテゴリ・タイトルを入れて、最初の記録を残しましょう。</p>
+      </li>
+    </ol>
+    <% unless demo %>
+      <div class="actions">
+        <%= link_to "新規登録して始める", new_user_registration_path, class: "button" %>
+      </div>
+    <% end %>
+  </section>
+
+  <% if guest_ready %>
+    <section id="public-top-guests" class="public-top-demo" aria-labelledby="guest-login-title">
       <h2 id="guest-login-title">ゲストとして試す</h2>
       <p>デモ専用のデータを閲覧できます。登録・編集・削除はできません。</p>
       <div class="actions">
@@ -17,19 +84,4 @@
       </div>
     </section>
   <% end %>
-</section>
-
-<div class="cards">
-  <section class="card">
-    <h2>記録</h2>
-    <p>推し活の活動や思い出を記録します。</p>
-  </section>
-  <section class="card">
-    <h2>振り返り</h2>
-    <p>活動履歴を見返し、これまでの推し活を振り返ります。</p>
-  </section>
-  <section class="card">
-    <h2>可視化</h2>
-    <p>活動回数や支出、活動傾向をデータで確認します。</p>
-  </section>
 </div>

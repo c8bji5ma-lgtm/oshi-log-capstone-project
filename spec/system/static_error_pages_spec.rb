@@ -18,7 +18,7 @@ RSpec.describe "Japanese error pages in the browser", type: :system do
     end
     click_link "トップページへ戻る"
     expect(page).to have_current_path(root_path)
-    expect(page).to have_css("main h1", text: "OshiLog", exact_text: true)
+    expect(page).to have_css("main h1", text: "推し活の記録を、振り返る楽しみに。", exact_text: true)
   ensure
     page.current_window.resize_to(1280, 1024)
   end
@@ -77,7 +77,7 @@ RSpec.describe "Japanese error pages in the browser", type: :system do
 
       find("main a:focus-visible").send_keys(:enter)
       expect(page).to have_current_path(root_path)
-      expect(page).to have_css("main h1", text: "OshiLog", exact_text: true)
+      expect(page).to have_css("main h1", text: "推し活の記録を、振り返る楽しみに。", exact_text: true)
     ensure
       page.current_window.resize_to(1280, 1024)
     end
