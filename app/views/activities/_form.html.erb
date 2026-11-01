@@ -27,78 +27,86 @@
     <p><%= t("ui.conflict.image_help") %></p>
   </section>
 <% end %>
-<%= form_with model: @activity, url: (@activity.persisted? ? activity_path(@activity, list_context: @list_context.presence) : nil), data: { activity_oshi_panel_target: "activityForm" } do |f| %>
+<%= form_with model: @activity, url: (@activity.persisted? ? activity_path(@activity, list_context: @list_context.presence) : nil), class: "activity-editor", data: { activity_oshi_panel_target: "activityForm" } do |f| %>
   <%= hidden_field_tag "activity[context_token]", activity_context_token, id: "activity_context_token", data: { activity_oshi_panel_target: "context" } %>
   <% if @activity.persisted? %>
     <%= f.hidden_field :lock_version, value: @submitted_lock_version || @activity.lock_version %>
   <% end %>
-  <div class="activity-form-grid">
-    <fieldset class="form-field choice-field" aria-describedby="oshi-selection-help" aria-invalid="<%= @activity.errors[:activity_oshis].any? || @activity.errors[:base].any? %>">
-      <legend><%= t("ui.activity.oshis_label") %></legend>
-      <p id="oshi-selection-help"><%= t("ui.activity.selection_help") %></p>
-      <% if activity_panel_writable? %>
-        <button type="button" hidden class="button button-secondary" data-activity-oshi-panel-target="openButton" data-action="activity-oshi-panel#open" aria-controls="activity-oshi-panel" aria-expanded="false"><%= t("ui.activity_panel.open") %></button>
-      <% end %>
-      <div class="choice-chips" data-activity-oshi-panel-target="choices">
-        <%= f.collection_check_boxes :oshi_ids, @selectable_oshis, :id, :name, checked: @selected_oshi_ids do |choice| %>
+  <div class="activity-editor-group" role="group" aria-labelledby="activity-basics-heading">
+    <h2 id="activity-basics-heading"><%= t("ui.activity.basics_heading") %></h2>
+    <div class="activity-form-grid">
+      <fieldset class="form-field choice-field" aria-describedby="oshi-selection-help" aria-invalid="<%= @activity.errors[:activity_oshis].any? || @activity.errors[:base].any? %>">
+        <legend><%= t("ui.activity.oshis_label") %></legend>
+        <p id="oshi-selection-help"><%= t("ui.activity.selection_help") %></p>
+        <% if activity_panel_writable? %>
+          <button type="button" hidden class="button button-secondary" data-activity-oshi-panel-target="openButton" data-action="activity-oshi-panel#open" aria-controls="activity-oshi-panel" aria-expanded="false"><%= t("ui.activity_panel.open") %></button>
+        <% end %>
+        <div class="choice-chips" data-activity-oshi-panel-target="choices">
+          <%= f.collection_check_boxes :oshi_ids, @selectable_oshis, :id, :name, checked: @selected_oshi_ids do |choice| %>
+            <%= choice.label(class: "choice-chip") { choice.check_box + tag.span(choice.text) } %>
+          <% end %>
+        </div>
+      </fieldset>
+      <div class="form-field">
+        <%= f.label :occurred_on, t("ui.activity.occurred_on_label") %>
+        <%= f.date_field :occurred_on, required: true, aria: { invalid: @activity.errors[:occurred_on].any? } %>
+      </div>
+      <div class="form-field">
+        <%= f.label :activity_type, t("ui.activity.type_label") %>
+        <%= f.select :activity_type, Activity::ACTIVITY_TYPES, { include_blank: t("ui.states.select_prompt") }, required: true, aria: { invalid: @activity.errors[:activity_type].any? } %>
+      </div>
+      <div class="form-field activity-editor-title">
+        <%= f.label :title, t("ui.activity.title_label") %>
+        <%= f.text_field :title, placeholder: t("ui.placeholders.activity_title"), required: true, maxlength: 255, aria: { invalid: @activity.errors[:title].any? } %>
+      </div>
+    </div>
+  </div>
+  <div class="activity-editor-group" role="group" aria-labelledby="activity-memories-heading">
+    <h2 id="activity-memories-heading"><%= t("ui.activity.memories_heading") %></h2>
+    <div class="activity-form-grid">
+      <div class="form-field">
+        <%= f.label :place, t("ui.labels.place") %>
+        <%= f.text_field :place, placeholder: t("ui.placeholders.place"), maxlength: 255, aria: { invalid: @activity.errors[:place].any? } %>
+      </div>
+      <div class="form-field">
+        <%= f.label :amount, t("ui.activity.amount_label") %>
+        <%= f.number_field :amount, min: 0, step: 1, aria: { invalid: @activity.errors[:amount].any?, describedby: "activity-amount-help" } %>
+        <p id="activity-amount-help"><%= t("ui.activity.amount_help") %></p>
+      </div>
+    </div>
+    <fieldset class="form-field choice-field" aria-describedby="emotion-selection-help" aria-invalid="<%= @activity.errors[:emotion_ids].any? %>">
+      <legend><%= t("ui.activity.emotions_label") %></legend>
+      <p id="emotion-selection-help"><%= t("ui.activity.emotion_help") %></p>
+      <div class="choice-chips">
+        <%= f.collection_check_boxes :emotion_ids, @selectable_emotions, :id, :name, checked: @selected_emotion_ids do |choice| %>
           <%= choice.label(class: "choice-chip") { choice.check_box + tag.span(choice.text) } %>
         <% end %>
       </div>
     </fieldset>
     <div class="form-field">
-      <%= f.label :occurred_on, t("ui.activity.occurred_on_label") %>
-      <%= f.date_field :occurred_on, required: true, aria: { invalid: @activity.errors[:occurred_on].any? } %>
+      <%= f.label :memo, t("ui.labels.memo") %>
+      <%= f.text_area :memo, placeholder: t("ui.placeholders.memo"), rows: 5, aria: { invalid: @activity.errors[:memo].any? } %>
     </div>
-    <div class="form-field">
-      <%= f.label :activity_type, t("ui.activity.type_label") %>
-      <%= f.select :activity_type, Activity::ACTIVITY_TYPES, { include_blank: t("ui.states.select_prompt") }, required: true, aria: { invalid: @activity.errors[:activity_type].any? } %>
+    <% if @existing_images.any? %>
+      <section>
+        <h2><%= t("ui.activity.saved_images") %></h2>
+        <div class="image-gallery">
+          <% @existing_images.each_with_index do |image, index| %>
+            <%= attachment_image_tag image, alt: t("ui.activity.image_alt", title: @activity.title, index: index + 1) %>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+    <div class="form-field" data-controller="image-upload" data-image-upload-preview-alt-value="<%= t("ui.activity.preview_alt") %>" data-image-upload-preview-error-value="<%= t("ui.activity.preview_error") %>">
+      <%= f.label :images, t("ui.activity.images_label") %>
+      <%= f.file_field :images, multiple: true, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { describedby: "activity-image-help activity-image-status", invalid: @activity.errors[:images].any? } %>
+      <p id="activity-image-help"><%= t("ui.activity.image_help") %></p>
+      <p id="activity-image-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
+      <section data-image-upload-target="preview" aria-labelledby="activity-image-preview-heading" hidden>
+        <h2 id="activity-image-preview-heading"><%= t("ui.activity.preview_heading") %></h2>
+        <div class="image-gallery" data-image-upload-target="previewImages"></div>
+      </section>
     </div>
-    <div class="form-field">
-      <%= f.label :title, t("ui.activity.title_label") %>
-      <%= f.text_field :title, placeholder: t("ui.placeholders.activity_title"), required: true, maxlength: 255, aria: { invalid: @activity.errors[:title].any? } %>
-    </div>
-    <div class="form-field">
-      <%= f.label :place, t("ui.labels.place") %>
-      <%= f.text_field :place, placeholder: t("ui.placeholders.place"), maxlength: 255, aria: { invalid: @activity.errors[:place].any? } %>
-    </div>
-    <div class="form-field">
-      <%= f.label :amount, t("ui.activity.amount_label") %>
-      <%= f.number_field :amount, min: 0, step: 1, aria: { invalid: @activity.errors[:amount].any?, describedby: "activity-amount-help" } %>
-      <p id="activity-amount-help"><%= t("ui.activity.amount_help") %></p>
-    </div>
-  </div>
-  <fieldset class="form-field choice-field" aria-describedby="emotion-selection-help" aria-invalid="<%= @activity.errors[:emotion_ids].any? %>">
-    <legend><%= t("ui.activity.emotions_label") %></legend>
-    <p id="emotion-selection-help"><%= t("ui.activity.emotion_help") %></p>
-    <div class="choice-chips">
-      <%= f.collection_check_boxes :emotion_ids, @selectable_emotions, :id, :name, checked: @selected_emotion_ids do |choice| %>
-        <%= choice.label(class: "choice-chip") { choice.check_box + tag.span(choice.text) } %>
-      <% end %>
-    </div>
-  </fieldset>
-  <div class="form-field">
-    <%= f.label :memo, t("ui.labels.memo") %>
-    <%= f.text_area :memo, placeholder: t("ui.placeholders.memo"), rows: 5, aria: { invalid: @activity.errors[:memo].any? } %>
-  </div>
-  <% if @existing_images.any? %>
-    <section>
-      <h2><%= t("ui.activity.saved_images") %></h2>
-      <div class="image-gallery">
-        <% @existing_images.each_with_index do |image, index| %>
-          <%= attachment_image_tag image, alt: t("ui.activity.image_alt", title: @activity.title, index: index + 1) %>
-        <% end %>
-      </div>
-    </section>
-  <% end %>
-  <div class="form-field" data-controller="image-upload" data-image-upload-preview-alt-value="<%= t("ui.activity.preview_alt") %>" data-image-upload-preview-error-value="<%= t("ui.activity.preview_error") %>">
-    <%= f.label :images, t("ui.activity.images_label") %>
-    <%= f.file_field :images, multiple: true, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { describedby: "activity-image-help activity-image-status", invalid: @activity.errors[:images].any? } %>
-    <p id="activity-image-help"><%= t("ui.activity.image_help") %></p>
-    <p id="activity-image-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
-    <section data-image-upload-target="preview" aria-labelledby="activity-image-preview-heading" hidden>
-      <h2 id="activity-image-preview-heading"><%= t("ui.activity.preview_heading") %></h2>
-      <div class="image-gallery" data-image-upload-target="previewImages"></div>
-    </section>
   </div>
   <%= f.submit(@activity.persisted? ? t("ui.actions.update") : t("ui.actions.record"), class: "button") %>
 <% end %>
