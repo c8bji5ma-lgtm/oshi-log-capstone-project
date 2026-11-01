@@ -107,6 +107,7 @@ ja:
       no_registered: "現在、登録済みの推しは見つかりません。登録がまだ処理中の場合もあるため、自動では再送しません。"
     navigation:
       label: "グローバルナビゲーション"
+      guest_guide: "ゲストの案内"
       top: "トップ"
       oshis: "推し一覧"
       activities: "活動記録一覧"

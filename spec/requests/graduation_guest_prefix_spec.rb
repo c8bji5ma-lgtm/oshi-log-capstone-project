@@ -89,4 +89,31 @@ RSpec.describe "デモのサブパス", type: :request do
     client.delete "/demo/users/sign_out"
     expect(client.response.location).to end_with("/demo/users/sign_in")
   end
+
+  [ true, false ].each do |ready|
+    it "keeps the header guide and registration prohibition under /demo when guests are #{ready ? "ready" : "stopped"}" do
+      create(:user) unless ready
+      expect(GraduationGuestSandbox.ready?).to eq(ready)
+
+      [ "/demo/", "/demo/users/sign_in" ].each do |path|
+        client.get path
+        expect(client.response).to have_http_status(:ok)
+        document = Nokogiri::HTML(client.response.body)
+        expect(document.css("nav a").map { |link| [ link.text, link["href"] ] }).to eq(
+          [ [ "ログイン", "/demo/users/sign_in" ], [ "ゲストの案内", "/demo/" ] ]
+        )
+        expect(document.css("nav a[href*='#']")).to be_empty
+      end
+
+      client.get "/demo/"
+      document = Nokogiri::HTML(client.response.body)
+      expect(document.css("main form[action*='/guest/']").size).to eq(ready ? 2 : 0)
+      expect(document.at_css("#public-top-guests").present?).to eq(ready)
+      expect(document.at_css("main").text).to include("現在、ゲストの利用を停止しています。") unless ready
+
+      client.get "/demo/users/sign_up"
+      expect(client.response).to have_http_status(:forbidden)
+      expect(client.response.body).to eq("デモ環境では新しいアカウントを登録できません。")
+    end
+  end
 end
