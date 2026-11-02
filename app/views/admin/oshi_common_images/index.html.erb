@@ -8,6 +8,9 @@
   </div>
   <%= f.submit t("ui.actions.search"), class: "button" %>
 <% end %>
+<% if @query.present? %>
+  <p><%= t("ui.common_images.search_limit") %></p>
+<% end %>
 <% @oshis.each do |oshi| %>
   <section class="card common-image-admin-card">
     <h2><%= oshi.name %></h2>
@@ -24,7 +27,7 @@
           <p><%= t("ui.common_images.creator_prefix") %><%= image.creator_name %></p>
           <p><%= t("ui.common_images.license_prefix") %><%= image.license_name %></p>
           <div class="actions">
-            <%= link_to t("ui.actions.edit"), edit_admin_oshi_common_image_path(image) %>
+            <%= link_to t("ui.actions.edit"), edit_admin_oshi_common_image_path(image), class: "button button-secondary" %>
             <%= button_to t("ui.actions.delete"), admin_oshi_common_image_path(image), method: :delete,
               params: { oshi_common_image: { lock_version: image.lock_version } }, class: "button button-secondary",
               form: { data: { turbo_confirm: t("ui.common_images.delete_confirm") } } %>
@@ -34,4 +37,7 @@
     </div>
   </section>
 <% end %>
-<p><%= link_to t("ui.merge.back"), admin_oshis_path %></p>
+<% if @query.present? && @oshis.empty? %>
+  <p role="status"><%= t("ui.common_images.search_empty") %></p>
+<% end %>
+<p><%= link_to t("ui.merge.back"), admin_oshis_path, class: "button button-secondary" %></p>
