@@ -16,6 +16,33 @@ module Admin
       update_status(:rejected, t("notices.oshis.rejected"))
     end
 
+    def manage
+      @query = deletion_query
+      scope = @query.present? ? Oshi.search(@query) : Oshi.all
+      records = scope.order(:name, :id).limit(51).to_a
+      @has_more = records.size > 50
+      @managed_oshis = records.first(50)
+    end
+
+    def confirm_destroy
+      @query = deletion_query
+      @oshi = Oshis::Delete.find(params[:id])
+      @references = Oshis::Delete.references(@oshi)
+      @deletion_read_only = session[:graduation_guest_role].present? ||
+        (GraduationGuestSandbox.enabled? && GraduationGuestSandbox.reserved_email?(current_user.email))
+      @confirmation = Oshis::Delete.confirmation(@oshi) if @references.empty? && !@deletion_read_only
+    rescue ActiveRecord::RecordNotFound => error
+      render_user_data_not_found(error)
+    end
+
+    def destroy
+      record = delete_oshi
+      return if performed?
+
+      redirect_to manage_admin_oshis_path(q: deletion_query),
+        notice: t("admin_oshi_deletion.deleted", name: record.name), status: :see_other
+    end
+
     def new_merge
       input = merge_selection_params
       @source_query = input[:source_query]
@@ -51,6 +78,40 @@ module Admin
     end
 
     private
+
+      def deletion_query
+        params[:q].is_a?(String) ? params[:q].strip[0, 255] : ""
+      end
+
+      def delete_oshi
+        Oshis::Delete.call(id: params[:id], confirmation: params[:oshi_delete_confirmation])
+      rescue Oshis::Delete::InUse => error
+        labels = error.references.map { |name| t("admin_oshi_deletion.references.#{name}") }.join("、")
+        refuse_deletion(t("admin_oshi_deletion.in_use_detail", references: labels))
+      rescue Oshis::Delete::InvalidConfirmation
+        refuse_deletion(t("admin_oshi_deletion.confirm_again"))
+      rescue ActiveRecord::RecordNotFound => error
+        render_user_data_not_found(error)
+      rescue ActiveRecord::InvalidForeignKey
+        refuse_deletion(t("admin_oshi_deletion.references_changed"))
+      rescue ActiveRecord::LockWaitTimeout, ActiveRecord::Deadlocked
+        refuse_deletion(t("admin_oshi_deletion.busy"))
+      rescue ActiveRecord::RecordNotDestroyed
+        refuse_deletion(t("admin_oshi_deletion.failed"), confirm: false)
+      rescue StandardError => error
+        Rails.logger.error("Oshi deletion failed: #{error.class.name}")
+        refuse_deletion(t("admin_oshi_deletion.failed"), confirm: false)
+      end
+
+      def refuse_deletion(message, confirm: true)
+        location = if confirm
+          confirm_destroy_admin_oshi_path(params[:id], q: deletion_query)
+        else
+          manage_admin_oshis_path(q: deletion_query)
+        end
+        redirect_to location, alert: message, status: :see_other
+      end
+
 
       def merge_selection_params
         input = params[:oshi_merge]
