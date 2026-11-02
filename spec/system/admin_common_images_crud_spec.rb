@@ -53,7 +53,8 @@ RSpec.describe "管理者の推し共通画像管理", type: :system do
       click_link "共通画像を追加"
     end
 
-    expect(page).to have_css("main h1", text: "#{oshi.name}の共通画像登録", exact_text: true)
+    expect(page).to have_css("main h1", text: "共通画像を登録", exact_text: true)
+    expect(page).to have_css("main p", text: "対象の推し：#{oshi.name}", exact_text: true)
     attach_file "画像ファイル（必須）", Rails.root.join("spec/fixtures/files/image.png")
     fill_in "出典URL（必須）", with: "https://example.test/source"
     fill_in "作者・権利者（必須）", with: "テスト作者"
@@ -74,7 +75,8 @@ RSpec.describe "管理者の推し共通画像管理", type: :system do
       click_link "編集", exact: true
     end
 
-    expect(page).to have_css("main h1", text: "#{oshi.name}の共通画像編集", exact_text: true)
+    expect(page).to have_css("main h1", text: "共通画像を編集", exact_text: true)
+    expect(page).to have_css("main p", text: "対象の推し：#{oshi.name}", exact_text: true)
     expect(page).to have_field("帰属表示（必須）", with: "画像提供：テスト作者")
     fill_in "作者・権利者（必須）", with: "更新した作者"
     fill_in "ライセンス・利用許諾（必須）", with: "更新した利用許諾"
