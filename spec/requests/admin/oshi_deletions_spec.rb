@@ -1,10 +1,30 @@
 require "rails_helper"
+require "tmpdir"
+require "fileutils"
 require_relative "../../support/image_attachments"
 require_relative "../../support/activity_input_context"
 
 RSpec.describe "Administrator unused oshi deletion", type: :request do
   include ImageAttachments
   include ActivityInputContext
+
+  around(:each, :isolated_storage) do |example|
+    registry, service = ActiveStorage::Blob.services, ActiveStorage::Blob.service
+    root = Rails.root.join("tmp").realpath
+    directory = Pathname.new(Dir.mktmpdir("admin-oshi-deletion-", root))
+    disk = ActiveStorage::Service::DiskService.new(root: directory.to_s)
+    disk.name = "test"
+    ActiveStorage::Blob.services = { "test" => disk }
+    ActiveStorage::Blob.service = disk
+    example.run
+  ensure
+    ActiveStorage::Blob.services, ActiveStorage::Blob.service = registry, service
+    if directory
+      raise "Unsafe test storage cleanup" unless !directory.symlink? && directory.realpath.parent == root &&
+        directory.basename.to_s.start_with?("admin-oshi-deletion-")
+      FileUtils.remove_entry_secure(directory.to_s)
+    end
+  end
 
   let(:admin) { create(:user, :admin) }
   let(:record) { create(:oshi, :approved, name: "登録済みの推し") }
@@ -153,7 +173,7 @@ RSpec.describe "Administrator unused oshi deletion", type: :request do
   end
 
   %i[html json].each do |format|
-    it "returns #{format} 404 when deletion wins during personal registration, without orphan uploads" do
+    it "returns #{format} 404 when deletion wins during personal registration, without orphan uploads", :isolated_storage do
       user = create(:user)
       target = create(:oshi, :approved)
       token = Oshis::Delete.confirmation(target)
