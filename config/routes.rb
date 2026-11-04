@@ -17,12 +17,14 @@ Rails.application.routes.draw do
   end
   namespace :admin do
     resources :oshi_common_images, path: "common-images", except: :show
-    resources :oshis, only: :index do
+    resources :oshis, only: [ :index, :destroy ] do
       collection do
+        get :manage
         get :new_merge
         post :merge
       end
       member do
+        get :confirm_destroy
         patch :approve
         patch :reject
       end

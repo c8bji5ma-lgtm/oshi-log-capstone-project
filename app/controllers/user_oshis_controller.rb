@@ -46,11 +46,12 @@ class UserOshisController < ApplicationController
     end
   rescue ActiveRecord::RecordNotUnique
     redirect_duplicate
-  rescue ActiveRecord::RecordNotFound => error
+  rescue ActiveRecord::RecordNotFound, ActiveRecord::InvalidForeignKey => error
     if activity_panel_request?
       render json: { error: "unavailable", message: t("ui.activity_panel.unavailable") }, status: :not_found
     else
-      render_user_data_not_found(error)
+      missing = error.is_a?(ActiveRecord::RecordNotFound) ? error : ActiveRecord::RecordNotFound.new
+      render_user_data_not_found(missing)
     end
   end
 

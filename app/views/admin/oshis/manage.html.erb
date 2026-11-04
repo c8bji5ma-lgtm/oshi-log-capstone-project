@@ -1,0 +1,27 @@
+<% content_for :title, t("admin_oshi_deletion.page_title") %>
+<h1><%= t("admin_oshi_deletion.heading") %></h1>
+<p><%= t("admin_oshi_deletion.help") %></p>
+<%= form_with url: manage_admin_oshis_path, method: :get do |f| %>
+  <div class="form-field">
+    <%= f.label :q, t("admin_oshi_deletion.search_label") %>
+    <%= f.search_field :q, value: @query, maxlength: 255 %>
+  </div>
+  <%= f.submit t("ui.actions.search"), class: "button" %>
+<% end %>
+<% if @has_more %>
+  <p role="status"><%= t("admin_oshi_deletion.search_limit") %></p>
+<% end %>
+<% if @managed_oshis.empty? %>
+  <p role="status"><%= t("admin_oshi_deletion.empty") %></p>
+<% else %>
+  <div class="cards">
+    <% @managed_oshis.each do |oshi| %>
+      <section class="card">
+        <h2><%= oshi.name %></h2>
+        <p><%= t("admin_oshi_deletion.identity", id: oshi.id, status: t("ui.states.#{oshi.status}")) %></p>
+        <%= link_to t("admin_oshi_deletion.review"), confirm_destroy_admin_oshi_path(oshi, q: @query), class: "button button-secondary", aria: { label: t("admin_oshi_deletion.review_named", name: oshi.name) } %>
+      </section>
+    <% end %>
+  </div>
+<% end %>
+<p><%= link_to t("ui.merge.back"), admin_oshis_path, class: "button button-secondary" %></p>

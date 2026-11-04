@@ -1,0 +1,28 @@
+<% content_for :title, t("admin_oshi_deletion.confirm_page_title") %>
+<h1><%= t("admin_oshi_deletion.confirm_heading") %></h1>
+<p id="oshi-deletion-target"><%= t("admin_oshi_deletion.target", name: @oshi.name) %></p>
+<p><%= t("admin_oshi_deletion.identity", id: @oshi.id, status: t("ui.states.#{@oshi.status}")) %></p>
+<p id="oshi-deletion-warning"><%= t("admin_oshi_deletion.warning") %></p>
+<% if @references.any? %>
+  <div class="validation-errors" role="status">
+    <p><%= t("admin_oshi_deletion.in_use") %></p>
+    <ul>
+      <% @references.each do |reference| %>
+        <li><%= t("admin_oshi_deletion.references.#{reference}") %></li>
+      <% end %>
+    </ul>
+  </div>
+<% elsif @deletion_read_only %>
+  <p role="status"><%= t("admin_oshi_deletion.read_only") %></p>
+<% else %>
+  <p><%= t("admin_oshi_deletion.unused") %></p>
+<% end %>
+<div class="actions">
+  <%= link_to t("admin_oshi_deletion.cancel"), manage_admin_oshis_path(q: @query), class: "button button-secondary" %>
+  <% if @references.empty? && !@deletion_read_only %>
+    <%= button_to t("admin_oshi_deletion.delete"), admin_oshi_path(@oshi, q: @query), method: :delete,
+      params: { oshi_delete_confirmation: @confirmation }, class: "button",
+      aria: { label: t("admin_oshi_deletion.delete_named", name: @oshi.name), describedby: "oshi-deletion-target oshi-deletion-warning" },
+      form: { data: { turbo_confirm: t("admin_oshi_deletion.confirm_prompt", name: @oshi.name) } } %>
+  <% end %>
+</div>
