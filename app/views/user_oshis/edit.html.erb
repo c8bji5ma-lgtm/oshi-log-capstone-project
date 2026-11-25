@@ -20,7 +20,7 @@
     <div class="form-field" data-controller="image-upload">
       <%= f.label :representative_image, t("ui.labels.representative_image") %>
       <%= f.file_field :representative_image, accept: "image/jpeg,image/png,image/webp", data: { image_upload_target: "input", action: "change->image-upload#change" }, aria: { invalid: @user_oshi.errors[:representative_image].any?, describedby: "image-help image-status" } %>
-      <p id="image-help"><%= t("ui.oshi.image_help") %></p>
+      <p id="image-help"><%= t("ui.oshi.image_help") %> <%= t("ui.image_formats.heif_help") %></p>
       <p id="image-status" class="image-upload-status" data-image-upload-target="status" role="status" aria-live="polite"></p>
     </div>
     <%= f.submit t("ui.actions.update_oshi"), class: "button" %>
