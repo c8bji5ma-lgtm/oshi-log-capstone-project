@@ -217,6 +217,10 @@ ja:
       compare_help: "下のフォームには送信した内容を残しています。内容を比較し、必要な値を控えてから最新内容を読み込み直してください。"
       image_help: "選択した画像ファイルは保持できません。編集し直す場合は、必要な画像をもう一度選択してください。"
     oshi:
+      record_activity: "この推しの活動を記録"
+      recent_activities: "最近の活動"
+      no_recent_activities: "この推しの活動はまだありません。"
+      all_activities: "この推しの活動をすべて見る"
       title: "推し登録"
       page_title: "推し登録 | OshiLog"
       existing_heading: "既存の推しから選ぶ"

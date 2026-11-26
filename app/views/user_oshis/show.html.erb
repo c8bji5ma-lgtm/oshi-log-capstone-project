@@ -14,8 +14,22 @@
   </dl>
   <%= attachment_image_tag @representative_image, alt: "#{@user_oshi.oshi.name}の代表画像", class: "representative-image" %>
   <div class="actions">
+    <%= link_to t("ui.oshi.record_activity"), new_activity_path(initial_oshi_id: @user_oshi.oshi_id), class: "button" %>
     <%= link_to "この推しでカードを作る", new_card_path(user_oshi_id: @user_oshi.id), class: "button" %>
   </div>
+</section>
+<section class="card" aria-labelledby="recent-oshi-activities-heading">
+  <h2 id="recent-oshi-activities-heading"><%= t("ui.oshi.recent_activities") %></h2>
+  <% if @recent_activities.any? %>
+    <ul>
+      <% @recent_activities.each do |activity| %>
+        <li><%= link_to activity.title, activity_path(activity) %> <%= tag.time(activity.occurred_on.to_fs(:db), datetime: activity.occurred_on.iso8601) %></li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p><%= t("ui.oshi.no_recent_activities") %></p>
+  <% end %>
+  <%= link_to t("ui.oshi.all_activities"), activities_path(oshi_id: @user_oshi.oshi_id) %>
 </section>
 <section class="card oshi-image-library" aria-labelledby="library-heading">
   <h2 id="library-heading">登録画像</h2>

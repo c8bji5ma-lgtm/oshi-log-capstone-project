@@ -10,6 +10,9 @@ class UserOshisController < ApplicationController
   end
 
   def show
+    @recent_activities = current_user.activities.joins(:activity_oshis)
+      .where(activity_oshis: { oshi_id: @user_oshi.oshi_id })
+      .order(Activities::KeysetPage::ORDER).limit(3).to_a
   end
 
   def edit
