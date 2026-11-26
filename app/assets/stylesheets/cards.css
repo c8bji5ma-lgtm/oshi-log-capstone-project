@@ -199,3 +199,44 @@ html:has(.image-crop-dialog[open]) {
 .data-card-settings .form-field {
   min-width: 0;
 }
+
+.card-completion {
+  border-color: var(--color-primary);
+}
+
+.card-completion-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-block-end: 0.75rem;
+}
+
+.card-completion-heading h2 {
+  margin: 0;
+}
+
+.card-completion-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.card-completion-mark::before {
+  content: "✓";
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card-completion:not([hidden]) .card-completion-mark {
+    animation: card-completion-in 190ms ease-out both;
+  }
+}
+
+@keyframes card-completion-in {
+  from { opacity: 0.45; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
