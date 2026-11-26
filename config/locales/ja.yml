@@ -77,6 +77,8 @@ ja:
         one: "%{resource}を保存できませんでした。入力内容を確認してください。"
         other: "%{resource}を保存できませんでした。入力内容を確認してください。"
   ui:
+    image_formats:
+      heif_help: "iPhoneのHEIC／HEIF画像は使えません。すでに撮った写真はJPEGなどで書き出して選び直してください。今後の撮影をJPEGにするには、iPhoneの「設定」→「カメラ」→「フォーマット」で「互換性優先」を選べます。"
     activity_panel:
       blocked_heading: "活動の保存を停止しました"
       open: "推しを追加"

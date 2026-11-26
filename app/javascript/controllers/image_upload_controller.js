@@ -161,7 +161,12 @@ export default class extends Controller {
   }
 
   async prepareFile(file, version) {
-    if (!CONTENT_TYPES.includes(file.type)) throw new Error("JPEG・PNG・WebP形式の画像を選び直してください。")
+    if (!CONTENT_TYPES.includes(file.type)) {
+      if (/^image\/hei[cf](?:-sequence)?$/i.test(file.type) || /\.hei[cf]$/i.test(file.name)) {
+        throw new Error("HEIC／HEIF画像は使えません。JPEGなどで書き出して選び直してください。")
+      }
+      throw new Error("JPEG・PNG・WebP形式の画像を選び直してください。")
+    }
     if (file.size <= 0 || file.size > MAX_SOURCE_BYTES) {
       throw new Error("画像が大きすぎて端末で安全に処理できません。25 MiB以下の画像を選び直してください。")
     }
