@@ -14,6 +14,13 @@ class ImagesController < ApplicationController
     head :not_found
   end
 
+  def activity_preview
+    attachment = owned_attachments.where(record_type: "Activity", name: "images").includes(:blob).find(params[:id])
+    send_data Activities::PhotoPreview.call(attachment.blob), type: "image/webp", disposition: "inline"
+  rescue ActiveRecord::RecordNotFound, ImageAttachmentInspector::Invalid, Vips::Error
+    head :not_found
+  end
+
   private
 
     def owned_attachments
