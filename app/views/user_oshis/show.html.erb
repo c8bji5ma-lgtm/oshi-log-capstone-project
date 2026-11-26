@@ -38,7 +38,8 @@
       <% @memory_activities.each do |activity| %>
         <% photo = activity.images_attachments.min_by(&:id) %>
         <li>
-          <%= link_to activity_path(activity), class: "oshi-memory-photo" do %>
+          <% destination = photo ? activity_path(activity, memory_origin: @user_oshi.id, memory_photo: photo.id) : activity_path(activity) %>
+          <%= link_to destination, class: "oshi-memory-photo", data: { memory_photo_link: photo&.id } do %>
             <span class="oshi-memory-photo__frame" aria-hidden="true">
               <%= image_tag protected_activity_preview_path(photo), alt: "", loading: "lazy", decoding: "async" if photo %>
             </span>

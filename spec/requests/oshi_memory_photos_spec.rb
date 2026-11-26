@@ -35,14 +35,52 @@ RSpec.describe "Oshi memory photos", type: :request do
     doc = Nokogiri::HTML(response.body)
     photos = doc.at_css("#oshi-memory-photos-heading").parent
     recent = doc.at_css("#recent-oshi-activities-heading").parent
-    expect(photos.css("li a").map { |link| link["href"] }).to eq([ first, second, third ].map { |a| activity_path(a) })
+    expect(photos.css("li a").map { |link| link["href"] }).to eq(
+      [ first, second, third ].map { |a| activity_path(a, memory_origin: oshi.id, memory_photo: a.images_attachments.order(:id).first.id) }
+    )
     expect(photos.css("img").map { |img| img["src"] }).to eq(
       [ first, second, third ].map { |a| protected_activity_preview_path(a.images_attachments.order(:id).first) }
     )
     expect(photos.css("time").first["datetime"]).to eq("2026-10-04")
     expect(recent.css("li a").map { |link| link["href"] }).to eq([ newest, first, second ].map { |a| activity_path(a) })
-    expect(photos.css("li a").map { |link| link["href"] }).not_to include(activity_path(older))
+    expect(photos.css("li a").map { |link| link["href"].split("?").first }).not_to include(activity_path(older))
     expect(doc.at_css("#library-heading")).to be_present
+  end
+
+  it "features the exact selected thumbnail ahead of the narrative without changing the image gallery" do
+    record = activity(1)
+    record.images.attach(image_upload("image.jpg"))
+    photos = record.images_attachments.order(:id).to_a
+    login
+    get activity_path(record, memory_origin: oshi.id, memory_photo: photos.last.id)
+
+    doc = Nokogiri::HTML(response.body)
+    feature = doc.at_css(".activity-memory-feature")
+    expect(feature.element_children.first["src"]).to eq(protected_activity_preview_path(photos.last))
+    expect(feature.next_element["class"]).to eq("detail-rows")
+    expect(doc.css(".image-gallery img").map { |img| img["src"] }).to match_array(photos.map { |photo| protected_image_path(photo) })
+  end
+
+  it "keeps normal detail for an ordinary link or unrelated, unauthorised, malformed or stale context" do
+    record = activity(1)
+    other_photo = activity(2).images_attachments.first
+    photo = record.images_attachments.first
+    other_oshi = create(:user_oshi, user: user)
+    foreign_registration = create(:user_oshi, oshi: oshi.oshi)
+    login
+
+    [
+      {},
+      { memory_origin: other_oshi.id, memory_photo: photo.id },
+      { memory_origin: foreign_registration.id, memory_photo: photo.id },
+      { memory_origin: oshi.id, memory_photo: other_photo.id },
+      { memory_origin: oshi.id, memory_photo: "0" },
+      { memory_origin: [ oshi.id ], memory_photo: photo.id }
+    ].each do |context|
+      get activity_path(record, **context)
+      expect(response).to have_http_status(:ok)
+      expect(Nokogiri::HTML(response.body).at_css(".activity-memory-feature")).to be_nil
+    end
   end
 
   it "does not render an empty gallery" do

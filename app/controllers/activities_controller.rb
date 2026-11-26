@@ -107,6 +107,16 @@ class ActivitiesController < ApplicationController
 
   def show
     @activity.oshis.load
+    origin = params[:memory_origin]
+    photo = params[:memory_photo]
+    return unless origin.is_a?(String) && photo.is_a?(String)
+
+    # Treat the source as optional context; the existing activity ownership
+    # check and normal detail still apply to incomplete or stale links.
+    registration = current_user.user_oshis.where(oshi_id: @activity.oshi_ids).find_by(id: origin)
+    return unless registration && registration.id.to_s == origin
+
+    @memory_photo = @existing_images.find { |image| image.id.to_s == photo }
   end
 
   def edit

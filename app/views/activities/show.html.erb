@@ -2,6 +2,11 @@
 <h1>活動記録の詳細</h1>
 <section class="card">
   <h2><%= @activity.title %></h2>
+  <% if @memory_photo %>
+    <figure class="activity-memory-feature" data-memory-photo-feature="<%= @memory_photo.id %>">
+      <%= image_tag protected_activity_preview_path(@memory_photo), alt: t("ui.oshi.memory_photo_alt", title: @activity.title) %>
+    </figure>
+  <% end %>
   <dl class="detail-rows">
     <dt>活動日</dt><dd><%= @activity.occurred_on.strftime("%Y/%m/%d") %></dd>
     <dt>カテゴリ</dt><dd><%= @activity.activity_type %></dd>

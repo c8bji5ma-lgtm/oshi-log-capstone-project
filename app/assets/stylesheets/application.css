@@ -1735,3 +1735,37 @@ body > main { flex: 1 0 auto; }
   block-size: 100%;
   object-fit: cover;
 }
+
+.activity-memory-feature {
+  margin: 0 0 1.25rem;
+  max-width: 28rem;
+  border-radius: var(--shape-card, 0.875rem);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+}
+
+.activity-memory-feature img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .memory-photo-transition-target {
+    view-transition-name: activity-memory-photo;
+  }
+
+  html[data-memory-photo-transition]::view-transition-old(root) {
+    display: none;
+  }
+
+  html[data-memory-photo-transition]::view-transition-new(root) {
+    animation: none;
+  }
+
+  html[data-memory-photo-transition]::view-transition-group(activity-memory-photo) {
+    animation-duration: 240ms;
+    animation-timing-function: ease-out;
+  }
+}
