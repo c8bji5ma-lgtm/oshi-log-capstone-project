@@ -98,6 +98,7 @@ class ActivitiesController < ApplicationController
     @activity = current_user.activities.new
     @existing_images = []
     if save_activity
+      flash[:activity_recorded] = true
       redirect_to activities_path, notice: t("notices.activities.created"), status: :see_other
     else
       render :new, status: :unprocessable_content

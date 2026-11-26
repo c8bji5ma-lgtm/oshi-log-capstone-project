@@ -108,7 +108,7 @@
       </section>
     </div>
   </div>
-  <%= f.submit(@activity.persisted? ? t("ui.actions.update") : t("ui.actions.record"), class: "button") %>
+  <%= f.submit(@activity.persisted? ? t("ui.actions.update") : t("ui.actions.record"), class: (@activity.persisted? ? "button" : "button activity-press")) %>
 <% end %>
   <p data-activity-oshi-panel-target="status" role="status" aria-live="polite"></p>
   <p data-activity-oshi-panel-target="restart" hidden><%= link_to t("ui.activity_panel.restart"), new_activity_path %></p>

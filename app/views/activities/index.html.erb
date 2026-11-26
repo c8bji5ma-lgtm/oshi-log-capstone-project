@@ -1,6 +1,6 @@
 <% content_for :title, t("ui.activity.index_page_title") %>
-<h1><%= t("ui.navigation.activities") %></h1>
-<p><%= link_to t("ui.actions.record"), new_activity_path, class: "button" %></p>
+<h1 data-activity-motion-page="index"><%= t("ui.navigation.activities") %></h1>
+<p><%= link_to t("ui.actions.record"), new_activity_path, class: "button activity-press" %></p>
 <% if @filters["year"].present? || @filters["month"].present? || @filters["oshi_id"].present? || @filters["activity_type"].present? || @filters["q"].present? || @filters["through"].present? %>
   <section class="card activity-filter-status" aria-labelledby="activity-filter-summary">
     <h2 id="activity-filter-summary"><%= @filter_errors.any? ? "指定した条件" : "適用中の条件" %></h2>
