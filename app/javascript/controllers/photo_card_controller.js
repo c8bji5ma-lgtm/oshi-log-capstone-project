@@ -4,7 +4,7 @@ import { DataTemplateState, MemoryTemplateState, PhotoTemplateState } from "lib/
 import { createCard, downloadCard, errorMessage } from "lib/card_png_transport"
 
 export default class extends Controller {
-  static targets = ["form", "status", "error", "preview", "image", "generateButton", "downloadButton", "oshi", "frames", "frameTemplate", "template", "panel", "settingsForm", "cropDialog", "memoryStatus", "memoryRetry", "memoryMore", "memoryEmpty", "memoryFrames", "memoryFrameTemplate", "memoryAdd", "dataYear", "dataOshi", "dataStatus", "dataRetry"]
+  static targets = ["form", "status", "error", "preview", "previewHeading", "image", "generateButton", "downloadButton", "oshi", "frames", "frameTemplate", "template", "panel", "settingsForm", "cropDialog", "memoryStatus", "memoryRetry", "memoryMore", "memoryEmpty", "memoryFrames", "memoryFrameTemplate", "memoryAdd", "dataYear", "dataOshi", "dataStatus", "dataRetry"]
   static values = { createUrl: String, downloadUrl: String, layouts: Object, collageLayouts: Object, memoriesUrl: String, memoryMaterialsUrl: String, statisticsUrl: String }
 
   connect() {
@@ -517,6 +517,18 @@ export default class extends Controller {
     this.operation = operation
     this.errorTarget.textContent = ""
     this.statusTarget.textContent = "カードを作成しています。"
+    const source = event.submitter || document.activeElement
+    const focusWatch = new AbortController()
+    const { signal } = focusWatch
+    let movedAway = false
+    const trackMove = ({ target }) => {
+      if (target !== source && !source?.contains(target)) movedAway = true
+    }
+    document.addEventListener("focusin", trackMove, { signal })
+    document.addEventListener("pointerdown", trackMove, { signal })
+    document.addEventListener("keydown", event => { if (event.key === "Tab") movedAway = true }, { signal })
+    document.addEventListener("wheel", () => { movedAway = true }, { signal, passive: true })
+    document.addEventListener("touchmove", () => { movedAway = true }, { signal, passive: true })
     this.generating = true
     this.updateGenerateButtons(true)
     try {
@@ -525,18 +537,32 @@ export default class extends Controller {
           this.photoState.payload(this.formTarget.elements.show_introduction.checked)
       const result = await createCard(this.createUrlValue, card, this.csrfToken, operation.signal)
       if (!this.current(sequence)) return
-      this.result = result
       this.url = URL.createObjectURL(result.blob)
       this.imageTarget.src = this.url
+      try {
+        await this.imageTarget.decode()
+      } catch {
+        if (!this.current(sequence)) return
+        this.invalidate()
+        this.errorTarget.textContent = "完成画像を表示できませんでした。プレビューを作成し直してください。"
+        this.statusTarget.textContent = ""
+        return
+      }
+      if (!this.current(sequence)) return
+      this.result = result
       this.previewTarget.hidden = false
       this.downloadButtonTarget.disabled = false
       this.statusTarget.textContent = "完成プレビューを確認してから保存してください。"
+      if (!movedAway && document.hasFocus() && [source, document.body].includes(document.activeElement)) {
+        this.previewHeadingTarget.focus()
+      }
     } catch (error) {
       if (this.current(sequence) && error.name !== "AbortError") {
         this.errorTarget.textContent = error.message
         this.statusTarget.textContent = ""
       }
     } finally {
+      focusWatch.abort()
       if (this.current(sequence)) {
         this.generating = false
         this.updateGenerateButtons()

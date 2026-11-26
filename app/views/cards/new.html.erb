@@ -153,8 +153,11 @@
   </section>
   <p role="status" aria-live="polite" data-photo-card-target="status"></p>
   <p role="alert" data-photo-card-target="error"></p>
-  <section class="card" data-photo-card-target="preview" hidden>
-    <h2>完成プレビュー</h2>
+  <section class="card card-completion" data-photo-card-target="preview" aria-labelledby="card-completion-title" hidden>
+    <div class="card-completion-heading">
+      <span class="card-completion-mark" aria-hidden="true"></span>
+      <h2 id="card-completion-title" data-photo-card-target="previewHeading" tabindex="-1">完成プレビュー</h2>
+    </div>
     <img class="photo-card-preview" data-photo-card-target="image" alt="生成した推し活カード">
     <p>プレビューの有効期限は生成成功から15分です。</p>
     <button type="button" class="button" data-photo-card-target="downloadButton" data-action="photo-card#download" disabled>PNGをダウンロード</button>
