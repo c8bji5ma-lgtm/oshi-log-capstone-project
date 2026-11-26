@@ -31,6 +31,25 @@
   <% end %>
   <%= link_to t("ui.oshi.all_activities"), activities_path(oshi_id: @user_oshi.oshi_id) %>
 </section>
+<% if @memory_activities.any? %>
+  <section class="card" aria-labelledby="oshi-memory-photos-heading">
+    <h2 id="oshi-memory-photos-heading"><%= t("ui.oshi.memory_photos") %></h2>
+    <ul class="oshi-memory-photos">
+      <% @memory_activities.each do |activity| %>
+        <% photo = activity.images_attachments.min_by(&:id) %>
+        <li>
+          <%= link_to activity_path(activity), class: "oshi-memory-photo" do %>
+            <span class="oshi-memory-photo__frame" aria-hidden="true">
+              <%= image_tag protected_activity_preview_path(photo), alt: "", loading: "lazy", decoding: "async" if photo %>
+            </span>
+            <strong><%= activity.title %></strong>
+            <%= tag.time(activity.occurred_on.to_fs(:db), datetime: activity.occurred_on.iso8601) %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </section>
+<% end %>
 <section class="card oshi-image-library" aria-labelledby="library-heading">
   <h2 id="library-heading">登録画像</h2>
   <%= render "user_oshis/image_gallery", manage: false %>

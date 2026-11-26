@@ -31,6 +31,7 @@ Rails.application.routes.draw do
     end
   end
   resources :activities
+  get "images/:id/activity-preview", to: "images#activity_preview", as: :protected_activity_preview
   get "images/:id", to: "images#show", as: :protected_image
   get "common-oshi-images/:id", to: "common_oshi_images#show", as: :common_oshi_image
   resources :subscriptions, only: [ :index, :new, :create, :edit, :update, :destroy ]

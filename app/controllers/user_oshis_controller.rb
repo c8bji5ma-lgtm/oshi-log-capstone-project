@@ -10,9 +10,13 @@ class UserOshisController < ApplicationController
   end
 
   def show
-    @recent_activities = current_user.activities.joins(:activity_oshis)
+    activities = current_user.activities.joins(:activity_oshis)
       .where(activity_oshis: { oshi_id: @user_oshi.oshi_id })
-      .order(Activities::KeysetPage::ORDER).limit(3).to_a
+      .order(Activities::KeysetPage::ORDER)
+    @recent_activities = activities.limit(3).to_a
+    with_photos = ActiveStorage::Attachment.where(record_type: "Activity", name: "images").select(:record_id)
+    @memory_activities = activities.where(id: with_photos)
+      .includes(:images_attachments).limit(3).to_a
   end
 
   def edit
