@@ -2,3 +2,4 @@
 import "@hotwired/turbo-rails"
 import "controllers"
 import "lib/activity_page_motion"
+import "lib/memory_photo_motion"
