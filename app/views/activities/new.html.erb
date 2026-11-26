@@ -2,7 +2,7 @@
 <% content_for :head do %>
   <%= tag.meta name: "activity-context-token", content: activity_context_token %>
 <% end %>
-<h1><%= t("ui.activity.new_title") %></h1>
+<h1 data-activity-motion-page="new"><%= t("ui.activity.new_title") %></h1>
 <% if @selectable_oshis.empty? && @activity.errors.empty? %>
   <% if session[:graduation_guest_role].present? %>
     <p><%= t("ui.activity.first_oshi_read_only_help") %></p>

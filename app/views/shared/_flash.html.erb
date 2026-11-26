@@ -1,5 +1,9 @@
 <% if notice.present? %>
-  <p class="page-width flash flash-notice" role="status"><%= notice %></p>
+  <% if flash[:activity_recorded] && controller_name == "activities" && action_name == "index" %>
+    <p class="page-width flash flash-notice activity-recorded-notice" role="status" data-turbo-temporary><span class="activity-recorded-mark" aria-hidden="true"></span><%= notice %></p>
+  <% else %>
+    <p class="page-width flash flash-notice" role="status"><%= notice %></p>
+  <% end %>
 <% end %>
 <% if alert.present? %>
   <p class="page-width flash flash-alert" role="alert"><%= alert %></p>
