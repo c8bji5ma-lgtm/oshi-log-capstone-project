@@ -1,3 +1,15 @@
+# Capybara 3.40 passes an invalid wildcard origin to Chrome's storage API.
+# Discard the disposable Selenium profile instead of weakening test isolation.
+require "capybara/selenium/driver"
+
+module FreshChromeProfileOnReset
+  def reset!
+    quit
+  end
+end
+
+Capybara::Selenium::Driver::ChromeDriver.prepend(FreshChromeProfileOnReset)
+
 RSpec.configure do |config|
   config.before(:each, type: :system) do
     driver_options = {}
