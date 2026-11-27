@@ -13,6 +13,10 @@ class CardsController < ApplicationController
 
     @user_oshis = current_user.user_oshis.includes(:oshi, representative_image_attachment: :blob, library_images_attachments: :blob).order(:id)
     @initial_user_oshi_id = initial_user_oshi_id
+    if params.key?(:memory_activity_id) || params.key?(:memory_image_id)
+      @initial_memory = initial_memory
+      redirect_to(new_card_path, alert: "選んだ思い出の写真は利用できません。") unless @initial_memory
+    end
   end
 
   def memories
@@ -22,9 +26,7 @@ class CardsController < ApplicationController
     oshi_counts = ActivityOshi.where(activity_id: ids).group(:activity_id).count
     image_counts = ActiveStorage::Attachment.where(record_type: "Activity", name: "images", record_id: ids).group(:record_id).count
     activities = page.records.map do |activity|
-      { id: activity.id.to_s, date: activity.occurred_on.strftime("%Y.%m.%d"), title: activity.title,
-        category: activity.activity_type, oshi_count: oshi_counts.fetch(activity.id, 0),
-        image_count: image_counts.fetch(activity.id, 0) }
+      memory_candidate(activity, oshi_counts.fetch(activity.id, 0), image_counts.fetch(activity.id, 0))
     end
     render_bounded_json(activities:, next_cursor: (page.older_cursor if page.has_older), has_more: page.has_older)
   rescue Activities::KeysetPage::InvalidCursor
@@ -146,6 +148,23 @@ class CardsController < ApplicationController
       response.headers["Vary"] = "Cookie"
       response.headers["X-Content-Type-Options"] = "nosniff"
       render_error("ログインしてください。", :unauthorized) if action_name != "new" && !user_signed_in?
+    end
+
+    def initial_memory
+      activity_id, image_id = params.values_at(:memory_activity_id, :memory_image_id)
+      return unless [ activity_id, image_id ].all? { |id| id.is_a?(String) && id.match?(/\A[1-9][0-9]{0,18}\z/) && id.to_i <= 2**63 - 1 }
+
+      activity = Cards::Memory.candidates(current_user).find_by(id: activity_id)
+      image = activity&.images_attachments&.find_by(id: image_id)
+      return unless image
+
+      { activity: memory_candidate(activity, activity.activity_oshis.count, activity.images_attachments.count),
+        image: { id: image.id.to_s, url: protected_image_path(image) } }
+    end
+
+    def memory_candidate(activity, oshi_count, image_count)
+      { id: activity.id.to_s, date: activity.occurred_on.strftime("%Y.%m.%d"), title: activity.title,
+        category: activity.activity_type, oshi_count:, image_count: }
     end
 
     def initial_user_oshi_id

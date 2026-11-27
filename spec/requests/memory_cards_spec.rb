@@ -44,6 +44,43 @@ RSpec.describe "Memory cards", type: :request do
     bytes
   end
 
+  it "seeds exactly the selected photo from an eligible owned activity" do
+    2.times { attach_photo }
+    photo = activity.images_attachments.order(:id).second
+    get new_card_path, params: { memory_activity_id: activity.id, memory_image_id: photo.id }
+
+    expect(response).to have_http_status(:ok)
+    document = Nokogiri::HTML(response.body)
+    seed = JSON.parse(document.at_css("[data-photo-card-initial-memory-value]")["data-photo-card-initial-memory-value"])
+    expect(seed).to include("activity" => a_hash_including("id" => activity.id.to_s),
+      "image" => { "id" => photo.id.to_s, "url" => protected_image_path(photo) })
+    expect(document.at_css("input[name='template'][checked]")["value"]).to eq("memories")
+    expect(response.headers["Cache-Control"]).to include("private", "no-store")
+  end
+
+  it "warns rather than replacing an invalid or stale selection" do
+    2.times { attach_photo }
+    photo = activity.images_attachments.order(:id).second
+    foreign = create(:activity)
+    future = create(:activity, user: user, occurred_on: Date.current + 1)
+    other = create(:activity, user: user)
+    [ foreign, future, other ].each { |record| attach_photo(record) }
+    photo.purge
+    expect(activity.images_attachments.count).to eq(1)
+
+    pairs = [ [ foreign.id, foreign.images_attachments.first.id ], [ future.id, future.images_attachments.first.id ],
+              [ activity.id, other.images_attachments.first.id ], [ [ activity.id ], photo.id ],
+              [ activity.id, nil ], [ activity.id, photo.id ] ]
+    pairs.each do |activity_id, image_id|
+      get new_card_path, params: { memory_activity_id: activity_id, memory_image_id: image_id }
+      expect(response).to redirect_to(new_card_path)
+      expect(flash[:alert]).to eq("選んだ思い出の写真は利用できません。")
+    end
+    follow_redirect!
+    expect(response.body).not_to include("data-photo-card-initial-memory-value")
+    expect(Nokogiri::HTML(response.body).at_css("input[name='template'][checked]")["value"]).to eq("photo")
+  end
+
   it "loads only eligible owned candidates in date, creation and ID order without exposing private fields" do
     old = create(:activity, user: user, occurred_on: Date.current - 1)
     timestamp = Time.current.change(usec: 0)

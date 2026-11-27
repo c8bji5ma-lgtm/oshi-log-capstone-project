@@ -125,10 +125,17 @@ export class MemoryTemplateState {
     if (!this.edits.has(id)) this.edits.set(id, { imageId: null, crop: defaultCrop() })
   }
 
-  load(activities) {
+  load(activities, seed) {
+    this.seededActivityId = seed?.activity.id
     this.activities = activities
-    this.ids = activities.slice(0, 3).map(activity => activity.id)
+    if (seed && !activities.some(activity => activity.id === seed.activity.id)) this.activities.unshift(seed.activity)
+    this.ids = seed ? [seed.activity.id] : activities.slice(0, 3).map(activity => activity.id)
     this.ids.forEach(id => this.initialize(id))
+    if (seed) {
+      const activity = this.activities.find(item => item.id === seed.activity.id)
+      activity.images.push(seed.image)
+      this.edits.get(activity.id).imageId = seed.image.id
+    }
   }
 
   append(activities) {
@@ -145,6 +152,10 @@ export class MemoryTemplateState {
     const known = new Set(activity[kind].map(item => item.id))
     const additions = items.filter(item => !known.has(item.id))
     activity[kind].push(...additions)
+    if (kind === "images" && activity.id === this.seededActivityId) {
+      // Keep the regular attachment order even when the chosen image was seeded before paging.
+      activity.images.sort((a, b) => a.id.length - b.id.length || a.id.localeCompare(b.id))
+    }
     Object.assign(activity.materials[kind], { cursor: nextCursor, hasMore, loaded: true, total: totalCount, error: null })
     const edit = this.edits.get(id)
     if (kind === "images" && edit.imageId === null) edit.imageId = activity.images[0]?.id || ""
@@ -169,7 +180,7 @@ export class MemoryTemplateState {
     }
   }
 
-  reset() { this.activities = null; this.ids = []; this.edits = new Map() }
+  reset() { this.activities = null; this.ids = []; this.edits = new Map(); this.seededActivityId = null }
 }
 
 export class DataTemplateState {

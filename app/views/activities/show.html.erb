@@ -16,6 +16,9 @@
     <dt>金額</dt><dd><%= @activity.amount.nil? ? "—" : "#{number_with_delimiter(@activity.amount)}円" %></dd>
     <dt>メモ</dt><dd class="activity-memo"><%= @activity.memo.presence || "—" %></dd>
   </dl>
+  <% if @memory_photo %>
+    <%= link_to "この思い出をカードにする", new_card_path(memory_activity_id: @activity.id, memory_image_id: @memory_photo.id), class: "button" %>
+  <% end %>
   <h2>画像</h2>
   <% if @existing_images.empty? %>
     <p>画像はありません。</p>
