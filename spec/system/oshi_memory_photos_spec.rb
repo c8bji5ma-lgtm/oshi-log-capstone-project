@@ -79,6 +79,19 @@ RSpec.describe "Oshi memory photos on a narrow screen", type: :system do
     expect(page).to have_no_css(".activity-memory-feature")
   end
 
+  it "returns directly to the originating gallery from the on-page link at 320px" do
+    expect(page.evaluate_script("window.innerWidth")).to eq(320)
+    open_memory
+    expect(page).to have_link("活動記録一覧へ戻る", href: activities_path)
+    click_link "#{registration.oshi.name}の思い出の写真へ戻る"
+    expect(page).to have_current_path(user_oshi_path(registration))
+    expect(page.evaluate_script("window.location.hash")).to eq("#oshi-memory-photos-heading")
+    within("section[aria-labelledby='oshi-memory-photos-heading']") do
+      expect(page).to have_link(activity.title)
+    end
+    expect(page.evaluate_script("document.documentElement.scrollWidth <= document.documentElement.clientWidth")).to be(true)
+  end
+
   it "shows the same photo with reduced motion, without starting a transition" do
     page.driver.browser.execute_cdp("Emulation.setEmulatedMedia", features: [ { name: "prefers-reduced-motion", value: "reduce" } ])
     watch_transitions

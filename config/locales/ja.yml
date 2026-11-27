@@ -220,6 +220,7 @@ ja:
       record_activity: "この推しの活動を記録"
       recent_activities: "最近の活動"
       memory_photos: "思い出の写真"
+      back_to_memory_photos: "%{name}の思い出の写真へ戻る"
       memory_photo_alt: "%{title}の思い出の写真"
       no_recent_activities: "この推しの活動はまだありません。"
       all_activities: "この推しの活動をすべて見る"
