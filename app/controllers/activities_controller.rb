@@ -117,6 +117,7 @@ class ActivitiesController < ApplicationController
     return unless registration && registration.id.to_s == origin
 
     @memory_photo = @existing_images.find { |image| image.id.to_s == photo }
+    @memory_origin = registration if @memory_photo
   end
 
   def edit

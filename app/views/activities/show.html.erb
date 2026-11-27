@@ -34,4 +34,7 @@
     <%= button_to "削除", activity_path(@activity), method: :delete, class: "destructive-button", form: { data: { turbo_confirm: "この活動記録を削除しますか？" } } %>
   </div>
 </section>
+<% if @memory_origin %>
+  <p><%= link_to t("ui.oshi.back_to_memory_photos", name: @memory_origin.oshi.name), user_oshi_path(@memory_origin, anchor: "oshi-memory-photos-heading") %></p>
+<% end %>
 <p><%= link_to "活動記録一覧へ戻る", activities_path(@list_context) %></p>

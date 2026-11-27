@@ -61,6 +61,27 @@ RSpec.describe "Oshi memory photos", type: :request do
     expect(doc.css(".image-gallery img").map { |img| img["src"] }).to match_array(photos.map { |photo| protected_image_path(photo) })
   end
 
+  it "returns to the originating gallery even when more than one oshi is linked" do
+    record = activity(1)
+    source = create(:user_oshi, user: user)
+    record.activity_oshis.create!(oshi: source.oshi)
+    photo = record.images_attachments.first
+    filters = { month: "2026-10", q: "ライブ" }
+    login
+
+    get user_oshi_path(source)
+    gallery = Nokogiri::HTML(response.body).at_css("#oshi-memory-photos-heading").parent
+    detail = gallery.at_css("a")["href"]
+    expect(detail).to eq(activity_path(record, memory_origin: source.id, memory_photo: photo.id))
+
+    get detail, params: { list_context: filters }
+    links = Nokogiri::HTML(response.body).css("a")
+    back = links.find { |link| link.text == "#{source.oshi.name}の思い出の写真へ戻る" }
+    expect(back["href"]).to eq(user_oshi_path(source, anchor: "oshi-memory-photos-heading"))
+    expect(links.map { |link| link["href"] }).not_to include(user_oshi_path(oshi, anchor: "oshi-memory-photos-heading"))
+    expect(links.find { |link| link.text == "活動記録一覧へ戻る" }["href"]).to eq(activities_path(filters))
+  end
+
   it "keeps normal detail for an ordinary link or unrelated, unauthorised, malformed or stale context" do
     record = activity(1)
     other_photo = activity(2).images_attachments.first
@@ -71,6 +92,9 @@ RSpec.describe "Oshi memory photos", type: :request do
 
     [
       {},
+      { memory_origin: oshi.id },
+      { memory_origin: oshi.id, memory_photo: [ photo.id ] },
+      { memory_origin: "0", memory_photo: photo.id },
       { memory_origin: other_oshi.id, memory_photo: photo.id },
       { memory_origin: foreign_registration.id, memory_photo: photo.id },
       { memory_origin: oshi.id, memory_photo: other_photo.id },
@@ -79,7 +103,9 @@ RSpec.describe "Oshi memory photos", type: :request do
     ].each do |context|
       get activity_path(record, **context)
       expect(response).to have_http_status(:ok)
-      expect(Nokogiri::HTML(response.body).at_css(".activity-memory-feature")).to be_nil
+      doc = Nokogiri::HTML(response.body)
+      expect(doc.at_css(".activity-memory-feature")).to be_nil
+      expect(doc.at_css('a[href$="#oshi-memory-photos-heading"]')).to be_nil
     end
   end
 
