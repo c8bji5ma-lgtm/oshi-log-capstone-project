@@ -5,14 +5,14 @@ import { createCard, downloadCard, errorMessage } from "lib/card_png_transport"
 
 export default class extends Controller {
   static targets = ["form", "status", "error", "preview", "previewHeading", "image", "generateButton", "downloadButton", "oshi", "frames", "frameTemplate", "template", "panel", "settingsForm", "cropDialog", "memoryStatus", "memoryRetry", "memoryMore", "memoryEmpty", "memoryFrames", "memoryFrameTemplate", "memoryAdd", "dataYear", "dataOshi", "dataStatus", "dataRetry"]
-  static values = { createUrl: String, downloadUrl: String, layouts: Object, collageLayouts: Object, memoriesUrl: String, memoryMaterialsUrl: String, statisticsUrl: String }
+  static values = { createUrl: String, downloadUrl: String, layouts: Object, collageLayouts: Object, memoriesUrl: String, memoryMaterialsUrl: String, statisticsUrl: String, initialMemory: Object }
 
   connect() {
     this.sequence = (this.sequence || 0) + 1
     this.disposed = false
     this.generating = false
     this.lastAction = Date.now()
-    this.template = "photo"
+    this.template = this.hasInitialMemoryValue ? "memories" : "photo"
     this.settingsFormTargets.forEach(form => {
       form.reset()
       form.querySelectorAll("input, select").forEach(input => { input.disabled = false })
@@ -26,6 +26,7 @@ export default class extends Controller {
     this.renderFrames()
     this.renderPanels()
     this.timer = setInterval(() => this.checkExpiry(), 1000)
+    if (this.hasInitialMemoryValue) this.loadMemories()
   }
 
   disconnect() { this.dispose() }
@@ -115,11 +116,13 @@ export default class extends Controller {
       if (!response.ok) throw new Error(await errorMessage(response))
       const { activities, next_cursor: nextCursor, has_more: hasMore } = await response.json()
       if (this.disposed || this.memoryLoad !== operation || !this.checkExpiry()) return
-      this.memoryState.load(activities)
+      const seed = this.hasInitialMemoryValue ? this.initialMemoryValue : null
+      this.memoryState.load(activities, seed)
       this.memoryCursor = nextCursor
       this.memoryMoreTarget.hidden = !hasMore
-      this.memoryStatusTarget.textContent = activities.length ? "最新の活動を選択しました。掲載順と写真を変更できます。" : ""
-      this.memoryEmptyTarget.hidden = activities.length > 0
+      this.memoryStatusTarget.textContent = seed ? "選んだ思い出の写真を設定しました。" :
+        (activities.length ? "最新の活動を選択しました。掲載順と写真を変更できます。" : "")
+      this.memoryEmptyTarget.hidden = this.memories.length > 0
       this.renderMemoryFrames()
       this.loadSelectedMemoryMaterials()
     } catch (error) {

@@ -18,6 +18,7 @@
 <div class="card-template-editor" data-controller="photo-card"
        data-photo-card-create-url-value="<%= card_path %>"
        data-photo-card-statistics-url-value="<%= statistics_card_path %>"
+       <% if @initial_memory %>data-photo-card-initial-memory-value="<%= @initial_memory.to_json %>"<% end %>
        data-photo-card-memories-url-value="<%= memories_card_path %>"
        data-photo-card-memory-materials-url-value="<%= memory_materials_card_path %>"
        data-photo-card-download-url-value="<%= download_card_path %>"
@@ -35,7 +36,7 @@
             <label>
               <input type="radio" name="template" value="<%= value %>" aria-controls="card-settings-<%= value %>"
                      aria-describedby="card-template-description-<%= value %>"
-                     data-photo-card-target="template" data-action="change->photo-card#switchTemplate" <%= "checked" if value == "photo" %>>
+                     data-photo-card-target="template" data-action="change->photo-card#switchTemplate" <%= "checked" if value == (@initial_memory ? "memories" : "photo") %>>
               <strong><%= name %></strong>
             </label>
             <span class="card-template-sample card-template-sample-<%= value %>" role="img" aria-label="<%= preview_label %>">
@@ -48,7 +49,7 @@
       <p id="card-template-help">編集内容はテンプレートごとに保持します。切り替えると作成済みのプレビューは破棄されます。</p>
     </form>
   </section>
-  <section class="card" id="card-settings-photo" aria-labelledby="card-heading-photo" data-photo-card-target="panel" data-template="photo">
+  <section class="card" id="card-settings-photo" aria-labelledby="card-heading-photo" data-photo-card-target="panel" data-template="photo" <%= "hidden" if @initial_memory %>>
     <h2 id="card-heading-photo">ビジュアル重視の設定</h2>
     <p>写真中心・推し1〜4人のカードです。</p>
     <form data-action="submit->photo-card#generate change->photo-card#changed" data-photo-card-target="form settingsForm">
@@ -90,7 +91,7 @@
     </form>
   </section>
   <section class="card" id="card-settings-memories" aria-labelledby="card-heading-memories"
-           data-photo-card-target="panel" data-template="memories" hidden>
+           data-photo-card-target="panel" data-template="memories" <%= "hidden" unless @initial_memory %>>
     <h2 id="card-heading-memories">思い出・活動履歴重視の設定</h2>
     <p>今日以前の活動を1〜3件、左から順に並べます。表示名・活動日・タイトル・カテゴリ・推し名を掲載します。自己紹介・メモ・金額・場所は掲載しません。</p>
     <p role="status" data-photo-card-target="memoryStatus">活動記録を読み込みます。</p>

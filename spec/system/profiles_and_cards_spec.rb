@@ -775,6 +775,51 @@ RSpec.describe "Profiles and photo cards in the browser", type: :system do
     download_png
   end
 
+  it "carries an older gallery photo to the memory editor and saves the same PNG at 375px" do
+    create(:profile, user: user)
+    another = create(:user_oshi, user: user)
+    memory = build(:activity, :without_oshis, user: user, occurred_on: Date.current - 1, title: "カードに残す思い出")
+    Activities::Save.call(activity: memory, oshi_ids: [ user_oshi.oshi_id ])
+    2.times { attach_memory_photo(memory) }
+    photo = memory.images_attachments.order(:id).first
+    50.times do
+      newer = build(:activity, :without_oshis, user: user, occurred_on: Date.current)
+      Activities::Save.call(activity: newer, oshi_ids: [ another.oshi_id ])
+    end
+    sign_in
+    page.current_window.resize_to(375, 900)
+    visit user_oshi_path(user_oshi)
+    within("section[aria-labelledby='oshi-memory-photos-heading']") { click_link memory.title }
+    expect(page).to have_link("この思い出をカードにする", href: new_card_path(memory_activity_id: memory.id, memory_image_id: photo.id))
+    click_link "この思い出をカードにする"
+
+    expect(page).to have_select("1. 掲載する活動", selected: memory_choice(memory))
+    expect(page).not_to have_select("2. 掲載する活動")
+    expect(page).not_to have_css("[data-photo-card-target='preview']")
+    expect(find("#memory-photo-#{memory.id}").value).to eq(photo.id.to_s)
+    click_button "さらに古い活動を読み込む"
+    expect(page).not_to have_button("さらに古い活動を読み込む")
+    expect(find("#memory-activity-#{memory.id}").all("option").map(&:value).count(memory.id.to_s)).to eq(1)
+    expect(find("#memory-photo-#{memory.id}").value).to eq(photo.id.to_s)
+    expect(page.evaluate_script("document.documentElement.scrollWidth <= document.documentElement.clientWidth")).to be(true)
+
+    generate_preview
+    digest = page.evaluate_async_script(<<~JS)
+      const done = arguments[0]
+      fetch(document.querySelector("[data-photo-card-target='image']").src)
+        .then(response => response.arrayBuffer()).then(bytes => crypto.subtle.digest("SHA-256", bytes))
+        .then(hash => done(Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2, "0")).join("")))
+    JS
+    download_png
+    expect(Digest::SHA256.file(@download_directory.join("oshilog-card.png")).hexdigest).to eq(digest)
+
+    second = memory.images_attachments.order(:id).second
+    visit activity_path(memory, memory_origin: user_oshi.id, memory_photo: second.id)
+    click_link "この思い出をカードにする"
+    expect(page).to have_select("1. 活動の写真", selected: "写真2")
+    expect(find("#memory-photo-#{memory.id}").value).to eq(second.id.to_s)
+  end
+
   it "loads older candidates once per request and preserves selected order, photo and crop across a failed retry" do
     create(:profile, user: user)
     timestamp = Time.current.change(usec: 0)
